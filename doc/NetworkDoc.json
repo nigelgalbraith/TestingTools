@@ -1,0 +1,31 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.scan_timeout",
+    "port_scan",
+    "port_scan.ports"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.scan_timeout.<VALUES>",
+    "port_scan.ports.<VALUES>",
+    "port_scan.timeout.<VALUES>",
+    "port_scan.workers.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "scan_timeout": 30
+    },
+    "port_scan": {
+      "ports": [22, 80, 443, 445, 3389, 5985, 5986],
+      "timeout": 0.5,
+      "workers": 200
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General runtime configuration.",
+    "general.scan_timeout": "Seconds to wait for an iw scan to complete.",
+    "port_scan.ports": "List of TCP ports to scan on discovered hosts.",
+    "port_scan.timeout": "Seconds to wait for a response when scanning each port.",
+    "port_scan.workers": "Number of concurrent threads to use when scanning ports."
+  }
+}

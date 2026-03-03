@@ -1,0 +1,14 @@
+{
+  "general": {
+    "scan_timeout": 30
+  },
+  
+"network_summary_columns": [
+    {"name": "SSID", "key": "ssid", "pattern": "^SSID:\\s*(.*)$"},
+    {"name": "BSSID", "key": "bssid", "pattern": "^BSS\\s+([0-9A-Fa-f:]{17})"},
+    {"name": "Signal Strength (dBm)", "key": "signal_strength", "pattern": "signal:\\s*(-?\\d+\\.\\d+)"},
+    {"name": "Channel", "key": "channel", "pattern": "channel\\s+(\\d+)"},
+    {"name": "Security", "key": "security", "pattern": "(RSN|WPA|Privacy)"},
+    {"name": "Frequency (MHz)", "key": "frequency", "pattern": "freq:\\s*(\\d+)"}
+  ]
+}
