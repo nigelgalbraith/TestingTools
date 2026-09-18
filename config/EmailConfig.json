@@ -1,0 +1,6 @@
+{
+    "locations": {
+        "source_dir": "email/email_source",
+        "dest_dir": "email/email_dest"
+    }
+}

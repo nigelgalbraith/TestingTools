@@ -52,6 +52,7 @@ REQUIRED_CONSTANTS = [
 AVAILABLE_CONSTANTS = {
     "WiFi utility": ("constants.WiFiConstants", 0),
     "Network utility": ("constants.NetworkConstants", 0),
+    "Email utility": ("constants.EmailConstants", 1000),
 }
 
 

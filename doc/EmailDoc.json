@@ -1,0 +1,22 @@
+{
+  "FIXED_FIELDS": [
+    "locations",
+    "locations.source_dir",
+    "locations.dest_dir"
+  ],
+  "EDITABLE_FIELDS": [
+    "locations.source_dir.<VALUES>",
+    "locations.dest_dir.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "locations": {
+      "source_dir": "email/email_source",
+      "dest_dir": "email/email_dest"
+    }
+  },
+  "DESCRIPTION": {
+    "locations": "Email source and destination directory configuration.",
+    "locations.source_dir": "Directory containing the email files to process.",
+    "locations.dest_dir": "Directory where converted or extracted email data will be written."
+  }
+}
