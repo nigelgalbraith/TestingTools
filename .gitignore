@@ -6,3 +6,6 @@ __pycache__/
 # Optional: virtual environments
 venv/
 .env/
+
+# Email working data
+email/
