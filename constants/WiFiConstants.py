@@ -193,6 +193,7 @@ NETWORK_SELECTION_PRE = [
             lambda job, meta, ctx: "managed",
         ],
         "result": "networks",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_interface")),
     },
     {
         "phase": "pre",
@@ -243,6 +244,7 @@ SCAN_NETWORKS_EXEC = [
             lambda job, meta, ctx: "managed",
         ],
         "result": "networks",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_interface")),
     },
     {
         "phase": "exec",
@@ -271,6 +273,7 @@ ANALYZE_NETWORK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY].get(SCAN_TIMEOUT_KEY, 8),
         ],
         "result": "analysis_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_network")),
     },
 ]
 

@@ -233,6 +233,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][WORK_DIR],
         ],
         "result": "email_files",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
     {
         "phase": "pre",
@@ -253,15 +254,6 @@ VIEW_EMAIL_PRE = [
         "result": "selected_email",
         "when": lambda job, meta, ctx: isinstance(ctx.get("selected_folder_emails"), list) and bool(ctx.get("selected_folder_emails")),
     },
-    {
-        "phase": "pre",
-        "fn": lambda ctx: ctx.update({
-            key: None
-            for key in ("selected_folder_emails", "selected_email")
-            if ctx.get(key) is True
-        }),
-        "args": [lambda job, meta, ctx: ctx],
-    },
 ]
 
 
@@ -277,6 +269,7 @@ VIEW_PST_SUMMARY_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "summary_rows",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
     {
         "phase": "exec",
@@ -300,6 +293,7 @@ LIST_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "list_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
@@ -350,6 +344,7 @@ CONVERT_PST_MBOX_EXEC = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
         ],
         "result": "convert_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
@@ -363,6 +358,7 @@ CONVERT_PST_EML_EXEC = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
         ],
         "result": "convert_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
@@ -376,6 +372,7 @@ EXTRACT_CONTACTS_EXEC = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
         ],
         "result": "extract_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
@@ -389,6 +386,7 @@ EXTRACT_ATTACHMENTS_EXEC = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
         ],
         "result": "extract_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
@@ -401,11 +399,6 @@ SHOW_CONFIG_DOC_EXEC = [
         "result": "ok",
     },
 ]
-
-
-# ---------------------------------------------------------------------
-# STEP GROUPS
-# ---------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------

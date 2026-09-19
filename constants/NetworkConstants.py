@@ -284,6 +284,7 @@ PORT_SCAN_EXEC = [
             lambda job, meta, ctx: meta[PORT_SCAN_KEY].get(WORKERS_KEY, 200),
         ],
         "result": "open_ports",
+        "when": lambda job, meta, ctx: bool(ctx.get("target")),
     },
     {
         "phase": "exec",

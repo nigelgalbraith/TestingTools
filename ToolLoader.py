@@ -102,7 +102,7 @@ def run_pipeline_steps(meta: Dict[str, Any],
             continue
         rkey = step.get("result")
         if rkey is not None:
-            ctx[rkey] = result if result is not None else True
+            ctx[rkey] = result
     errors = ctx.get("errors") or []
     default_success = (len(errors) == 0)
     override_success = None

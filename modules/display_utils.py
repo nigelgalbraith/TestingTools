@@ -123,7 +123,7 @@ def print_dict_table(items, field_names, label):
     """Print a table for a list of dicts using multi-line cells where needed."""
     if not items:
         print(f"\n{label.upper()}: (None)")
-        return
+        return True
     col_widths = compute_col_widths(items, field_names)
     build_header(label, field_names, col_widths)
     for item in items:
