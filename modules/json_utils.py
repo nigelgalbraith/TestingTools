@@ -8,7 +8,8 @@ Helpers for loading JSON config and validating config/job structures.
 import os
 import json
 from pathlib import Path
-from typing import Union,Dict, Any, Tuple
+from typing import Union, Dict, Any, Tuple
+
 
 # ---------------------------------------------------------------------
 # HELPERS
@@ -22,19 +23,7 @@ def load_json(config_path: Union[str, Path]):
 
 
 def resolve_value(data: dict, primary_key: str, secondary_key: str, default_key: str = "default", check_file: bool = True) -> str | bool:
-    """
-    Resolve a nested dictionary value with fallback to `default_key`.
-
-    Looks for:
-      1) data[primary_key][secondary_key]
-      2) data[default_key][secondary_key]
-
-    If `check_file` is True and the resolved value is a string, it must exist as a file
-    path or False is returned.
-
-    Example:
-        path = resolve_value(cfg, "Laptop", "FirewallRulesPath")
-    """
+    """Resolve a nested dictionary value with fallback to `default_key`."""
     value = None
     if primary_key in data and secondary_key in data[primary_key]:
         value = data[primary_key][secondary_key]
@@ -45,6 +34,7 @@ def resolve_value(data: dict, primary_key: str, secondary_key: str, default_key:
     if check_file and isinstance(value, str) and not os.path.isfile(value):
         return False
     return value
+
 
 # ---------------------------------------------------------------------
 # VALIDATION
@@ -67,20 +57,7 @@ def validate_required_fields(jobs: Dict[str, Dict[str, Any]], required_fields: D
 
 
 def validate_secondary_subkey(jobs_block: Dict[str, Dict[str, Any]], subkey: str, rules: Dict[str, Any]) -> Dict[str, bool]:
-    """
-    Validate required fields for dict items stored under a list-valued subkey for each job.
-
-    The rules dict supports:
-      - allow_empty: bool
-      - required_job_fields: {field_name: type or (types...)}
-
-    Returns:
-        {field_name: bool} indicating whether each required field validated across all jobs/items.
-
-    Example:
-        rules = {"allow_empty": False, "required_job_fields": {"URL": str, "Name": str}}
-        ok = validate_secondary_subkey(jobs, "Links", rules)
-    """
+    """Validate required fields for dict items stored under a list-valued subkey for each job."""
     allow_empty = bool(rules.get("allow_empty", False))
     required = rules.get("required_job_fields", {}) or {}
     results: Dict[str, bool] = {fname: True for fname in required}

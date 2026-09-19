@@ -3,13 +3,15 @@
 network_utils.py
 """
 
-
 from __future__ import annotations
 
 from typing import List, Dict, Any, Optional
 import subprocess
 import os
 
+# ---------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------
 
 def _run_nmcli(args: List[str]) -> str:
     """Run nmcli and return stdout (best-effort)."""
@@ -21,6 +23,9 @@ def _run_nmcli(args: List[str]) -> str:
     )
     return r.stdout or ""
 
+# ---------------------------------------------------------------------
+# NETWORK INTERFACE
+# ---------------------------------------------------------------------
 
 def get_interfaces(types: Optional[List[str]] = None) -> List[str]:
     """Return all interface names optionally filtered by type."""
@@ -64,6 +69,7 @@ def get_connected_interfaces(types: Optional[List[str]] = None) -> List[str]:
         return list(dict.fromkeys(interfaces))
     except Exception:
         return []
+
 
 def get_interface_status() -> List[Dict[str, Any]]:
     """Return status rows for each non-loopback interface."""
@@ -120,4 +126,3 @@ def analyze_interface(interface: str) -> List[Dict[str, Any]]:
     except Exception as e:
         print(f"[ERROR] Failed to analyze interface {interface}: {e}")
         return []
-

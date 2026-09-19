@@ -9,6 +9,7 @@ import subprocess
 from typing import List, Union
 from shutil import which
 
+
 # ---------------------------------------------------------------------
 # HELPERS / STATUS
 # ---------------------------------------------------------------------
@@ -25,18 +26,14 @@ def check_package(pkg: str) -> bool:
     except subprocess.CalledProcessError:
         return False
 
+
 # ---------------------------------------------------------------------
 # DEPENDENCIES
 # ---------------------------------------------------------------------
 
 
 def ensure_dependencies_installed(dependencies):
-    """
-    Ensure required executables are installed via APT and return True if all succeed.
-
-    Example:
-        ensure_dependencies_installed(["wget", "curl"])
-    """
+    """Ensure required executables are installed via APT and return True if all succeed."""
     success = True
     for dep in dependencies:
         if not check_package(dep):
@@ -47,18 +44,14 @@ def ensure_dependencies_installed(dependencies):
                 success = False
     return success
 
+
 # ---------------------------------------------------------------------
 # APT INSTALL / UNINSTALL
 # ---------------------------------------------------------------------
 
 
 def install_packages(packages: Union[str, List[str]]) -> bool:
-    """
-    Install one or more APT packages and return True on success.
-
-    Example:
-        install_packages(["git", "curl"])
-    """
+    """Install one or more APT packages and return True on success."""
     if not packages:
         return False
     if isinstance(packages, str):
@@ -69,4 +62,3 @@ def install_packages(packages: Union[str, List[str]]) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
-

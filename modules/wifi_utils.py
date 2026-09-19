@@ -6,9 +6,11 @@ from typing import List, Dict, Any
 
 from modules.system_utils import run_cmd
 
-# ============================================================
+
+# ---------------------------------------------------------------------
 # HELPERS
-# ============================================================
+# ---------------------------------------------------------------------
+
 
 def build_network_choices(
     networks: List[Dict[str, Any]],
@@ -44,9 +46,10 @@ def select_network_from_scan(
     return networks[idx] if 0 <= idx < len(networks) else {}
 
 
-# ============================================================
+# ---------------------------------------------------------------------
 # INTERFACE DISCOVERY
-# ============================================================
+# ---------------------------------------------------------------------
+
 
 def get_wireless_interfaces(timeout: int) -> List[str]:
     """Get list of available wireless interfaces."""
@@ -107,9 +110,10 @@ def check_wifi_status() -> List[Dict[str, Any]]:
     return rows
 
 
-# ============================================================
+# ---------------------------------------------------------------------
 # SCANNING
-# ============================================================
+# ---------------------------------------------------------------------
+
 
 def scan_networks(
     interface: str,
@@ -153,9 +157,9 @@ def scan_networks(
                 continue
             match = re.search(pattern, line)
             if match:
-                if match.lastindex:   
+                if match.lastindex:
                     value = match.group(1)
-                else:                 
+                else:
                     value = match.group(0)
                 try:
                     if "." in value:

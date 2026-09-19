@@ -12,6 +12,7 @@ import subprocess
 # DATA
 # ---------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class PortResult:
     """Port scan result for a single TCP port."""
@@ -24,6 +25,7 @@ class PortResult:
 # ---------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------
+
 
 def get_arp_neighbors() -> List[str]:
     """Return a list of neighbor IPs from `ip neigh` (best-effort)."""
@@ -124,6 +126,7 @@ def _risk_note(port: int) -> str:
 # ---------------------------------------------------------------------
 # MAIN OPS
 # ---------------------------------------------------------------------
+
 
 def scan_tcp_ports(
     host: str,

@@ -13,11 +13,13 @@ import os
 import getpass
 import json
 
+
 # ---------------------------------------------------------------------
 # CONSTANTS
 # ---------------------------------------------------------------------
 
 MAX_COL_WIDTH = 60
+
 
 # ---------------------------------------------------------------------
 # HELPERS
@@ -99,15 +101,7 @@ def build_header(label, field_names, col_widths):
 
 
 def wrap_in_box(val: Any, title: str | None = None, indent: int = 2, pad: int = 1) -> str:
-    """
-    Return a string with `val` wrapped in an ASCII box.
-
-    `val` is rendered into one or more lines, then boxed with optional title, indentation,
-    and padding.
-
-    Example:
-        print(wrap_in_box(["Line 1", "Line 2"], title="Notice"))
-    """
+    """Return a string with `val` wrapped in an ASCII box."""
     lines = format_value_lines(val)
     if title:
         lines.insert(0, f"[ {title} ]")
@@ -119,21 +113,14 @@ def wrap_in_box(val: Any, title: str | None = None, indent: int = 2, pad: int = 
     out = [prefix + border] + [f"{prefix}|{l}| " for l in inner_lines] + [prefix + border]
     return "\n".join(out)
 
+
 # ---------------------------------------------------------------------
 # DISPLAY / PRINTING
 # ---------------------------------------------------------------------
 
 
 def print_dict_table(items, field_names, label):
-    """
-    Print a table for a list of dicts using multi-line cells where needed.
-
-    Column widths are computed dynamically based on displayed content and capped
-    at MAX_COL_WIDTH.
-
-    Example:
-        print_dict_table([{"Name": "A", "Status": True}], ["Name", "Status"], "Packages")
-    """
+    """Print a table for a list of dicts using multi-line cells where needed."""
     if not items:
         print(f"\n{label.upper()}: (None)")
         return
@@ -158,18 +145,14 @@ def print_dict_table(items, field_names, label):
     print()
     return True
 
+
 def format_status_summary(
     status_dict: Dict[str, Any],
     label: str = "Item",
     count_keys: Optional[list] = None,
     labels: Optional[Dict[Any, str]] = None
 ) -> str:
-    """
-    Return a formatted status table + counts summary for a dict of {item: status}.
-
-    Example:
-        print(format_status_summary({"curl": True, "wget": False}, label="Package"))
-    """
+    """Return a formatted status table + counts summary for a dict of {item: status}."""
     labels = labels or {True: "INSTALLED", False: "NOT INSTALLED"}
     non_spacer_items = [(k, v) for k, v in status_dict.items() if str(k).strip() != ""]
     max_item_len = max([len(label)] + [len(str(item)) for item, _ in non_spacer_items], default=len(label))
@@ -208,12 +191,7 @@ def display_example(example: Any) -> None:
 
 
 def display_description(description: dict[str, Any]) -> None:
-    """
-    Print DESCRIPTION as a collapsed dot-path hierarchy.
-
-    Keys like "A.B.C" are displayed as a tree with nested nodes, and the leaf text
-    is printed as the description under that node.
-    """
+    """Print DESCRIPTION as a collapsed dot-path hierarchy."""
     print("\nDESCRIPTION")
     print("-----------")
     if not isinstance(description, dict):
@@ -252,6 +230,7 @@ def display_description(description: dict[str, Any]) -> None:
         if isinstance(child, dict):
             stack.append((child, sorted(child.keys()), 0, depth + 1, False))
 
+
 # ---------------------------------------------------------------------
 # INTERACTIVE INPUT
 # ---------------------------------------------------------------------
@@ -263,13 +242,7 @@ def confirm(
     valid_yes: tuple[str, ...] = ("y", "yes"),
     valid_no: tuple[str, ...] = ("n", "no"),
 ) -> bool:
-    """
-    Prompt repeatedly for a yes/no answer and return True/False for valid input.
-
-    Example:
-        if confirm("Install packages? [y/n]: "):
-            ...
-    """
+    """Prompt repeatedly for a yes/no answer and return True/False for valid input."""
     yes = tuple(s.lower() for s in valid_yes)
     no = tuple(s.lower() for s in valid_no)
     while True:
@@ -284,12 +257,7 @@ def confirm(
 
 
 def select_from_list(title: str, options: list[str]) -> str | None:
-    """
-    Render a numbered menu and return the selected option (or None on invalid input).
-
-    Example:
-        choice = select_from_list("Pick one", ["A", "B"])
-    """
+    """Render a numbered menu and return the selected option (or None on invalid input)."""
     if not options:
         return None
     print(f"\n{title}:")
@@ -303,18 +271,9 @@ def select_from_list(title: str, options: list[str]) -> str | None:
 
 
 def pick_constants_interactively(choices: dict[str, tuple[str, Optional[int]]]) -> str:
-    """
-    Prompt the user to select a constants module, filtering choices by allowed UID rules.
-
-    Items with a UID restriction are hidden unless the current user matches the required UID,
-    or both are non-root users (>= 1000) per the existing rule.
-
-    Example:
-        mod = pick_constants_interactively({"Laptop": ("constants_laptop", None)})
-    """
+    """Prompt the user to select a constants module, filtering choices by allowed UID rules."""
     current_uid = os.geteuid()
     current_user = getpass.getuser()
-
     allowed = {
         label: mod
         for label, (mod, uid) in choices.items()
@@ -357,18 +316,14 @@ def pick_constants_interactively(choices: dict[str, tuple[str, Optional[int]]]) 
         raise SystemExit("Exited by user.")
     return allowed[selection]
 
+
 # ---------------------------------------------------------------------
 # CONFIG DOC HELPERS
 # ---------------------------------------------------------------------
 
 
 def display_config_doc(doc_path: str) -> bool:
-    """
-    Load a config help JSON doc and print its EXAMPLE and DESCRIPTION sections.
-
-    Example:
-        display_config_doc("/path/to/ConfigHelp.json")
-    """
+    """Load a config help JSON doc and print its EXAMPLE and DESCRIPTION sections."""
     path = Path(doc_path)
     if not path.is_file():
         print(f"[ERROR] Config doc not found: {path}")
@@ -398,15 +353,7 @@ def display_config_doc(doc_path: str) -> bool:
 
 
 def format_config_help(doc_path: str) -> list[str]:
-    """
-    Return formatted output lines for a config help JSON doc.
-
-    This captures the printed output of display_example() and display_description()
-    and returns it as a list of strings for later display/logging.
-
-    Example:
-        lines = format_config_help("/path/to/ConfigHelp.json")
-    """
+    """Return formatted output lines for a config help JSON doc."""
     path = Path(doc_path)
     if not path.is_file():
         return [f"[WARN] No config help found at: {doc_path}"]
@@ -424,6 +371,5 @@ def format_config_help(doc_path: str) -> list[str]:
     captured = buf.getvalue().splitlines()
     while captured and captured[0].strip() == "":
         captured.pop(0)
-
     lines.extend(captured)
     return lines

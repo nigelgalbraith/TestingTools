@@ -1,5 +1,6 @@
 # EthernetConstants.py
 from __future__ import annotations
+
 from typing import Dict, Any
 
 from modules.display_utils import (
@@ -7,14 +8,12 @@ from modules.display_utils import (
     select_from_list,
     print_dict_table,
 )
-
 from modules.network_utils import (
     get_interfaces,
     get_connected_interfaces,
     get_interface_status,
     analyze_interface,
 )
-
 from modules.portscan_utils import (
     get_arp_neighbors,
     get_arp_neighbor_rows,
@@ -22,19 +21,31 @@ from modules.portscan_utils import (
     scan_tcp_ports,
 )
 
-# === CONFIG PATHS ===
+
+# ---------------------------------------------------------------------
+# CONFIG PATHS
+# ---------------------------------------------------------------------
+
 CONFIG_PATH = "config/NetworkConfig.json"
 TOOL_TYPE = "NetworkScanner"
 CONFIG_DOC = "doc/NetworkDoc.json"
 
-# === JSON KEYS ===
+
+# ---------------------------------------------------------------------
+# JSON KEYS
+# ---------------------------------------------------------------------
+
 GENERAL_KEY = "general"
 PORT_SCAN_KEY = "port_scan"
 PORTS_KEY = "ports"
 TIMEOUT_KEY = "timeout"
 WORKERS_KEY = "workers"
 
-# === VALIDATION CONFIG ===
+
+# ---------------------------------------------------------------------
+# VALIDATION CONFIG
+# ---------------------------------------------------------------------
+
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
         GENERAL_KEY: dict,
@@ -42,7 +53,11 @@ VALIDATION_CONFIG: Dict[str, Any] = {
     },
 }
 
-# === SECONDARY VALIDATION ===
+
+# ---------------------------------------------------------------------
+# SECONDARY VALIDATION
+# ---------------------------------------------------------------------
+
 SECONDARY_VALIDATION: Dict[str, Any] = {
     PORT_SCAN_KEY: {
         "required_job_fields": {
@@ -53,13 +68,22 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
         "allow_empty": False,
     }
 }
-# === USER REQUIREMENTS ===
+
+
+# ---------------------------------------------------------------------
+# USER REQUIREMENTS
+# ---------------------------------------------------------------------
+
 REQUIRED_USER = "root"
 
 ACTIVE_LABEL = "CONNECTED"
 INACTIVE_LABEL = "DISCONNECTED"
 
-# === STATUS CHECK CONFIG ===
+
+# ---------------------------------------------------------------------
+# STATUS CHECK CONFIG
+# ---------------------------------------------------------------------
+
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_interface_status,
     "args": [],
@@ -68,56 +92,62 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
 }
 
 
-# === DEPENDENCIES ===
+# ---------------------------------------------------------------------
+# DEPENDENCIES
+# ---------------------------------------------------------------------
+
 DEPENDENCIES = [
     "network-manager",
     "iproute2",
 ]
 
-# === PLAN CONFIG ===
+
+# ---------------------------------------------------------------------
+# PLAN CONFIG
+# ---------------------------------------------------------------------
+
 PLAN_COLUMN_ORDER = [GENERAL_KEY]
 OPTIONAL_PLAN_COLUMNS = {}
 
-# === ACTIONS ===
+
+# ---------------------------------------------------------------------
+# ACTIONS
+# ---------------------------------------------------------------------
+
 ACTIONS: Dict[str, Dict[str, Any]] = {
     "_meta": {"title": "Select a Network operation"},
-
     "Analyze network": {
         "verb": "analyze",
         "prompt": "Analyze selected network interface? [y/n]: ",
         "execute_state": "ANALYZE_NETWORK",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": False,
         "skip_confirm": False,
     },
-
     "Show Neighbours": {
         "verb": "arp_scan",
         "prompt": "Run ARP scan? [y/n]: ",
         "execute_state": "ARP_SCAN",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": False,
     },
-
     "Port scan host": {
         "verb": "portscan",
         "prompt": "Run TCP port scan? [y/n]: ",
         "execute_state": "PORT_SCAN",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": False,
         "skip_confirm": False,
     },
-
     "Show config help": {
         "verb": "help",
         "prompt": "Show config help now? [y/n]: ",
         "execute_state": "SHOW_CONFIG_DOC",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": True,
     },
-
     "Cancel": {
         "verb": "cancel",
         "prompt": "",
@@ -127,9 +157,10 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# ============================================================
+
+# ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
-# ============================================================
+# ---------------------------------------------------------------------
 
 INTERFACE_SELECTION_PRE = [
     {
@@ -172,6 +203,7 @@ CONNECTED_INTERFACE_SELECTION_PRE = [
     },
 ]
 
+
 PORT_SCAN_PRE = [
     {
         "phase": "pre",
@@ -213,11 +245,9 @@ PORT_SCAN_PRE = [
 ]
 
 
-
-
-# ============================================================
+# ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
-# ============================================================
+# ---------------------------------------------------------------------
 
 ANALYZE_NETWORK_EXEC = [
     {
@@ -268,6 +298,7 @@ PORT_SCAN_EXEC = [
     },
 ]
 
+
 ARP_SCAN_EXEC = [
     {
         "phase": "exec",
@@ -301,7 +332,6 @@ ARP_SCAN_EXEC = [
     },
 ]
 
-         
 
 SHOW_CONFIG_DOC_EXEC = [
     {
@@ -312,18 +342,22 @@ SHOW_CONFIG_DOC_EXEC = [
     },
 ]
 
-# === STEP GROUPS ===
+
+# ---------------------------------------------------------------------
+# STEP GROUPS
+# ---------------------------------------------------------------------
+
 PORT_SCAN_STEPS_PRE = (
     CONNECTED_INTERFACE_SELECTION_PRE +
     PORT_SCAN_PRE
 )
-    
-# ============================================================
+
+
+# ---------------------------------------------------------------------
 # PIPELINE STATES
-# ============================================================
+# ---------------------------------------------------------------------
 
 PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
-
     "ANALYZE_NETWORK": {
         "pipeline": [
             *CONNECTED_INTERFACE_SELECTION_PRE,
@@ -332,7 +366,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "ANALYZE_COMPLETE",
         "success_key": "analysis_ok",
     },
-
     "ARP_SCAN": {
         "pipeline": [
             *ARP_SCAN_EXEC,
@@ -340,7 +373,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "ARP_SCAN_COMPLETE",
         "success_key": "arpscan_ok",
     },
-    
     "PORT_SCAN": {
         "pipeline": [
             *PORT_SCAN_STEPS_PRE,
@@ -349,7 +381,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "PORTSCAN_COMPLETE",
         "success_key": "portscan_display_ok",
     },
-
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,

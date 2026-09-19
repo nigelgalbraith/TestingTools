@@ -6,10 +6,12 @@ system_utils.py
 import os
 import subprocess
 from typing import List
-  
-# ----------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------
 # SMALL HELPERS / STATUS
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------------
+
 
 def check_account(expected_user="standard"):
     """Return True if script is run by the expected user type ("standard" vs "root")."""
@@ -22,6 +24,7 @@ def check_account(expected_user="standard"):
         print("Please run this script as root.")
         return False
     return True
+
 
 def run_cmd(
     cmd: List[str],
@@ -36,7 +39,7 @@ def run_cmd(
             cmd,
             capture_output=True,
             text=True,
-            check=False,  
+            check=False,
             timeout=timeout,
         )
         stdout = (result.stdout or "").strip()
@@ -55,4 +58,3 @@ def run_cmd(
     except Exception as e:
         print(f"[ERROR] Unexpected failure: {e}")
         return None
-

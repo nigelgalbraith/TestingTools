@@ -1,28 +1,36 @@
 # WiFiScannerConstants.py
 from __future__ import annotations
+
 from typing import Dict, Any
 
 from modules.display_utils import (
-    display_config_doc, 
-    select_from_list, 
-    print_dict_table, 
+    display_config_doc,
+    select_from_list,
+    print_dict_table,
 )
-
 from modules.wifi_utils import (
     get_wireless_interfaces,
     scan_networks,
     check_wifi_status,
     show_network_details,
-    build_network_choices, 
+    build_network_choices,
     select_network_from_scan,
 )
 
-# === CONFIG PATHS ===
+
+# ---------------------------------------------------------------------
+# CONFIG PATHS
+# ---------------------------------------------------------------------
+
 CONFIG_PATH = "config/WiFiConfig.json"
 TOOL_TYPE = "WiFiScanner"
 CONFIG_DOC = "doc/WiFiDoc.json"
 
-# ==== JSON SCHEMA ===
+
+# ---------------------------------------------------------------------
+# JSON SCHEMA
+# ---------------------------------------------------------------------
+
 GENERAL_KEY = "general"
 SCAN_TIMEOUT_KEY = "scan_timeout"
 NETWORK_SUMMARY_COLUMNS_KEY = "network_summary_columns"
@@ -30,7 +38,11 @@ NETWORK_SUMMARY_NAME_KEY = "name"
 NETWORK_SUMMARY_KEY_KEY = "key"
 NETWORK_SUMMARY_COLUMN_PATTERN = "pattern"
 
-# === VALIDATION CONFIG ===
+
+# ---------------------------------------------------------------------
+# VALIDATION CONFIG
+# ---------------------------------------------------------------------
+
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
         GENERAL_KEY: dict,
@@ -39,7 +51,10 @@ VALIDATION_CONFIG: Dict[str, Any] = {
 }
 
 
-# === SECONDARY VALIDATION ===
+# ---------------------------------------------------------------------
+# SECONDARY VALIDATION
+# ---------------------------------------------------------------------
+
 SECONDARY_VALIDATION: Dict[str, Any] = {
     GENERAL_KEY: {
         "required_job_fields": {
@@ -47,7 +62,6 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
         },
         "allow_empty": False,
     },
-
     NETWORK_SUMMARY_COLUMNS_KEY: {
         "required_job_fields": {
             NETWORK_SUMMARY_NAME_KEY: str,
@@ -58,12 +72,20 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
     },
 }
 
-# === USER / LABELS ===
+
+# ---------------------------------------------------------------------
+# USER / LABELS
+# ---------------------------------------------------------------------
+
 REQUIRED_USER = "root"
 ACTIVE_LABEL = "CONNECTED"
 INACTIVE_LABEL = "DISCONNECTED"
 
-# === STATUS CHECK CONFIG ===
+
+# ---------------------------------------------------------------------
+# STATUS CHECK CONFIG
+# ---------------------------------------------------------------------
+
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": check_wifi_status,
     "args": [],
@@ -71,50 +93,59 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
     "active_rule": {"field": "state", "equals": "connected"},
 }
 
-# === PLAN COLUMNS ===
+
+# ---------------------------------------------------------------------
+# PLAN COLUMNS
+# ---------------------------------------------------------------------
+
 PLAN_COLUMN_ORDER = [
     GENERAL_KEY,
 ]
 
+
 OPTIONAL_PLAN_COLUMNS = {}
 
-# === DEPENDENCIES ===
+
+# ---------------------------------------------------------------------
+# DEPENDENCIES
+# ---------------------------------------------------------------------
+
 DEPENDENCIES = [
     "iw",
     "network-manager",
 ]
 
-# === ACTIONS ===
+
+# ---------------------------------------------------------------------
+# ACTIONS
+# ---------------------------------------------------------------------
+
 ACTIONS: Dict[str, Dict[str, Any]] = {
     "_meta": {"title": "Select a WiFi operation"},
-
     "Scan for networks": {
         "verb": "scan",
         "prompt": "Start WiFi scan? [y/n]: ",
         "execute_state": "SCAN_NETWORKS",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": False,
         "skip_confirm": False,
     },
-
     "Analyze a network": {
         "verb": "analyze",
         "prompt": "Analyze selected network? [y/n]: ",
         "execute_state": "ANALYZE_NETWORK",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": False,
     },
-
     "Show config help": {
         "verb": "help",
         "prompt": "Show config help now? [y/n]: ",
         "execute_state": "SHOW_CONFIG_DOC",
-        "post_state": "PACKAGE_STATUS",
+        "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": True,
     },
-
     "Cancel": {
         "verb": "cancel",
         "prompt": "",
@@ -124,7 +155,11 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-# === REUSABLE STEP BLOCKS ===
+
+# ---------------------------------------------------------------------
+# REUSABLE STEP BLOCKS
+# ---------------------------------------------------------------------
+
 INTERFACE_SELECTION_PRE = [
     {
         "phase": "pre",
@@ -145,6 +180,7 @@ INTERFACE_SELECTION_PRE = [
         "when": lambda job, meta, ctx: len(ctx.get("interfaces", [])) > 0,
     },
 ]
+
 
 NETWORK_SELECTION_PRE = [
     {
@@ -192,7 +228,10 @@ NETWORK_SELECTION_PRE = [
 ]
 
 
-# --- EXEC PHASE STEPS ---
+# ---------------------------------------------------------------------
+# EXEC PHASE STEPS
+# ---------------------------------------------------------------------
+
 SCAN_NETWORKS_EXEC = [
     {
         "phase": "exec",
@@ -221,6 +260,7 @@ SCAN_NETWORKS_EXEC = [
     },
 ]
 
+
 ANALYZE_NETWORK_EXEC = [
     {
         "phase": "exec",
@@ -234,6 +274,7 @@ ANALYZE_NETWORK_EXEC = [
     },
 ]
 
+
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
@@ -244,16 +285,21 @@ SHOW_CONFIG_DOC_EXEC = [
 ]
 
 
-# === STEP GROUPS ===
+# ---------------------------------------------------------------------
+# STEP GROUPS
+# ---------------------------------------------------------------------
+
 ANALYZE_NETWORK_STEPS_PRE = (
     INTERFACE_SELECTION_PRE +
     NETWORK_SELECTION_PRE
 )
 
-# === PIPELINES ===
+
+# ---------------------------------------------------------------------
+# PIPELINES
+# ---------------------------------------------------------------------
 
 PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
-
     "SCAN_NETWORKS": {
         "pipeline": [
             *INTERFACE_SELECTION_PRE,
@@ -262,7 +308,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "SCAN_COMPLETE",
         "success_key": "display_ok",
     },
-
     "ANALYZE_NETWORK": {
         "pipeline": [
             *ANALYZE_NETWORK_STEPS_PRE,
@@ -271,7 +316,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "ANALYZE_COMPLETE",
         "success_key": "analysis_ok",
     },
-
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,

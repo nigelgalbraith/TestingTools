@@ -7,9 +7,11 @@ argument resolution, and step conditions.
 """
 
 from __future__ import annotations
+
 import argparse
 import importlib
 from typing import Any, Dict, List, Optional
+
 
 # ---------------------------------------------------------------------
 # CONSTANTS / CLI
@@ -17,14 +19,7 @@ from typing import Any, Dict, List, Optional
 
 
 def load_constants_from_module(module_path: str, required: list[str]):
-    """
-    Import a constants module and return a namespace-like object of uppercase attributes.
-
-    Validates that all names in `required` exist in the imported module.
-
-    Example:
-        consts = load_constants_from_module("constants.DebConstants", ["ACTIONS", "JOBS"])
-    """
+    """Import a constants module and return a namespace-like object of uppercase attributes."""
     mod = importlib.import_module(module_path)
     consts = {name: getattr(mod, name) for name in dir(mod) if name.isupper()}
     missing = [n for n in required if n not in consts]
@@ -36,36 +31,19 @@ def load_constants_from_module(module_path: str, required: list[str]):
 
 
 def parse_args_early() -> argparse.Namespace:
-    """
-    Parse only the --constants flag early, before full constants-dependent parsing.
-
-    Example:
-        early = parse_args_early()
-        consts = load_constants_from_module(early.constants, required=[...])
-    """
+    """Parse only the --constants flag early, before full constants-dependent parsing."""
     p = argparse.ArgumentParser(add_help=False)
     p.add_argument("--constants", help="Python module path for constants (e.g. constants.DebConstants)")
     return p.parse_known_args()[0]
 
 
 def parse_args(consts: Any) -> argparse.Namespace:
-    """
-    Parse CLI flags for non-interactive state machine operation.
-
-    Builds --action choices dynamically from consts.ACTIONS (excluding '_meta').
-
-    Example:
-        args = parse_args(consts)
-        if args.status:
-            ...
-    """
+    """Parse CLI flags for non-interactive state machine operation."""
     p = argparse.ArgumentParser(description="Installer state machine")
     p.add_argument("--yes", "-y", action="store_true", help="Auto-confirm prompts (non-interactive).")
-
     action_choices = [k for k in consts.ACTIONS.keys() if k != "_meta"]
     if "Cancel" in action_choices:
         action_choices = [c for c in action_choices if c != "Cancel"] + ["Cancel"]
-
     p.add_argument("--action", choices=action_choices,
                    help="Action to perform non-interactively.")
     p.add_argument("--targets", help="Comma-separated list of job names to operate on (used with --action).")
@@ -75,25 +53,14 @@ def parse_args(consts: Any) -> argparse.Namespace:
                    help="Python module path for constants (e.g. constants.DebConstants)")
     return p.parse_args()
 
+
 # ---------------------------------------------------------------------
 # ARG RESOLUTION / CONDITIONS
 # ---------------------------------------------------------------------
 
 
 def resolve_arg(spec: Any, job: str, meta: Dict[str, Any], ctx: Dict[str, Any]) -> Any:
-    """
-    Resolve a pipeline arg spec into a concrete value.
-
-    Resolution order:
-      1) callable(spec) -> spec(job, meta, ctx)
-      2) ctx lookup (string key)
-      3) meta lookup (supports dotted key form; uses last segment)
-      4) literal "job" -> job name
-      5) fallback -> original spec
-
-    Example:
-        value = resolve_arg("paths.output", job, meta, ctx)
-    """
+    """Resolve a pipeline arg spec into a concrete value."""
     if callable(spec):
         return spec(job, meta, ctx)
     if isinstance(spec, str):
@@ -108,19 +75,7 @@ def resolve_arg(spec: Any, job: str, meta: Dict[str, Any], ctx: Dict[str, Any]) 
 
 
 def check_when(cond: Any, job: str, meta: Dict[str, Any], ctx: Dict[str, Any]) -> bool:
-    """
-    Evaluate a step's `when` condition and return True if the step should run.
-
-    Supported forms:
-      - None: always run
-      - callable: cond(job, meta, ctx) -> truthy
-      - string/arg spec: resolved via resolve_arg() then cast to bool
-      - literal: bool(literal)
-
-    Example:
-        if check_when(step.get("when"), job, meta, ctx):
-            ...
-    """
+    """Evaluate a step's `when` condition and return True if the step should run."""
     if cond is None:
         return True
     if callable(cond):

@@ -140,7 +140,6 @@ class StateMachine:
         self._deps_install_list: List[str] = []
         self.runtime_ctx: Dict[str, Any] = {}
 
-
     def setup(self, required_user: str) -> None:
         """Initialize logging and verify user; advance to DEP_CHECK or FINALIZE."""
         for k, v in vars(self.c).items():
@@ -154,7 +153,6 @@ class StateMachine:
             self.state = State.FINALIZE
             return
         self.state = State.DEP_CHECK
-
 
     def dep_check(self, deps: List[str]) -> None:
         """Check dependencies and collect missing ones."""
@@ -170,7 +168,6 @@ class StateMachine:
             print("\n  ==> Running Dependency Check")
             print(wrap_in_box(out, title="Dependency Check", indent=2, pad=1))
         self.state = State.DEP_INSTALL if self._deps_install_list else State.CONFIG_LOADING
-
 
     def dep_install(self) -> None:
         """Install missing dependencies in batch, verify each; fail fast on error."""
@@ -197,7 +194,6 @@ class StateMachine:
         print(wrap_in_box(out, title="Dependency Install", indent=2, pad=1))
         self.state = State.CONFIG_LOADING
 
-
     def load_config(self, config_path: str) -> None:
         """Load single JSON config object and seed single active job."""
         resolved = self.config_path or config_path
@@ -221,7 +217,6 @@ class StateMachine:
         self.verification_ok = True
         self.state = State.JSON_REQUIRED_KEYS_CHECK
 
-
     def validate_json_required_keys(self, validation_config: Dict, object_type: type = dict) -> None:
         """Validate required fields against the single config object."""
         required_fields = (validation_config or {}).get("required_job_fields", {})
@@ -237,7 +232,6 @@ class StateMachine:
             self.verification_outcomes[f"Config: {field} ({expected_str})"] = ok
             primary_ok = primary_ok and ok
         self.state = State.DISPLAY_VERIFICATION if not primary_ok else State.SECONDARY_VALIDATION
-
 
     def validate_secondary_keys(self, secondary_validation: Dict) -> None:
         """Validate nested required fields for config sections."""
@@ -306,8 +300,6 @@ class StateMachine:
             self.verification_notes.append("[WARN] Secondary validation failed for one or more nested fields.")
         self.state = State.DISPLAY_VERIFICATION
 
-
-
     def display_verification_outcome(self, config_doc: Optional[str] = None) -> None:
         """Display combined verification results; exit on failure or continue on success."""
         if self.verification_outcomes:
@@ -334,7 +326,6 @@ class StateMachine:
         print("\n  ==> Displaying Verification Outcome")
         print(wrap_in_box(out_lines, indent=2, pad=1))
         self.state = State.PACKAGE_STATUS
-
 
     def build_status_map(self, summary_label: str, installed_label: str, uninstalled_label: str, status_fn_config: Dict[str, Any]) -> None:
         """Compute status and print summary; advance accordingly."""
@@ -382,7 +373,6 @@ class StateMachine:
         print(wrap_in_box(out_lines, indent=2, pad=1))
         self.state = State.BUILD_ACTIONS
 
-
     def build_actions(self, base_actions: Dict[str, Dict[str, Any]]) -> None:
         """Build the main menu from ACTIONS, validating execute_state keys."""
         actions = dict(base_actions)
@@ -398,7 +388,6 @@ class StateMachine:
             actions["Cancel"] = cancel_spec
         self.actions = actions
         self.state = State.MENU_SELECTION
-
 
     def select_action(self) -> None:
         """Prompt for an action, or use CLI overrides; set the next state."""
@@ -437,7 +426,6 @@ class StateMachine:
         self.runtime_ctx = {}
         self.state = State.PIPELINE_PRE
 
-
     def run_pipeline_pre(self) -> None:
         """Run pre-phase steps, then advance to plan/confirm."""
         spec = self._pending_pipeline_spec or {}
@@ -460,7 +448,6 @@ class StateMachine:
             self.state = State.CONFIRM
             return
         self.state = State.PREPARE_PLAN
-
 
     def prepare_plan(self, key_label: str, plan_columns: List[str]) -> None:
         """Print plan and move to CONFIRM (or finalize if plan-only)."""
@@ -492,7 +479,6 @@ class StateMachine:
             return
         self.state = State.CONFIRM
 
-
     def confirm_action(self) -> None:
         """Confirm the chosen action; advance to EXECUTE or bounce to MENU."""
         spec = self.actions[self.current_action_key]
@@ -506,7 +492,6 @@ class StateMachine:
             self.state = State.MENU_SELECTION
             return
         self.state = State.EXECUTE
-
 
     def run_pipeline_action(self) -> None:
         """Run exec-phase steps and then go to post_state."""
@@ -530,7 +515,6 @@ class StateMachine:
         except KeyError:
             print(f"[WARN] Unknown post_state '{post_state_name}', defaulting to CONFIG_LOADING.")
             self.state = State.CONFIG_LOADING
-
 
     def main(self) -> None:
         """Run the state machine with a dispatch table until FINALIZE."""
