@@ -32,6 +32,7 @@ CONFIG_DOC = "doc/EmailDoc.json"
 LOCATIONS_KEY = "locations"
 SOURCE_DIR = "source_dir"
 DEST_DIR = "dest_dir"
+WORK_DIR = "work_dir"
 
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
@@ -44,6 +45,7 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
         "required_job_fields": {
             SOURCE_DIR: str,
             DEST_DIR: str,
+            WORK_DIR: str,
         },
         "allow_empty": False,
     }
@@ -195,7 +197,7 @@ VIEW_EMAIL_PRE = [
         "fn": get_pst_email_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: "/tmp/toolloader_email_view",
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][WORK_DIR],
         ],
         "result": "email_files",
     },
