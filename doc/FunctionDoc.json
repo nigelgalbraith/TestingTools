@@ -1,0 +1,42 @@
+{
+  "FIXED_FIELDS": [
+    "Modules",
+    "ModuleFolder",
+    "CheckFolders",
+    "CheckFiles"
+  ],
+  "EDITABLE_FIELDS": [
+    "Modules.<VALUES>",
+    "ModuleFolder",
+    "CheckFolders.<VALUES>",
+    "CheckFiles.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "Modules": [
+      "display_utils.py",
+      "email_utils.py",
+      "file_utils.py",
+      "function_utils.py",
+      "json_utils.py",
+      "network_utils.py",
+      "package_utils.py",
+      "portscan_utils.py",
+      "state_machine_utils.py",
+      "system_utils.py",
+      "wifi_utils.py"
+    ],
+    "ModuleFolder": "/mnt/nigel/userData/GitHub/Private/DebianScripts/TestingTools/modules",
+    "CheckFolders": [
+      "/mnt/nigel/userData/GitHub/Private/DebianScripts/TestingTools/constants"
+    ],
+    "CheckFiles": [
+      "/mnt/nigel/userData/GitHub/Private/DebianScripts/TestingTools/ToolLoader.py"
+    ]
+  },
+  "DESCRIPTION": {
+    "Modules": "Python module filenames available in the selection menu. Maintain the module list here; adding a filename requires no constants change.",
+    "ModuleFolder": "Shared directory containing all configured Python modules. Status reports whether each configured module file exists.",
+    "CheckFolders": "Shared additional folders recursively scanned for references to functions in the selected module.",
+    "CheckFiles": "Shared individual Python files scanned for references to functions in the selected module."
+  }
+}
