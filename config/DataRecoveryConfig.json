@@ -1,0 +1,7 @@
+{
+  "general": {
+    "destination": "recovery",
+    "log_destination": "recovery/log",
+    "ddrescue_retries": 3
+  }
+}

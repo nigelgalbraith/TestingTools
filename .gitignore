@@ -9,3 +9,5 @@ venv/
 
 # Email working data
 email/
+recovery/
+integrity/

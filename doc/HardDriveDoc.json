@@ -1,0 +1,30 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.temperature_warning",
+    "general.wear_warning",
+    "general.benchmark_size_mb",
+    "general.disk_usage_warning"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.temperature_warning.<VALUES>",
+    "general.wear_warning.<VALUES>",
+    "general.benchmark_size_mb.<VALUES>",
+    "general.disk_usage_warning.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "temperature_warning": 60,
+      "wear_warning": 80,
+      "benchmark_size_mb": 512,
+      "disk_usage_warning": 90
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General configuration for the Hard Drive Tools utility.",
+    "general.temperature_warning": "Drive temperature in degrees Celsius at which the utility reports a WARNING.",
+    "general.wear_warning": "Drive wear percentage at which the utility reports a WARNING.",
+    "general.benchmark_size_mb": "Amount of data in megabytes read during the non-destructive sequential read benchmark.",
+    "general.disk_usage_warning": "Filesystem usage percentage at which a filesystem on the selected drive is reported as WARNING."
+  }
+}

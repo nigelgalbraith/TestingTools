@@ -1,0 +1,18 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.mount_root"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.mount_root.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "mount_root": "/mnt/user/windows_inspection"
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General configuration for the Offline Windows Inspection utility.",
+    "general.mount_root": "Directory used to mount detected Windows partitions read-only for offline inspection."
+  }
+}

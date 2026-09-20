@@ -1,0 +1,7 @@
+{
+  "general": {
+    "algorithm": "sha256",
+    "target_dir": "integrity/targets",
+    "manifest_dir": "integrity/manifests"
+  }
+}

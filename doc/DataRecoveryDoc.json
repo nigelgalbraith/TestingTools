@@ -1,0 +1,22 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.destination",
+    "general.ddrescue_retries"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.destination.<VALUES>",
+    "general.ddrescue_retries.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "destination": "recovery",
+      "ddrescue_retries": 3
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General configuration for the Data Recovery utility.",
+    "general.destination": "Directory under the program working directory where recovery images, ddrescue map files, and PhotoRec output are stored.",
+    "general.ddrescue_retries": "Number of retry passes ddrescue performs on unreadable areas after the initial recovery pass."
+  }
+}

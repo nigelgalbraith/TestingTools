@@ -1,0 +1,22 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.temperature_warning",
+    "general.memory_usage_warning"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.temperature_warning.<VALUES>",
+    "general.memory_usage_warning.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "temperature_warning": 80,
+      "memory_usage_warning": 90
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General threshold configuration for the Diagnostic utility.",
+    "general.temperature_warning": "Temperature in degrees Celsius at which a detected sensor is reported as WARNING.",
+    "general.memory_usage_warning": "Memory usage percentage at which system RAM usage is reported as WARNING."
+  }
+}

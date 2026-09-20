@@ -1,0 +1,6 @@
+{
+  "general": {
+    "temperature_warning": 80,
+    "memory_usage_warning": 90
+  }
+}

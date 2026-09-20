@@ -1,0 +1,8 @@
+{
+  "general": {
+    "temperature_warning": 60,
+    "wear_warning": 80,
+    "benchmark_size_mb": 512,
+    "disk_usage_warning": 90
+  }
+}

@@ -52,6 +52,11 @@ REQUIRED_CONSTANTS = [
 AVAILABLE_CONSTANTS = {
     "WiFi utility": ("constants.WiFiConstants", 0),
     "Network utility": ("constants.NetworkConstants", 0),
+    "Diagnostic utility": ("constants.DiagnosticConstants", 0),
+    "HardDrive utility": ("constants.HardDriveConstants", 0),
+    "Data Recovery utility": ("constants.DataRecoveryConstants", 0),
+    "Windows Inspection utility": ("constants.WindowsInspectionConstants", 0),
+    "File Integrity utility": ("constants.FileIntegrityConstants", 0),
     "Email utility": ("constants.EmailConstants", 1000),
     "Function utility": ("constants.FunctionConstants", 1000),
 }
@@ -83,7 +88,7 @@ def run_pipeline_steps(
     label: str,
     success_key: str,
     ctx: Dict[str, Any],
-) -> None:
+) -> bool:
     """Run pipeline steps for a given phase, storing outputs in ctx."""
     ctx.setdefault("errors", [])
     phase = (phase or "").strip().lower()
@@ -115,8 +120,9 @@ def run_pipeline_steps(
     success = override_success if override_success is not None else default_success
     if phase == "pre":
         print(f"{label} (pre): {'Success' if success else 'Failed'}")
-        return
+        return success
     print(f"{label}: {'Success' if success else 'Failed'}")
+    return success
 
 
 class StateMachine:
@@ -451,12 +457,12 @@ class StateMachine:
         self.state = State.PIPELINE_PRE
 
     def run_pipeline_pre(self) -> None:
-        """Run pre-phase steps, then advance to plan/confirm."""
+        """Run pre-phase steps and stop when pre-validation fails."""
         spec = self._pending_pipeline_spec or {}
         pipeline = spec.get("pipeline") or []
         label = spec.get("label", "DONE")
         success_key = spec.get("success_key", "ok")
-        run_pipeline_steps(
+        success = run_pipeline_steps(
             self.cfg,
             pipeline,
             phase="pre",
@@ -464,6 +470,10 @@ class StateMachine:
             success_key=success_key,
             ctx=self.runtime_ctx,
         )
+        if not success:
+            self._pending_pipeline_spec = None
+            self.state = State.MENU_SELECTION
+            return
         action_spec = self.actions.get(self.current_action_key or "", {})
         if self.plan_only:
             self.state = State.PREPARE_PLAN

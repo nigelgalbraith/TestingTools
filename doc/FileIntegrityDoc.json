@@ -1,0 +1,26 @@
+{
+  "FIXED_FIELDS": [
+    "general",
+    "general.algorithm",
+    "general.target_dir",
+    "general.manifest_dir"
+  ],
+  "EDITABLE_FIELDS": [
+    "general.algorithm.<VALUES>",
+    "general.target_dir.<VALUES>",
+    "general.manifest_dir.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "general": {
+      "algorithm": "sha256",
+      "target_dir": "/mnt/nigel/userData",
+      "manifest_dir": "integrity"
+    }
+  },
+  "DESCRIPTION": {
+    "general": "General configuration for the File Integrity utility.",
+    "general.algorithm": "Hash algorithm used for file hashing, comparison, duplicate detection, and checksum manifests.",
+    "general.target_dir": "Base directory inspected by File Integrity. Directory operations use this path automatically and file selections are resolved relative to this directory.",
+    "general.manifest_dir": "Directory where checksum manifests are stored. Relative paths are resolved from the program working directory."
+  }
+}
