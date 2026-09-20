@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Dict
 
+
 # ---------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------
@@ -13,9 +14,11 @@ def _expand(path: str) -> Path:
     """Expand ~ and environment variables in `path`, then resolve to an absolute Path."""
     return Path(os.path.expandvars(os.path.expanduser(path))).resolve()
 
+
 # ---------------------------------------------------------------------
 # STATUS
 # ---------------------------------------------------------------------
+
 
 def get_function_status(modules: list, module_folder: str) -> list[dict]:
     """Return readiness status for each configured Function utility module."""
@@ -61,6 +64,7 @@ def collect_usage_sources(check_folders, check_files, module_folder):
         )
     return list(dict.fromkeys(external)), list(dict.fromkeys(internal))
 
+
 # ---------------------------------------------------------------------
 # MODULE PARSING
 # ---------------------------------------------------------------------
@@ -100,12 +104,18 @@ def load_module_function_docs(module_folder: str, job: str) -> Dict[str, str]:
             docs[n.name] = doc.strip()
     return docs
 
+
 # ---------------------------------------------------------------------
 # USAGE SCANNING
 # ---------------------------------------------------------------------
 
 
-def scan_function_usage(module_functions: dict, check_folders, check_files, module_folder):
+def scan_function_usage(
+    module_functions: dict,
+    check_folders,
+    check_files,
+    module_folder,
+):
     """
     Scan configured external and internal Python sources for references
     to functions defined in a module.
@@ -118,7 +128,11 @@ def scan_function_usage(module_functions: dict, check_folders, check_files, modu
     - Python files under ModuleFolder
     """
     import ast
-    external_sources, internal_sources = collect_usage_sources(check_folders, check_files, module_folder)
+    external_sources, internal_sources = collect_usage_sources(
+        check_folders,
+        check_files,
+        module_folder,
+    )
     used = {fn: set() for fn in module_functions}
     for src in external_sources + internal_sources:
         usage_type = "INTERNAL" if src in internal_sources else "EXTERNAL"
@@ -146,6 +160,7 @@ def detect_usage(scan_result: dict) -> bool:
     """Return True if any function has at least one recorded usage location."""
     usage = scan_result["usage"]
     return any(locations for locations in usage.values())
+
 
 # ---------------------------------------------------------------------
 # OUTPUT

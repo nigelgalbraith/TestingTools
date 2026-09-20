@@ -1,11 +1,11 @@
 # modules/portscan_utils.py
 from __future__ import annotations
 
-from dataclasses import dataclass
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Dict, Any, Optional
 import socket
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 # ---------------------------------------------------------------------

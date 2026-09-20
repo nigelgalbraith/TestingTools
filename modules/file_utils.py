@@ -6,7 +6,7 @@ file_utils.py
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 def get_directory_status(directory: str) -> List[Dict[str, Any]]:

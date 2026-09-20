@@ -5,13 +5,15 @@ network_utils.py
 
 from __future__ import annotations
 
-from typing import List, Dict, Any, Optional
-import subprocess
 import os
+import subprocess
+from typing import Any, Dict, List, Optional
+
 
 # ---------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------
+
 
 def _run_nmcli(args: List[str]) -> str:
     """Run nmcli and return stdout (best-effort)."""
@@ -23,9 +25,11 @@ def _run_nmcli(args: List[str]) -> str:
     )
     return r.stdout or ""
 
+
 # ---------------------------------------------------------------------
 # NETWORK INTERFACE
 # ---------------------------------------------------------------------
+
 
 def get_interfaces(types: Optional[List[str]] = None) -> List[str]:
     """Return all interface names optionally filtered by type."""
@@ -58,7 +62,11 @@ def get_connected_interfaces(types: Optional[List[str]] = None) -> List[str]:
             parts = line.split(":")
             if len(parts) != 3:
                 continue
-            device, dev_type, state = parts[0].strip(), parts[1].strip().lower(), parts[2].strip().lower()
+            device, dev_type, state = (
+                parts[0].strip(),
+                parts[1].strip().lower(),
+                parts[2].strip().lower(),
+            )
             if not device:
                 continue
             if wanted and dev_type not in wanted:
@@ -108,7 +116,12 @@ def analyze_interface(interface: str) -> List[Dict[str, Any]]:
         print("[ERROR] No interface provided.")
         return []
     try:
-        r = subprocess.run(["nmcli", "device", "show", interface], capture_output=True, text=True, check=True)
+        r = subprocess.run(
+            ["nmcli", "device", "show", interface],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
         out = (r.stdout or "").strip()
         if not out:
             print(f"[WARN] No output for interface: {interface}")

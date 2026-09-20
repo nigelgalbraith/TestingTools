@@ -5,14 +5,14 @@ email_utils.py
 
 from __future__ import annotations
 
-from email import policy
-from email.parser import BytesParser
-from pathlib import Path
-from typing import List, Dict, Any
 import mailbox
 import shutil
 import subprocess
 import tempfile
+from email import policy
+from email.parser import BytesParser
+from pathlib import Path
+from typing import Any, Dict, List
 
 
 EMAIL_COLUMN_WIDTHS = {

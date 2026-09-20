@@ -1,22 +1,22 @@
-# EthernetConstants.py
+# NetworkConstants.py
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from modules.display_utils import (
     display_config_doc,
-    select_from_list,
     print_dict_table,
+    select_from_list,
 )
 from modules.network_utils import (
-    get_interfaces,
+    analyze_interface,
     get_connected_interfaces,
     get_interface_status,
-    analyze_interface,
+    get_interfaces,
 )
 from modules.portscan_utils import (
-    get_arp_neighbors,
     get_arp_neighbor_rows,
+    get_arp_neighbors,
     prompt_for_target,
     scan_tcp_ports,
 )

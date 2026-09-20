@@ -1,8 +1,8 @@
 """WiFi utilities - interface status, scanning, and network selection."""
 
-import subprocess
 import re
-from typing import List, Dict, Any
+import subprocess
+from typing import Any, Dict, List
 
 from modules.system_utils import run_cmd
 
@@ -96,17 +96,22 @@ def get_wireless_interfaces(timeout: int) -> List[str]:
 
 def check_wifi_status() -> List[Dict[str, Any]]:
     """Return status rows for each wireless adapter."""
-    interfaces=get_wireless_interfaces(timeout=5)
-    rows: List[Dict[str, Any]]=[]
+    interfaces = get_wireless_interfaces(timeout=5)
+    rows: List[Dict[str, Any]] = []
     for iface in interfaces:
         try:
-            result=subprocess.run(["iw","dev",iface,"link"],capture_output=True,text=True,timeout=3)
-            connected="Connected to" in (result.stdout or "")
-            rows.append({"device":iface,"state":"connected" if connected else "disconnected"})
+            result = subprocess.run(
+                ["iw", "dev", iface, "link"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+            connected = "Connected to" in (result.stdout or "")
+            rows.append({"device": iface, "state": "connected" if connected else "disconnected"})
         except Exception:
-            rows.append({"device":iface,"state":"disconnected"})
+            rows.append({"device": iface, "state": "disconnected"})
     if not rows:
-        rows.append({"device":"No WiFi adapters","state":"disconnected"})
+        rows.append({"device": "No WiFi adapters", "state": "disconnected"})
     return rows
 
 

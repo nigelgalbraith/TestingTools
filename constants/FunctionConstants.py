@@ -1,7 +1,7 @@
 # FunctionConstants.py
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from modules.display_utils import (
     display_config_doc,
@@ -9,11 +9,11 @@ from modules.display_utils import (
 )
 from modules.function_utils import (
     get_function_status,
-    load_module_functions,
     load_module_function_docs,
-    scan_function_usage,
-    print_usage_summary,
+    load_module_functions,
     print_functions_summary,
+    print_usage_summary,
+    scan_function_usage,
 )
 
 

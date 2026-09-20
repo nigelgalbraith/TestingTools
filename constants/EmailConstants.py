@@ -1,29 +1,29 @@
 # EmailConstants.py
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from modules.display_utils import (
     display_config_doc,
-    select_from_list,
     print_dict_table,
+    select_from_list,
+)
+from modules.email_utils import (
+    browse_pst_emails,
+    clear_pst_files,
+    convert_pst_to_eml,
+    convert_pst_to_mbox,
+    extract_pst_attachments,
+    extract_pst_contacts,
+    get_email_details,
+    get_pst_email_files,
+    get_pst_summary,
+    select_email,
+    select_email_folder,
 )
 from modules.file_utils import (
     get_directory_status,
     get_files_by_extension,
-)
-from modules.email_utils import (
-    get_pst_summary,
-    browse_pst_emails,
-    get_pst_email_files,
-    get_email_details,
-    convert_pst_to_mbox,
-    convert_pst_to_eml,
-    extract_pst_contacts,
-    extract_pst_attachments,
-    select_email,
-    select_email_folder,
-    clear_pst_files,
 )
 
 

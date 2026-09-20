@@ -6,29 +6,29 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime
+from contextlib import redirect_stdout
 from enum import Enum, auto
 from io import StringIO
-from typing import Callable, Dict, List, Optional, Any
-from contextlib import redirect_stdout
+from typing import Any, Callable, Dict, List, Optional
 
-from modules.system_utils import check_account
+from modules.display_utils import (
+    confirm,
+    format_config_help,
+    format_status_summary,
+    pick_constants_interactively,
+    print_dict_table,
+    select_from_list,
+    wrap_in_box,
+)
 from modules.json_utils import load_json, validate_required_fields
 from modules.package_utils import check_package, ensure_dependencies_installed
-from modules.display_utils import (
-    format_status_summary,
-    select_from_list,
-    confirm,
-    print_dict_table,
-    pick_constants_interactively,
-    wrap_in_box,
-    format_config_help,
-)
 from modules.state_machine_utils import (
+    check_when,
     load_constants_from_module,
     parse_args_early,
     resolve_arg,
-    check_when,
 )
+from modules.system_utils import check_account
 
 
 REQUIRED_CONSTANTS = [
@@ -75,13 +75,15 @@ class State(Enum):
     FINALIZE = auto()
 
 
-def run_pipeline_steps(meta: Dict[str, Any],
-                       pipeline: List[Dict[str, Any]],
-                       *,
-                       phase: str,
-                       label: str,
-                       success_key: str,
-                       ctx: Dict[str, Any]) -> None:
+def run_pipeline_steps(
+    meta: Dict[str, Any],
+    pipeline: List[Dict[str, Any]],
+    *,
+    phase: str,
+    label: str,
+    success_key: str,
+    ctx: Dict[str, Any],
+) -> None:
     """Run pipeline steps for a given phase, storing outputs in ctx."""
     ctx.setdefault("errors", [])
     phase = (phase or "").strip().lower()
@@ -118,9 +120,16 @@ def run_pipeline_steps(meta: Dict[str, Any],
 
 
 class StateMachine:
-    def __init__(self, constants, *, auto_yes: bool = False, cli_action: Optional[str] = None,
-                 status_only: bool = False, plan_only: bool = False,
-                 config_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        constants,
+        *,
+        auto_yes: bool = False,
+        cli_action: Optional[str] = None,
+        status_only: bool = False,
+        plan_only: bool = False,
+        config_path: Optional[str] = None,
+    ) -> None:
         """Initialize machine state and fields."""
         self.state: State = State.INITIAL
         self.finalize_msg: Optional[str] = None
@@ -218,7 +227,11 @@ class StateMachine:
         self.verification_ok = True
         self.state = State.JSON_REQUIRED_KEYS_CHECK
 
-    def validate_json_required_keys(self, validation_config: Dict, object_type: type = dict) -> None:
+    def validate_json_required_keys(
+        self,
+        validation_config: Dict,
+        object_type: type = dict,
+    ) -> None:
         """Validate required fields against the single config object."""
         required_fields = (validation_config or {}).get("required_job_fields", {})
         if not required_fields:
@@ -308,7 +321,11 @@ class StateMachine:
         else:
             self.verification_ok = False
             self.verification_notes.append("[WARN] No verification outcomes were recorded.")
-        summary = format_status_summary(self.verification_outcomes, label="Verification", labels={True: "Correct", False: "Incorrect"})
+        summary = format_status_summary(
+            self.verification_outcomes,
+            label="Verification",
+            labels={True: "Correct", False: "Incorrect"},
+        )
         out_lines: List[str] = summary.splitlines() if summary else []
         out_lines.extend(self.verification_notes)
         if not self.verification_ok:
@@ -328,7 +345,13 @@ class StateMachine:
         print(wrap_in_box(out_lines, indent=2, pad=1))
         self.state = State.PACKAGE_STATUS
 
-    def build_status_map(self, summary_label: str, installed_label: str, uninstalled_label: str, status_fn_config: Dict[str, Any]) -> None:
+    def build_status_map(
+        self,
+        summary_label: str,
+        installed_label: str,
+        uninstalled_label: str,
+        status_fn_config: Dict[str, Any],
+    ) -> None:
         """Compute status and print summary; advance accordingly."""
         fn = status_fn_config.get("fn")
         if not callable(fn):
@@ -469,7 +492,11 @@ class StateMachine:
                 columns.append(rk)
         buf = StringIO()
         with redirect_stdout(buf):
-            print_dict_table([row], field_names=columns, label=f"Planned {verb.title()} ({key_label})")
+            print_dict_table(
+                [row],
+                field_names=columns,
+                label=f"Planned {verb.title()} ({key_label})",
+            )
         out_lines = buf.getvalue().splitlines()
         if out_lines and not out_lines[0].strip():
             out_lines = out_lines[1:]
@@ -527,11 +554,19 @@ class StateMachine:
             State.JSON_REQUIRED_KEYS_CHECK: lambda: self.validate_json_required_keys(self.c.VALIDATION_CONFIG, dict),
             State.SECONDARY_VALIDATION:     lambda: self.validate_secondary_keys(self.c.SECONDARY_VALIDATION),
             State.DISPLAY_VERIFICATION:     lambda: self.display_verification_outcome(self.c.CONFIG_DOC),
-            State.PACKAGE_STATUS:           lambda: self.build_status_map(self.c.TOOL_TYPE, self.c.ACTIVE_LABEL, self.c.INACTIVE_LABEL, self.c.STATUS_FN_CONFIG),
+            State.PACKAGE_STATUS:           lambda: self.build_status_map(
+                self.c.TOOL_TYPE,
+                self.c.ACTIVE_LABEL,
+                self.c.INACTIVE_LABEL,
+                self.c.STATUS_FN_CONFIG,
+            ),
             State.BUILD_ACTIONS:            lambda: self.build_actions(self.c.ACTIONS),
             State.MENU_SELECTION:           lambda: self.select_action(),
             State.PIPELINE_PRE:             lambda: self.run_pipeline_pre(),
-            State.PREPARE_PLAN:             lambda: self.prepare_plan(self.c.TOOL_TYPE, self.c.OPTIONAL_PLAN_COLUMNS.get(self.current_action_key, self.c.PLAN_COLUMN_ORDER)),
+            State.PREPARE_PLAN:             lambda: self.prepare_plan(
+                self.c.TOOL_TYPE,
+                self.c.OPTIONAL_PLAN_COLUMNS.get(self.current_action_key, self.c.PLAN_COLUMN_ORDER),
+            ),
             State.CONFIRM:                  lambda: self.confirm_action(),
             State.EXECUTE:                  lambda: self.run_pipeline_action(),
         }
@@ -555,8 +590,16 @@ class StateMachine:
 def _parse_args_single(consts) -> argparse.Namespace:
     """Parse CLI args for single-config loader while keeping your existing pattern."""
     p = argparse.ArgumentParser(add_help=True)
-    p.add_argument("--constants", default=None, help="Constants module path, e.g. constants.DebSingleConstants")
-    p.add_argument("--config", default=None, help="Override config path (defaults to CONFIG_PATH).")
+    p.add_argument(
+        "--constants",
+        default=None,
+        help="Constants module path, e.g. constants.DebSingleConstants",
+    )
+    p.add_argument(
+        "--config",
+        default=None,
+        help="Override config path (defaults to CONFIG_PATH).",
+    )
     p.add_argument("--action", default=None, help="Action title (must match menu text).")
     p.add_argument("--yes", action="store_true", help="Auto-confirm prompts.")
     p.add_argument("--status", action="store_true", help="Status-only mode.")

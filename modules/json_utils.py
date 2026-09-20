@@ -5,10 +5,10 @@ json_utils.py
 Helpers for loading JSON config and validating config/job structures.
 """
 
-import os
 import json
+import os
 from pathlib import Path
-from typing import Union, Dict, Any, Tuple
+from typing import Any, Dict, Tuple, Union
 
 
 # ---------------------------------------------------------------------
@@ -22,7 +22,13 @@ def load_json(config_path: Union[str, Path]):
         return json.load(f)
 
 
-def resolve_value(data: dict, primary_key: str, secondary_key: str, default_key: str = "default", check_file: bool = True) -> str | bool:
+def resolve_value(
+    data: dict,
+    primary_key: str,
+    secondary_key: str,
+    default_key: str = "default",
+    check_file: bool = True,
+) -> str | bool:
     """Resolve a nested dictionary value with fallback to `default_key`."""
     value = None
     if primary_key in data and secondary_key in data[primary_key]:
@@ -41,7 +47,10 @@ def resolve_value(data: dict, primary_key: str, secondary_key: str, default_key:
 # ---------------------------------------------------------------------
 
 
-def validate_required_fields(jobs: Dict[str, Dict[str, Any]], required_fields: Dict[str, Union[type, Tuple[type, ...]]]) -> Dict[str, bool]:
+def validate_required_fields(
+    jobs: Dict[str, Dict[str, Any]],
+    required_fields: Dict[str, Union[type, Tuple[type, ...]]],
+) -> Dict[str, bool]:
     """Check that each job dict contains required fields of the expected type(s)."""
     results: Dict[str, bool] = {field: True for field in required_fields}
     for job_name, meta in jobs.items():
@@ -56,7 +65,11 @@ def validate_required_fields(jobs: Dict[str, Dict[str, Any]], required_fields: D
     return results
 
 
-def validate_secondary_subkey(jobs_block: Dict[str, Dict[str, Any]], subkey: str, rules: Dict[str, Any]) -> Dict[str, bool]:
+def validate_secondary_subkey(
+    jobs_block: Dict[str, Dict[str, Any]],
+    subkey: str,
+    rules: Dict[str, Any],
+) -> Dict[str, bool]:
     """Validate required fields for dict items stored under a list-valued subkey for each job."""
     allow_empty = bool(rules.get("allow_empty", False))
     required = rules.get("required_job_fields", {}) or {}

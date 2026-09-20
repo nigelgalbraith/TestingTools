@@ -6,8 +6,8 @@ Package management helpers for APT/dpkg plus small checks for installed packages
 """
 
 import subprocess
-from typing import List, Union
 from shutil import which
+from typing import List, Union
 
 
 # ---------------------------------------------------------------------

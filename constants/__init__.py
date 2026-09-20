@@ -1,1 +1,1 @@
-# Settings/__init__.py
+# constants/__init__.py

@@ -5,13 +5,13 @@ display_utils.py
 Console formatting, table printing, and interactive prompts for CLI utilities.
 """
 
-from io import StringIO
-from contextlib import redirect_stdout
-from typing import Dict, Any, Optional
-from pathlib import Path
-import os
 import getpass
 import json
+import os
+from contextlib import redirect_stdout
+from io import StringIO
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 
 # ---------------------------------------------------------------------
@@ -155,7 +155,10 @@ def format_status_summary(
     """Return a formatted status table + counts summary for a dict of {item: status}."""
     labels = labels or {True: "INSTALLED", False: "NOT INSTALLED"}
     non_spacer_items = [(k, v) for k, v in status_dict.items() if str(k).strip() != ""]
-    max_item_len = max([len(label)] + [len(str(item)) for item, _ in non_spacer_items], default=len(label))
+    max_item_len = max(
+        [len(label)] + [len(str(item)) for item, _ in non_spacer_items],
+        default=len(label),
+    )
     col_width = max_item_len + 4
     lines: list[str] = []
     title = f"{label} Status Summary"

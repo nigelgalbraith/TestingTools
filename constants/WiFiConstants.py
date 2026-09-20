@@ -1,20 +1,20 @@
-# WiFiScannerConstants.py
+# WiFiConstants.py
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from modules.display_utils import (
     display_config_doc,
-    select_from_list,
     print_dict_table,
+    select_from_list,
 )
 from modules.wifi_utils import (
+    build_network_choices,
+    check_wifi_status,
     get_wireless_interfaces,
     scan_networks,
-    check_wifi_status,
-    show_network_details,
-    build_network_choices,
     select_network_from_scan,
+    show_network_details,
 )
 
 
