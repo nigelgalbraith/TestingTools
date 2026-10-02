@@ -5,14 +5,20 @@ file_utils.py
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Dict, List
+
+
+def expand_path(path):
+    """Expand ~ in filesystem paths."""
+    return os.path.expanduser(path)
 
 
 def get_directory_status(directory: str) -> List[Dict[str, Any]]:
     """Return directory status rows for ToolLoader."""
     try:
-        path = Path(directory)
+        path = Path(expand_path(directory))
         has_files = path.is_dir() and any(item.is_file() for item in path.iterdir())
         return [{
             "location": directory,
@@ -28,7 +34,7 @@ def get_directory_status(directory: str) -> List[Dict[str, Any]]:
 def get_files_by_extension(directory: str, extension: str) -> List[str]:
     """Return files in a directory matching the supplied extension."""
     try:
-        path = Path(directory)
+        path = Path(expand_path(directory))
         if not path.is_dir():
             return []
         return sorted(

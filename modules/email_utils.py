@@ -14,6 +14,8 @@ from email.parser import BytesParser
 from pathlib import Path
 from typing import Any, Dict, List
 
+from modules.file_utils import expand_path
+
 
 EMAIL_COLUMN_WIDTHS = {
     "From": 50,
@@ -58,7 +60,7 @@ def _run_readpst(args: list[str]) -> subprocess.CompletedProcess:
 
 def _get_pst_output_dir(pst_file: str, dest_dir: str) -> Path:
     """Return the output directory for a PST file."""
-    output_dir = Path(dest_dir) / Path(pst_file).stem
+    output_dir = Path(expand_path(dest_dir)) / Path(pst_file).stem
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -140,7 +142,7 @@ def get_pst_summary(pst_file: str) -> List[Dict[str, Any]]:
 def get_pst_email_files(pst_file: str, work_dir: str) -> List[str]:
     """Extract a PST and return contained EML files."""
     try:
-        output_path = Path(work_dir)
+        output_path = Path(expand_path(work_dir))
         if output_path.exists():
             shutil.rmtree(output_path)
         output_path.mkdir(parents=True, exist_ok=True)

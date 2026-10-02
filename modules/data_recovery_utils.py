@@ -14,6 +14,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List
 
+from modules.file_utils import expand_path
+
 
 # ---------------------------------------------------------------------
 # COMMAND HELPERS
@@ -91,7 +93,7 @@ def _get_recovery_destination(destination: str) -> Path | None:
     destination_name = destination.strip()
     if not destination_name:
         return None
-    path = (Path.cwd() / destination_name).resolve()
+    path = (Path.cwd() / expand_path(destination_name)).resolve()
     try:
         path.mkdir(parents=True, exist_ok=True)
     except OSError:
@@ -243,7 +245,7 @@ def run_ddrescue_image(device: str, destination: str, retries: int, resume: bool
 
 def run_testdisk(device: str, log_destination: str) -> List[Dict[str, Any]]:
     """Launch TestDisk interactively for one source drive."""
-    log_path = (Path.cwd() / log_destination).resolve()
+    log_path = (Path.cwd() / expand_path(log_destination)).resolve()
     try:
         log_path.mkdir(parents=True, exist_ok=True)
     except OSError:
