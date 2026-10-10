@@ -1,16 +1,20 @@
 {
   "Modules": [
+    "data_recovery_utils.py",
+    "diagnostic_utils.py",
     "display_utils.py",
     "email_utils.py",
     "file_utils.py",
     "function_utils.py",
+    "harddrive_utils.py",
     "json_utils.py",
     "network_utils.py",
     "package_utils.py",
     "portscan_utils.py",
     "state_machine_utils.py",
     "system_utils.py",
-    "wifi_utils.py"
+    "wifi_utils.py",
+    "windows_inspection_utils.py"
   ],
 
   "ModuleFolder": "/mnt/nigel/userData/GitHub/Private/DebianScripts/TestingTools/modules",
