@@ -52,7 +52,6 @@ def _run_readpst(args: list[str]) -> subprocess.CompletedProcess:
     """Run readpst with the given arguments."""
     return subprocess.run(
         ["readpst", *args],
-        capture_output=True,
         text=True,
         check=False,
     )
