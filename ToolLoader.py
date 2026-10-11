@@ -58,6 +58,7 @@ AVAILABLE_CONSTANTS = {
     "Windows Inspection utility": ("constants.WindowsInspectionConstants", 0),
     "File Integrity utility": ("constants.FileIntegrityConstants", 0),
     "Email utility": ("constants.EmailConstants", 1000),
+    "Router utility": ("constants.RouterConstants", 1000),
     "Function utility": ("constants.FunctionConstants", 1000),
 }
 

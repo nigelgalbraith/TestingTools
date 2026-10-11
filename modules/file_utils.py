@@ -31,16 +31,14 @@ def get_directory_status(directory: str) -> List[Dict[str, Any]]:
         }]
 
 
-def get_files_by_extension(directory: str, extension: str) -> List[str]:
-    """Return files in a directory matching the supplied extension."""
+def get_files_by_extension(directory: str, extension: str | list[str]) -> List[str]:
+    """Return files matching one or more extensions."""
     try:
         path = Path(expand_path(directory))
         if not path.is_dir():
             return []
-        return sorted(
-            str(item)
-            for item in path.iterdir()
-            if item.is_file() and item.suffix.lower() == extension.lower()
-        )
+        extensions = [extension] if isinstance(extension, str) else extension
+        extensions = {ext.lower() for ext in extensions}
+        return sorted(str(item) for item in path.iterdir() if item.is_file() and item.suffix.lower() in extensions)
     except Exception:
         return []

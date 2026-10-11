@@ -1,0 +1,10 @@
+
+{
+    "Locations": {
+        "model_specs_path": "routers/model_specs",
+        "config_path": "~/Documents/Routers/templates",
+        "decoded_config_path": "~/Documents/Routers/decoded",
+        "edited_config_path": "~/Documents/Routers/edited",
+        "updated_config_path": "~/Documents/Routers/updated"
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "FIXED_FIELDS": [
+        "Locations",
+        "Locations.config_path",
+        "Locations.model_specs_path",
+        "Locations.decoded_config_path",
+        "Locations.edited_config_path",
+        "Locations.updated_config_path"
+    ],
+    "EDITABLE_FIELDS": [
+        "Locations.config_path",
+        "Locations.model_specs_path",
+        "Locations.decoded_config_path",
+        "Locations.edited_config_path",
+        "Locations.updated_config_path"
+    ],
+    "EXAMPLE": {
+        "Locations": {
+            "config_path": "routers/templates",
+            "model_specs_path": "routers/model_specs",
+            "decoded_config_path": "~/Documents/Routers/decoded",
+            "edited_config_path": "~/Documents/Routers/edited",
+            "updated_config_path": "~/Documents/Routers/updated"
+        }
+    },
+    "DESCRIPTION": {
+        "Locations": "Directories used by the router configuration utility.",
+        "Locations.config_path": "Directory containing original router backup files.",
+        "Locations.model_specs_path": "Directory containing router model JSON specifications. Add another router by creating a new JSON file here.",
+        "Locations.decoded_config_path": "Directory containing decoded router archives and extracted configurations.",
+        "Locations.edited_config_path": "Directory containing edited copies of router configurations.",
+        "Locations.updated_config_path": "Directory containing newly encoded router backup files."
+    }
+}
