@@ -1,7 +1,7 @@
 {
   "locations": {
-    "source_dir": "~/Documents/TestingTools/email/email_source",
-    "dest_dir": "~/Documents/TestingTools/email/email_dest",
+    "source_dir": "~/Documents/TestingToolsData/email/email_source",
+    "dest_dir": "~/Documents/TestingToolsData/email/email_dest",
     "work_dir": "/tmp/toolloader_email_view"
   }
 }

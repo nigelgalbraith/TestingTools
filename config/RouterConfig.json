@@ -2,10 +2,10 @@
     "Locations": {
         "model_specs_path": "routers/model_specs",
         "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md",
-        "template_router_password_path": "~/Documents/TestingTools/routers/templatePasswords",
-        "config_path": "~/Documents/TestingTools/routers/templates",
-        "decoded_config_path": "~/Documents/TestingTools/routers/decoded",
-        "edited_config_path": "~/Documents/TestingTools/routers/edited",
-        "updated_config_path": "~/Documents/TestingTools/routers/updated"
+        "template_router_password_path": "~/Documents/TestingToolsData/routers/templatePasswords",
+        "config_path": "~/Documents/TestingToolsData/routers/templates",
+        "decoded_config_path": "~/Documents/TestingToolsData/routers/decoded",
+        "edited_config_path": "~/Documents/TestingToolsData/routers/edited",
+        "updated_config_path": "~/Documents/TestingToolsData/routers/updated"
     }
 }

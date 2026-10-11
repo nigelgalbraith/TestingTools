@@ -1,7 +1,7 @@
 {
   "general": {
     "algorithm": "sha256",
-    "target_dir": "~/Documents/TestingTools/integrity/targets",
-    "manifest_dir": "~/Documents/TestingTools/integrity/manifests"
+    "target_dir": "~/Documents/TestingToolsData/integrity/targets",
+    "manifest_dir": "~/Documents/TestingToolsData/integrity/manifests"
   }
 }

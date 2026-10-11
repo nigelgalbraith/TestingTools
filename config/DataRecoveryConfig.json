@@ -1,7 +1,7 @@
 {
   "general": {
-    "destination": "~/Documents/TestingTools/recovery",
-    "log_destination": "~/Documents/TestingTools/recovery/log",
+    "destination": "~/Documents/TestingToolsData/recovery",
+    "log_destination": "~/Documents/TestingToolsData/recovery/log",
     "ddrescue_retries": 3
   }
 }
