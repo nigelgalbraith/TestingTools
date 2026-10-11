@@ -2,9 +2,9 @@
 {
     "Locations": {
         "model_specs_path": "routers/model_specs",
-        "config_path": "~/Documents/Routers/templates",
-        "decoded_config_path": "~/Documents/Routers/decoded",
-        "edited_config_path": "~/Documents/Routers/edited",
-        "updated_config_path": "~/Documents/Routers/updated"
+        "config_path": "~/Documents/TestingTools/routers/templates",
+        "decoded_config_path": "~/Documents/TestingTools/routers/decoded",
+        "edited_config_path": "~/Documents/TestingTools/routers/edited",
+        "updated_config_path": "~/Documents/TestingTools/routers/updated"
     }
 }
