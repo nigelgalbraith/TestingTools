@@ -557,13 +557,13 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
                 raise ValueError(f"Invalid value for {label}")
             changes[index] = updated
         if not changes:
-            print("No configuration changes made.")
-            return False
-        print("\nChanges:")
-        for label, (key, index) in fields.items():
-            if index in changes:
-                print(f"{label}: {lines[index].split('=', 1)[1].rstrip()} -> {changes[index]}")
-        confirmation = input("\nSave edited configuration? [y/n]: ").strip().lower()
+            print("No changes made.")
+        else:
+            print("\nChanges:")
+            for label, (key, index) in fields.items():
+                if index in changes:
+                    print(f"{label}: {lines[index].split('=', 1)[1].rstrip()} -> {changes[index]}")
+        confirmation = input("\nSave configuration for encoding? [y/n]: ").strip().lower()
         if confirmation not in ("y", "yes"):
             print("Configuration editing cancelled.")
             return False
@@ -594,7 +594,6 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
     except (OSError, ValueError, TypeError, KeyError, UnicodeError) as exc:
         print(f"Failed to edit router configuration: {exc}")
         return False
-
 
 # ---------------------------------------------------------------------
 # REBUILD ROUTER ARCHIVE
