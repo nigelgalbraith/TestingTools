@@ -7,7 +7,7 @@ The router utility reads each JSON file to determine how to decode, encode, extr
 
 **Router model names are labels, not processing rules.** The JSON settings determine which functions are used.
 
-Original router backups belong in `routers/templates/`.
+Original router backups belong in the directory configured by `Locations.config_path` in `config/RouterConfig.json`.
 
 ## Adding Another Router
 
@@ -16,7 +16,7 @@ Original router backups belong in `routers/templates/`.
 3. Copy an existing model JSON and update its settings.
 4. Configure the fields you want to view or edit.
 5. Place the JSON in `routers/model_specs/`.
-6. Place the original backup in `routers/templates/`.
+6. Place the original backup in the directory configured by `Locations.config_path`.
 7. Select the model and backup through ToolLoader.
 8. Test decoding, editing, encoding, and restoring.
 
@@ -390,7 +390,7 @@ This example describes the known VRV9517 mechanisms. It is not a universal speci
 | New proprietary binary wrapper | No — add a reusable wrapper helper |
 | ZIP archive instead of tar.gz | No — add a ZIP archive handler |
 | XML configuration instead of key-value | No — add an XML parser/editor |
-| `.bin` extension with an otherwise supported internal format | Possibly — file selection must also support `.bin` |
+| `.bin` extension with an otherwise supported internal format | Yes — `.cfg` and `.bin` are supported for file selection |
 
 **A file extension does not determine the backup format.**
 
