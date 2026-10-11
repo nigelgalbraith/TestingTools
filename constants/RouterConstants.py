@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
-from modules.display_utils import display_config_doc, select_from_list
+from modules.display_utils import display_config_doc, select_from_list, display_readme
 from modules.file_utils import get_directory_status, get_files_by_extension
 from modules.router_utils import (
     load_router_model_specs,
@@ -33,7 +33,7 @@ DECODED_CONFIG_FILE = "decoded_config_path"
 EDITED_CONFIG_FILE = "edited_config_path"
 UPDATED_CONFIG_FILE = "updated_config_path"
 MODEL_SPECS_PATH = "model_specs_path"
-
+TEMPLATE_ROUTER_PASSWORD_PATH = "template_router_password_path"
 
 # ---------------------------------------------------------------------
 # MODEL SPECIFICATION KEYS
@@ -49,7 +49,7 @@ PASSWORD_BASE_KEY = "password_base"
 PASSWORD_HASH_KEY = "password_hash"
 KEY_DERIVATION_KEY = "key_derivation"
 CONFIG_FIELDS_KEY = "config_fields"
-
+MODEL_SPECS_README = "model_specs_readme_path"
 
 # ---------------------------------------------------------------------
 # FILE EXTENSIONS
@@ -58,6 +58,10 @@ CONFIG_FIELDS_KEY = "config_fields"
 CONFIG_EXTENSION = [".cfg", ".bin"]
 DECODED_EXTENSION = ".tar.gz"
 MODEL_SPECS_EXTENSION = ".json"
+
+DECODED_SUFFIX = "-decoded"
+EDITED_SUFFIX = "-edited"
+UPDATED_SUFFIX = "-updated"
 
 
 # ---------------------------------------------------------------------
@@ -81,6 +85,8 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
             EDITED_CONFIG_FILE: str,
             UPDATED_CONFIG_FILE: str,
             MODEL_SPECS_PATH: str,
+            MODEL_SPECS_README: str,
+            TEMPLATE_ROUTER_PASSWORD_PATH: str,
         },
         "allow_empty": False,
     },
@@ -165,6 +171,14 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
         "verb": "encode",
         "prompt": "Encode edited router configuration? [y/n]: ",
         "execute_state": "ENCODE_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "View Model Specifications Help": {
+        "verb": "model_specs_help",
+        "prompt": "View model specifications help? [y/n]: ",
+        "execute_state": "SHOW_MODEL_SPECS_HELP",
         "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": True,
@@ -324,6 +338,7 @@ DECODE_ROUTER_CONFIG_EXEC = [
         "args": [
             lambda job, meta, ctx: ctx["selected_config"],
             lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][TEMPLATE_ROUTER_PASSWORD_PATH],
         ],
         "result": "decoded_config",
         "when": lambda job, meta, ctx: (
@@ -346,7 +361,7 @@ SAVE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx.get("decoded_config"),
             lambda job, meta, ctx: str(
                 Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).name + DECODED_EXTENSION)
+                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX + DECODED_EXTENSION)
             ) if ctx.get("selected_config") else "",
             lambda job, meta, ctx: ctx["model_specs"],
         ],
@@ -367,11 +382,11 @@ EXTRACT_ROUTER_CONFIG_EXEC = [
         "args": [
             lambda job, meta, ctx: str(
                 Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).name + DECODED_EXTENSION)
+                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX + DECODED_EXTENSION)
             ),
             lambda job, meta, ctx: str(
                 Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / Path(ctx["selected_config"]).name
+                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX)
             ),
             lambda job, meta, ctx: ctx["model_specs"],
         ],
@@ -415,7 +430,7 @@ EDIT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_decoded_config"),
             lambda job, meta, ctx: str(
                 Path(meta[LOCATIONS_KEY][EDITED_CONFIG_FILE]).expanduser()
-                / Path(ctx["selected_decoded_config"]).name
+                / (Path(ctx["selected_decoded_config"]).name.removesuffix(DECODED_SUFFIX) + EDITED_SUFFIX)
             ),
             lambda job, meta, ctx: ctx["model_specs"],
         ],
@@ -464,9 +479,10 @@ ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_config"),
             lambda job, meta, ctx: str(
                 Path(meta[LOCATIONS_KEY][UPDATED_CONFIG_FILE]).expanduser()
-                / Path(ctx["selected_edited_config"]).name
+                / (Path(ctx["selected_config"]).stem + UPDATED_SUFFIX + Path(ctx["selected_config"]).suffix)
             ),
             lambda job, meta, ctx: ctx.get("model_specs"),
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][TEMPLATE_ROUTER_PASSWORD_PATH],
         ],
         "result": "encoded_path",
         "when": lambda job, meta, ctx: (
@@ -477,6 +493,20 @@ ENCODE_ROUTER_CONFIG_EXEC = [
     },
 ]
 
+# ---------------------------------------------------------------------
+# SHOW MODEL SPECIFICATIONS HELP
+# ---------------------------------------------------------------------
+
+SHOW_MODEL_SPECS_HELP_EXEC = [
+    {
+        "phase": "exec",
+        "fn": display_readme,
+        "args": [
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][MODEL_SPECS_README],
+        ],
+        "result": "ok",
+    },
+]
 
 # ---------------------------------------------------------------------
 # SHOW CONFIG DOC
@@ -574,6 +604,11 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         ],
         "label": "ENCODE_CONFIG_COMPLETE",
         "success_key": "encoded_path",
+    },
+    "SHOW_MODEL_SPECS_HELP": {
+        "pipeline": [*SHOW_MODEL_SPECS_HELP_EXEC],
+        "label": "SHOW_MODEL_SPECS_HELP_COMPLETE",
+        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [*SHOW_CONFIG_DOC_EXEC],

@@ -30,24 +30,66 @@ SUPPORTED_HASHES = ("md5", "sha256", "sha512")
 
 
 # ---------------------------------------------------------------------
-# GET ROUTER FACTORY PASSWORD
+# GET TARGET ROUTER FACTORY PASSWORD
 # ---------------------------------------------------------------------
 
-def get_router_factory_password(model_specs: dict) -> str | bool:
-    """Prompt for the router's original factory Wi-Fi password."""
+def get_target_router_password(model_specs: dict) -> str | bool:
+    """Prompt for the target router's original factory Wi-Fi password."""
     if not model_specs.get("password_required", False):
         return ""
     try:
-        password = getpass("Enter original factory Wi-Fi password: ")
+        password = getpass("Enter target router factory Wi-Fi password: ")
         if not password:
-            print("Factory Wi-Fi password is required.")
+            print("Target router factory Wi-Fi password is required.")
             return False
         return password
     except (EOFError, KeyboardInterrupt):
-        print("\nFactory Wi-Fi password entry cancelled.")
+        print("\nTarget router password entry cancelled.")
         return False
 
 
+# ---------------------------------------------------------------------
+# GET TEMPLATE PASSWORD
+# ---------------------------------------------------------------------
+
+def get_router_template_password(model_specs: dict, password_dir: str) -> str | bool:
+    """Select and read a template router's factory password."""
+    if not model_specs.get("password_required", False):
+        return ""
+    directory = Path(password_dir).expanduser()
+    if not directory.is_dir():
+        print(f"Template password directory not found: {directory}")
+        return False
+    password_files = sorted(directory.glob("*.txt"))
+    if not password_files:
+        print("No template router password files found.")
+        return False
+    print("\nSelect Template Router Password")
+    print("--------------------------------")
+    for index, path in enumerate(password_files, 1):
+        print(f"{index}. {path.name}")
+    try:
+        choice = input("\nSelect password file (0 to cancel): ").strip()
+        if choice == "0":
+            return False
+        index = int(choice) - 1
+        if not 0 <= index < len(password_files):
+            print("Invalid selection.")
+            return False
+        password = password_files[index].read_text(
+            encoding="utf-8"
+        ).strip()
+        if not password:
+            print("Selected password file is empty.")
+            return False
+        return password
+    except (ValueError, OSError) as exc:
+        print(f"Failed to load template password: {exc}")
+        return False
+    except (EOFError, KeyboardInterrupt):
+        print("\nTemplate password selection cancelled.")
+        return False
+    
 # ---------------------------------------------------------------------
 # LOAD ROUTER MODEL SPECS
 # ---------------------------------------------------------------------
@@ -326,20 +368,40 @@ def validate_directory(directory: Path) -> None:
             raise ValueError(f"Unsafe configuration entry: {path}")
 
 
-def decode_router_config(config_path: str, model_specs: dict) -> bytes | bool:
+def decode_router_config(
+    config_path: str,
+    model_specs: dict,
+    password_dir: str
+) -> bytes | bool:
     """Decode and validate an original backup using only declared mechanisms."""
-    wrapper = parse_router_wrapper(Path(config_path).expanduser().read_bytes(), model_specs)
-    password = get_router_factory_password(model_specs)
+    wrapper = parse_router_wrapper(
+        Path(config_path).expanduser().read_bytes(),
+        model_specs
+    )
+    password = get_router_template_password(model_specs, password_dir)
     if password is False:
         return False
-    decoded = decrypt_router_payload(wrapper["encrypted"], password, model_specs)
-    with tarfile.open(fileobj=io.BytesIO(decoded), mode=archive_mode(model_specs, "r")) as archive:
+    decoded = decrypt_router_payload(
+        wrapper["encrypted"],
+        password,
+        model_specs
+    )
+    with tarfile.open(
+        fileobj=io.BytesIO(decoded),
+        mode=archive_mode(model_specs, "r")
+    ) as archive:
         members = validate_archive(archive)
         configured = Path(model_specs["config_fields"]["file"])
-        member = next((m for m in members if Path(m.name) == configured and m.isfile()), None)
+        member = next(
+            (m for m in members if Path(m.name) == configured and m.isfile()),
+            None
+        )
         if member is None:
             raise ValueError("Configured file missing from archive")
-        parse_config_fields(archive.extractfile(member).read().decode("utf-8"), model_specs)
+        parse_config_fields(
+            archive.extractfile(member).read().decode("utf-8"),
+            model_specs
+        )
     return decoded
 
 
@@ -591,40 +653,108 @@ def rebuild_router_archive(original_archive: bytes, edited_dir: str, model_specs
 # ENCODE ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
-def encode_router_config(edited_dir: str, original_cfg: str, output_cfg: str, model_specs: dict) -> str | bool:
+def encode_router_config(
+    edited_dir: str,
+    original_cfg: str,
+    output_cfg: str,
+    model_specs: dict,
+    password_dir: str
+) -> str | bool:
     """Rebuild, encrypt and verify an edited backup without changing its source."""
+    from constants.RouterConstants import EDITED_SUFFIX
+
     try:
         validate_model_specs(model_specs)
         directory = Path(edited_dir).expanduser()
         original = Path(original_cfg).expanduser()
         output = Path(output_cfg).expanduser()
-        if directory.name != original.name:
-            raise ValueError("Edited configuration name does not match original backup")
+        if directory.name != original.stem + EDITED_SUFFIX:
+            raise ValueError(
+                "Edited configuration name does not match original backup"
+            )
         if output.exists() or output.is_symlink():
-            raise FileExistsError(f"Updated backup already exists: {output}")
-        wrapper = parse_router_wrapper(original.read_bytes(), model_specs)
-        wifi_password = get_router_factory_password(model_specs)
-        if wifi_password is False:
+            raise FileExistsError(
+                f"Updated backup already exists: {output}"
+            )
+        wrapper = parse_router_wrapper(
+            original.read_bytes(),
+            model_specs
+        )
+        # Select the password file belonging to the master template router
+        template_password = get_router_template_password(model_specs, password_dir)
+        if template_password is False:
             return False
-        original_archive = decrypt_router_payload(wrapper["encrypted"], wifi_password, model_specs)
-        rebuilt_archive, changes = rebuild_router_archive(original_archive, str(directory), model_specs)
-        validate_edited_fields(original_archive, directory, model_specs)
-        encrypted = encrypt_router_payload(rebuilt_archive, wifi_password, model_specs)
-        rebuilt = rebuild_router_wrapper(encode_router_payload(encrypted, model_specs), wrapper["header"], model_specs)
+        original_archive = decrypt_router_payload(
+            wrapper["encrypted"],
+            template_password,
+            model_specs
+        )
+        rebuilt_archive, changes = rebuild_router_archive(
+            original_archive,
+            str(directory),
+            model_specs
+        )
+        validate_edited_fields(
+            original_archive,
+            directory,
+            model_specs
+        )
+        # Encrypt for target router using its factory password
+        target_password = get_target_router_password(model_specs)
+        if target_password is False:
+            return False
+        encrypted = encrypt_router_payload(
+            rebuilt_archive,
+            target_password,
+            model_specs
+        )
+        rebuilt = rebuild_router_wrapper(
+            encode_router_payload(encrypted, model_specs),
+            wrapper["header"],
+            model_specs
+        )
+        # Verify using target router password
         verified = parse_router_wrapper(rebuilt, model_specs)
-        decrypted = decrypt_router_payload(verified["encrypted"], wifi_password, model_specs)
+        decrypted = decrypt_router_payload(
+            verified["encrypted"],
+            target_password,
+            model_specs
+        )
         if decrypted != rebuilt_archive:
-            raise ValueError("Generated backup failed decryption verification")
-        with tarfile.open(fileobj=io.BytesIO(decrypted), mode=archive_mode(model_specs, "r")) as archive:
+            raise ValueError(
+                "Generated backup failed decryption verification"
+            )
+        with tarfile.open(
+            fileobj=io.BytesIO(decrypted),
+            mode=archive_mode(model_specs, "r")
+        ) as archive:
             validate_archive(archive)
-        output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        output.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+            mode=0o700
+        )
         with output.open("xb") as target:
             os.chmod(output, 0o600)
             target.write(rebuilt)
-        print("Modified files: " + (", ".join(changes) or "none; original compressed archive retained"))
-        print(f"Updated router backup: {output}; checksum and local round-trip verified.")
+        print(
+            "Modified files: " +
+            (", ".join(changes) or "none; original compressed archive retained")
+        )
+        print(
+            f"Updated router backup: {output}; "
+            "checksum and local round-trip verified."
+        )
         return str(output)
-    except (OSError, ValueError, KeyError, TypeError, tarfile.TarError, EOFError, subprocess.SubprocessError) as exc:
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        tarfile.TarError,
+        EOFError,
+        subprocess.SubprocessError
+    ) as exc:
         print(f"Failed to encode router configuration: {exc}")
         return False
 
