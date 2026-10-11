@@ -248,6 +248,7 @@ The generic router functions perform the processing using the selected model spe
 
 ToolLoader coordinates the pipeline.
 
+
 ### Router Output Naming
 
 The utility uses consistent filename suffixes for the different configuration stages.
@@ -265,36 +266,27 @@ Extracted directory:
     SmartModem_backup-decoded/
 
 Edited directory:
-    SmartModem_backup-edited/
+    OfficeRouter-edited/
 
-Updated backup:
-    SmartModem_backup-updated.cfg
+Encoded backup:
+    OfficeRouter-encoded.cfg
 ```
 
-For a `.bin` backup:
+When editing, the user can enter a new configuration name, such as `OfficeRouter`.
+
+If no name is entered, the original template filename is used:
 
 ```text
-Original:
-    SmartModem_backup.bin
-
-Decoded archive:
-    SmartModem_backup-decoded.tar.gz
-
-Extracted directory:
-    SmartModem_backup-decoded/
-
 Edited directory:
     SmartModem_backup-edited/
 
-Updated backup:
-    SmartModem_backup-updated.bin
+Encoded backup:
+    SmartModem_backup-encoded.cfg
 ```
 
-Each generated file or directory is written to the corresponding configured location.
+The original template name is retained during decoding. The new configuration name is used for editing and encoding.
 
 The original router backup remains unchanged.
-
-The utility uses the original filename stem for intermediate outputs, so templates with identical stems but different extensions can have naming collisions. Use distinct stems for such templates.
 
 ### Password Handling
 
