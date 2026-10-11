@@ -1,7 +1,7 @@
 {
     "Locations": {
         "model_specs_path": "routers/model_specs",
-        "model_specs_readme_path": "routers/ModelSpecsReadMe.md",
+        "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md",
         "template_router_password_path": "~/Documents/TestingTools/routers/templatePasswords",
         "config_path": "~/Documents/TestingTools/routers/templates",
         "decoded_config_path": "~/Documents/TestingTools/routers/decoded",
