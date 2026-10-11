@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -527,6 +528,7 @@ def view_router_config_fields(config_dir: str, model_specs: dict) -> bool:
 
 def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dict) -> str | bool:
     """Copy and edit selected router configuration fields."""
+    from constants.RouterConstants import EDITED_SUFFIX
     try:
         config_fields = model_specs["config_fields"]
         source = Path(config_dir).expanduser()
@@ -534,6 +536,11 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
         destination = Path(edited_dir).expanduser()
         if not source.is_dir():
             raise NotADirectoryError(f"Decoded configuration directory not found: {source}")
+        configuration_name = input("Configuration name (blank for default; letters, numbers, _ or -): ").strip()
+        if configuration_name:
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", configuration_name):
+                raise ValueError("Invalid configuration name: use only letters, numbers, _ or -")
+            destination = destination.with_name(f"{configuration_name}{EDITED_SUFFIX}")
         if destination.exists() or destination.is_symlink():
             raise FileExistsError(f"Edited configuration already exists: {destination}")
         relative = Path(config_fields[CONFIG_FIELDS_FILE_KEY])
@@ -655,22 +662,24 @@ def rebuild_router_archive(original_archive: bytes, edited_dir: str, model_specs
 def encode_router_config(
     edited_dir: str,
     original_cfg: str,
-    output_cfg: str,
+    output_dir: str,
     model_specs: dict,
-    password_dir: str
+    password_dir: str,
+    configuration_name: str
 ) -> str | bool:
     """Rebuild, encrypt and verify an edited backup without changing its source."""
-    from constants.RouterConstants import EDITED_SUFFIX
-
+    from constants.RouterConstants import EDITED_SUFFIX, UPDATED_SUFFIX
     try:
         validate_model_specs(model_specs)
         directory = Path(edited_dir).expanduser()
         original = Path(original_cfg).expanduser()
-        output = Path(output_cfg).expanduser()
-        if directory.name != original.stem + EDITED_SUFFIX:
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", configuration_name):
+            raise ValueError("Invalid configuration name: use only letters, numbers, _ or -")
+        if directory.name != configuration_name + EDITED_SUFFIX:
             raise ValueError(
-                "Edited configuration name does not match original backup"
+                "Edited configuration directory does not match configuration name"
             )
+        output = Path(output_dir).expanduser() / f"{configuration_name}{UPDATED_SUFFIX}{original.suffix}"
         if output.exists() or output.is_symlink():
             raise FileExistsError(
                 f"Updated backup already exists: {output}"

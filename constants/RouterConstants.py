@@ -61,7 +61,7 @@ MODEL_SPECS_EXTENSION = ".json"
 
 DECODED_SUFFIX = "-decoded"
 EDITED_SUFFIX = "-edited"
-UPDATED_SUFFIX = "-updated"
+UPDATED_SUFFIX = "-encoded"
 
 
 # ---------------------------------------------------------------------
@@ -477,12 +477,10 @@ ENCODE_ROUTER_CONFIG_EXEC = [
         "args": [
             lambda job, meta, ctx: ctx.get("selected_edited_config"),
             lambda job, meta, ctx: ctx.get("selected_config"),
-            lambda job, meta, ctx: str(
-                Path(meta[LOCATIONS_KEY][UPDATED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).stem + UPDATED_SUFFIX + Path(ctx["selected_config"]).suffix)
-            ),
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][UPDATED_CONFIG_FILE],
             lambda job, meta, ctx: ctx.get("model_specs"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][TEMPLATE_ROUTER_PASSWORD_PATH],
+            lambda job, meta, ctx: Path(ctx["selected_edited_config"]).name.removesuffix(EDITED_SUFFIX),
         ],
         "result": "encoded_path",
         "when": lambda job, meta, ctx: (
