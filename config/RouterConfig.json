@@ -6,6 +6,6 @@
         "config_path": "~/Documents/TestingToolsData/routers/templates",
         "decoded_config_path": "~/Documents/TestingToolsData/routers/decoded",
         "edited_config_path": "~/Documents/TestingToolsData/routers/edited",
-        "updated_config_path": "~/Documents/TestingToolsData/routers/updated"
+        "updated_config_path": "~/Documents/TestingToolsData/routers/encoded"
     }
 }

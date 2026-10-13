@@ -34,20 +34,15 @@ SUPPORTED_HASHES = ("md5", "sha256", "sha512")
 # GET TARGET ROUTER FACTORY PASSWORD
 # ---------------------------------------------------------------------
 
-def get_target_router_password(model_specs: dict) -> str | bool:
-    """Prompt for the target router's original factory Wi-Fi password."""
+def get_target_router_password(model_specs: dict, template_password: str) -> str | bool:
     if not model_specs.get("password_required", False):
         return ""
     try:
-        password = getpass("Enter target router factory Wi-Fi password: ")
-        if not password:
-            print("Target router factory Wi-Fi password is required.")
-            return False
-        return password
+        password = getpass("Enter target router password (Enter to use template password): ")
+        return password or template_password
     except (EOFError, KeyboardInterrupt):
         print("\nTarget router password entry cancelled.")
         return False
-
 
 # ---------------------------------------------------------------------
 # GET TEMPLATE PASSWORD
@@ -708,7 +703,7 @@ def encode_router_config(
             model_specs
         )
         # Encrypt for target router using its factory password
-        target_password = get_target_router_password(model_specs)
+        target_password = get_target_router_password(model_specs, template_password)
         if target_password is False:
             return False
         encrypted = encrypt_router_payload(
