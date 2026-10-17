@@ -23,22 +23,22 @@
       "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Spark_SmartModem_VRV9517-encoded.cfg"
     },
     "Spark SmartModem VRV951 B": {
-      "specs": "routers/model_specs/Spark_SmartModem_VRV951_B-spec.json",
-      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV951_B-password.txt",
-      "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV951_B-template.cfg",
-      "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV951_B-decoded.tar.gz",
-      "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV951_B-decoded",
-      "template_edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV951_B-edited.tar.gz",
-      "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV951_B-edited",
-      "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV951_B-encoded.cfg",
-      "original": "~/Documents/TestingToolsData/routers/original/Spark_SmartModem_VRV951_B-original.cfg",
-      "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV951_B-decoded.tar.gz",
-      "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV951_B-decoded",
-      "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV951_B-edited.tar.gz",
-      "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV951_B-edited",
-      "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV951_B-converted.tar.gz",
-      "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV951_B-converted",
-      "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Spark_SmartModem_VRV951_B-encoded.cfg"
+      "specs": "routers/model_specs/Spark_SmartModem_VRV9517_B-spec.json",
+      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV9517_B-password.txt",
+      "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV9517_B-template.cfg",
+      "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517_B-decoded.tar.gz",
+      "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517_B-decoded",
+      "template_edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517_B-edited.tar.gz",
+      "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517_B-edited",
+      "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV9517_B-encoded.cfg",
+      "original": "~/Documents/TestingToolsData/routers/original/Spark_SmartModem_VRV9517_B-original.cfg",
+      "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517_B-decoded.tar.gz",
+      "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517_B-decoded",
+      "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517_B-edited.tar.gz",
+      "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517_B-edited",
+      "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517_B-converted.tar.gz",
+      "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517_B-converted",
+      "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Spark_SmartModem_VRV9517_B-encoded.cfg"
     }
   }
 }
