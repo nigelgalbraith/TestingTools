@@ -12,6 +12,7 @@ from modules.router_utils import (
     view_router_config_fields,
     edit_router_config_fields,
     encode_router_config,
+    convert_router_config_fields,
 )
 
 
@@ -22,6 +23,7 @@ from modules.router_utils import (
 CONFIG_PATH = "config/RouterConfig.json"
 TOOL_TYPE = "Router Configuration"
 CONFIG_DOC = "doc/RouterDoc.json"
+
 
 
 # ---------------------------------------------------------------------
@@ -35,11 +37,21 @@ MODEL_SPECS_README = "model_specs_readme_path"
 SPECS_KEY = "specs"
 PASSWORD_KEY = "password"
 TEMPLATE_KEY = "template"
-DECODED_KEY = "decoded"
-DECODED_DIR_KEY = "decoded_dir"
-EDITED_KEY = "edited"
-EDITED_DIR_KEY = "edited_dir"
-ENCODED_KEY = "encoded"
+DECODED_KEY = "template_decoded"
+DECODED_DIR_KEY = "template_decoded_dir"
+EDITED_KEY = "template_edited"
+EDITED_DIR_KEY = "template_edited_dir"
+ENCODED_KEY = "template_encoded"
+
+ORIGINAL_KEY = "original"
+
+MIGRATION_DECODED_KEY = "migration_decoded"
+MIGRATION_DECODED_DIR_KEY = "migration_decoded_dir"
+MIGRATION_EDITED_KEY = "migration_edited"
+MIGRATION_EDITED_DIR_KEY = "migration_edited_dir"
+MIGRATION_CONVERTED_KEY = "migration_converted"
+MIGRATION_CONVERTED_DIR_KEY = "migration_converted_dir"
+MIGRATION_ENCODED_KEY = "migration_encoded"
 
 
 # ---------------------------------------------------------------------
@@ -69,12 +81,9 @@ VALIDATION_CONFIG: Dict[str, Any] = {
     },
 }
 
-
 # ---------------------------------------------------------------------
 # SECONDARY VALIDATION
 # ---------------------------------------------------------------------
-
-
 
 SECONDARY_VALIDATION: Dict[str, Any] = {
     COMMON_LOCATIONS_KEY: {
@@ -93,12 +102,19 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
             EDITED_KEY: str,
             EDITED_DIR_KEY: str,
             ENCODED_KEY: str,
+            ORIGINAL_KEY: str,
+            MIGRATION_DECODED_KEY: str,
+            MIGRATION_DECODED_DIR_KEY: str,
+            MIGRATION_EDITED_KEY: str,
+            MIGRATION_EDITED_DIR_KEY: str,
+            MIGRATION_CONVERTED_KEY: str,
+            MIGRATION_CONVERTED_DIR_KEY: str,
+            MIGRATION_ENCODED_KEY: str,
         },
         "dynamic_keys": True,
         "allow_empty": False,
     },
 }
-
 
 
 # ---------------------------------------------------------------------
@@ -185,6 +201,70 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
         "verb": "encode",
         "prompt": "Encode edited router configuration? [y/n]: ",
         "execute_state": "ENCODE_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Modify Router - Same Model (Run All)": {
+        "verb": "run_all_same_model",
+        "prompt": "Run all same-model router operations? [y/n]: ",
+        "execute_state": "RUN_ALL_SAME_MODEL",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Migrate a Config": {
+        "verb": "migrate_decode",
+        "prompt": "Decode router configuration for migration? [y/n]: ",
+        "execute_state": "MIGRATION_DECODE_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Edit Migration Config": {
+        "verb": "migration_edit",
+        "prompt": "Edit decoded migration configuration? [y/n]: ",
+        "execute_state": "MIGRATION_EDIT_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "View Edited Migration Config": {
+        "verb": "view_migration_edited",
+        "prompt": "View edited migration configuration? [y/n]: ",
+        "execute_state": "VIEW_MIGRATION_EDITED_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Prepare Destination Config": {
+        "verb": "migration_convert_prepare",
+        "prompt": "Decode destination configuration for conversion? [y/n]: ",
+        "execute_state": "MIGRATION_CONVERT_PREPARE",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Convert Migration Config": {
+        "verb": "migration_convert",
+        "prompt": "Convert migration configuration? [y/n]: ",
+        "execute_state": "MIGRATION_CONVERT_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Encode Migration Config": {
+        "verb": "migration_encode",
+        "prompt": "Encode converted migration configuration? [y/n]: ",
+        "execute_state": "MIGRATION_ENCODE_CONFIG",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "Modify Router - Different Model (Run All)": {
+        "verb": "run_all_different_model",
+        "prompt": "Run all different-model router operations? [y/n]: ",
+        "execute_state": "RUN_ALL_DIFFERENT_MODEL",
         "post_state": "MENU_SELECTION",
         "skip_prepare_plan": True,
         "skip_confirm": True,
@@ -372,6 +452,260 @@ ENCODE_ROUTER_CONFIG_EXEC = [
 
 
 # ---------------------------------------------------------------------
+# DECODE MIGRATION CONFIGURATION
+# ---------------------------------------------------------------------
+
+MIGRATION_DECODE_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": decode_router_config,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ORIGINAL_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: None,
+            lambda job, meta, ctx: "Enter SOURCE router password: ",
+        ],
+        "result": "decoded_config",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
+    },
+]
+
+MIGRATION_SAVE_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": save_router_config,
+        "args": [
+            lambda job, meta, ctx: ctx.get("decoded_config"),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+        ],
+        "result": "save_ok",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("decoded_config"), bytes),
+    },
+]
+
+MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": extract_router_config,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_DIR_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+        ],
+        "result": "extracted_path",
+        "when": lambda job, meta, ctx: ctx.get("save_ok") is True,
+    },
+]
+
+
+# ---------------------------------------------------------------------
+# EDIT MIGRATION CONFIGURATION
+# ---------------------------------------------------------------------
+
+MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": edit_router_config_fields,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_DIR_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+        ],
+        "result": "edited_path",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
+    },
+]
+
+
+# ---------------------------------------------------------------------
+# ENCODE MIGRATION CONFIGURATION
+# ---------------------------------------------------------------------
+
+MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": encode_router_config,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_ENCODED_KEY],
+            lambda job, meta, ctx: ctx["destination_specs"],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: "Enter DESTINATION router password: ",
+        ],
+        "result": "migration_encoded_path",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
+    },
+]
+
+# ---------------------------------------------------------------------
+# VIEW EDITED MIGRATION CONFIGURATION
+# ---------------------------------------------------------------------
+
+MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": view_router_config_fields,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+        ],
+        "result": "view_migration_edited_ok",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
+    },
+]
+
+# ---------------------------------------------------------------------
+# SELECT DESTINATION ROUTER
+# ---------------------------------------------------------------------
+
+SELECT_DESTINATION_ROUTER_PRE = [
+    {
+        "phase": "pre",
+        "fn": select_from_list,
+        "args": [
+            lambda job, meta, ctx: "Select destination router",
+            lambda job, meta, ctx: list(meta[ROUTERS_KEY]),
+        ],
+        "result": "destination_router",
+        "when": lambda job, meta, ctx: bool(meta.get(ROUTERS_KEY)),
+    },
+]
+
+LOAD_DESTINATION_MODEL_SPECS_PRE = [
+    {
+        "phase": "pre",
+        "fn": load_router_model_specs,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
+        ],
+        "result": "destination_specs",
+        "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
+    },
+]
+
+
+# ---------------------------------------------------------------------
+# DECODE DESTINATION CONFIGURATION FOR CONVERSION
+# ---------------------------------------------------------------------
+
+
+MIGRATION_CONVERT_DECODE_EXEC = [
+    {
+        "phase": "exec",
+        "fn": decode_router_config,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
+            lambda job, meta, ctx: ctx["destination_specs"],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
+        ],
+        "result": "converted_decoded_config",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
+    },
+]
+
+
+
+MIGRATION_CONVERT_SAVE_EXEC = [
+    {
+        "phase": "exec",
+        "fn": save_router_config,
+        "args": [
+            lambda job, meta, ctx: ctx.get("converted_decoded_config"),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
+            lambda job, meta, ctx: ctx["destination_specs"],
+        ],
+        "result": "converted_save_ok",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("converted_decoded_config"), bytes),
+    },
+]
+
+MIGRATION_CONVERT_EXTRACT_EXEC = [
+    {
+        "phase": "exec",
+        "fn": extract_router_config,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
+            lambda job, meta, ctx: ctx["destination_specs"],
+        ],
+        "result": "converted_extracted_path",
+        "when": lambda job, meta, ctx: ctx.get("converted_save_ok") is True,
+    },
+]
+
+
+# ---------------------------------------------------------------------
+# CONVERT MIGRATION CONFIGURATION
+# ---------------------------------------------------------------------
+
+MIGRATION_CONVERT_ROUTER_CONFIG_EXEC = [
+    {
+        "phase": "exec",
+        "fn": convert_router_config_fields,
+        "args": [
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: ctx["destination_specs"],
+        ],
+        "result": "converted_path",
+        "when": lambda job, meta, ctx: (
+            isinstance(ctx.get("model_specs"), dict)
+            and isinstance(ctx.get("destination_specs"), dict)
+        ),
+    },
+]
+
+# ---------------------------------------------------------------------
+# RUN ALL SAME MODEL STEPS SAME MODEL
+# ---------------------------------------------------------------------
+
+RUN_ALL_EDIT_ROUTER_CONFIG_EXEC = [
+    {
+        **EDIT_ROUTER_CONFIG_EXEC[0],
+        "when": lambda job, meta, ctx: bool(ctx.get("extracted_path")),
+    },
+]
+
+RUN_ALL_ENCODE_ROUTER_CONFIG_EXEC = [
+    {
+        **ENCODE_ROUTER_CONFIG_EXEC[0],
+        "when": lambda job, meta, ctx: bool(ctx.get("edited_path")),
+    },
+]
+
+# ---------------------------------------------------------------------
+# RUN ALL SAME MODEL STEPS DIFFERENT MODEL
+# ---------------------------------------------------------------------
+
+RUN_ALL_MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
+    {
+        **MIGRATION_EDIT_ROUTER_CONFIG_EXEC[0],
+        "when": lambda job, meta, ctx: bool(ctx.get("extracted_path")),
+    },
+]
+
+RUN_ALL_MIGRATION_CONVERT_ROUTER_CONFIG_EXEC = [
+    {
+        **MIGRATION_CONVERT_ROUTER_CONFIG_EXEC[0],
+        "when": lambda job, meta, ctx: (
+            bool(ctx.get("edited_path"))
+            and bool(ctx.get("converted_extracted_path"))
+        ),
+    },
+]
+
+RUN_ALL_MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
+    {
+        **MIGRATION_ENCODE_ROUTER_CONFIG_EXEC[0],
+        "when": lambda job, meta, ctx: bool(ctx.get("converted_path")),
+    },
+]
+
+# ---------------------------------------------------------------------
 # SHOW MODEL SPECIFICATIONS HELP
 # ---------------------------------------------------------------------
 
@@ -453,6 +787,100 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         ],
         "label": "ENCODE_CONFIG_COMPLETE",
         "success_key": "encoded_path",
+    },
+    "RUN_ALL_SAME_MODEL": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *DECODE_ROUTER_CONFIG_EXEC,
+            *SAVE_ROUTER_CONFIG_EXEC,
+            *EXTRACT_ROUTER_CONFIG_EXEC,
+            *RUN_ALL_EDIT_ROUTER_CONFIG_EXEC,
+            *RUN_ALL_ENCODE_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "RUN_ALL_SAME_MODEL_COMPLETE",
+        "success_key": "encoded_path",
+    },
+    "MIGRATION_DECODE_CONFIG": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *MIGRATION_DECODE_ROUTER_CONFIG_EXEC,
+            *MIGRATION_SAVE_ROUTER_CONFIG_EXEC,
+            *MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "MIGRATION_DECODE_CONFIG_COMPLETE",
+        "success_key": "extracted_path",
+    },
+    "MIGRATION_EDIT_CONFIG": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *MIGRATION_EDIT_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "MIGRATION_EDIT_CONFIG_COMPLETE",
+        "success_key": "edited_path",
+    },
+    "VIEW_MIGRATION_EDITED_CONFIG": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "VIEW_MIGRATION_EDITED_CONFIG_COMPLETE",
+        "success_key": "view_migration_edited_ok",
+    },
+    "MIGRATION_CONVERT_PREPARE": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *SELECT_DESTINATION_ROUTER_PRE,
+            *LOAD_DESTINATION_MODEL_SPECS_PRE,
+            *MIGRATION_CONVERT_DECODE_EXEC,
+            *MIGRATION_CONVERT_SAVE_EXEC,
+            *MIGRATION_CONVERT_EXTRACT_EXEC,
+        ],
+        "label": "MIGRATION_CONVERT_PREPARE_COMPLETE",
+        "success_key": "converted_extracted_path",
+    },
+    "MIGRATION_CONVERT_CONFIG": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *SELECT_DESTINATION_ROUTER_PRE,
+            *LOAD_DESTINATION_MODEL_SPECS_PRE,
+            *MIGRATION_CONVERT_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "MIGRATION_CONVERT_CONFIG_COMPLETE",
+        "success_key": "converted_path",
+    },
+    "MIGRATION_ENCODE_CONFIG": {
+        "pipeline": [
+            *SELECT_DESTINATION_ROUTER_PRE,
+            *LOAD_DESTINATION_MODEL_SPECS_PRE,
+            *MIGRATION_ENCODE_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "MIGRATION_ENCODE_CONFIG_COMPLETE",
+        "success_key": "migration_encoded_path",
+    },
+    "RUN_ALL_DIFFERENT_MODEL": {
+        "pipeline": [
+            *SELECT_ROUTER_PRE,
+            *LOAD_ROUTER_MODEL_SPECS_PRE,
+            *MIGRATION_DECODE_ROUTER_CONFIG_EXEC,
+            *MIGRATION_SAVE_ROUTER_CONFIG_EXEC,
+            *MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC,
+            *RUN_ALL_MIGRATION_EDIT_ROUTER_CONFIG_EXEC,
+            *SELECT_DESTINATION_ROUTER_PRE,
+            *LOAD_DESTINATION_MODEL_SPECS_PRE,
+            *MIGRATION_CONVERT_DECODE_EXEC,
+            *MIGRATION_CONVERT_SAVE_EXEC,
+            *MIGRATION_CONVERT_EXTRACT_EXEC,
+            *RUN_ALL_MIGRATION_CONVERT_ROUTER_CONFIG_EXEC,
+            *RUN_ALL_MIGRATION_ENCODE_ROUTER_CONFIG_EXEC,
+        ],
+        "label": "RUN_ALL_DIFFERENT_MODEL_COMPLETE",
+        "success_key": "migration_encoded_path",
     },
     "SHOW_MODEL_SPECS_HELP": {
         "pipeline": [*SHOW_MODEL_SPECS_HELP_EXEC],

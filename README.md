@@ -1,95 +1,576 @@
+Loading older messages…
 
-# TestingTools
+{
 
-A collection of terminal-based testing utilities built around a **shared, reusable ToolLoader** and a **pipeline-style state machine**.
+    "FIXED_FIELDS": [
+
+        "Common Locations",
+
+        "Common Locations.model_specs_readme_path",
+
+        "Routers",
+
+        "Routers.<router name>.specs",
+
+        "Routers.<router name>.password",
+
+        "Routers.<router name>.template",
+
+        "Routers.<router name>.template_decoded",
+
+        "Routers.<router name>.template_decoded_dir",
+
+        "Routers.<router name>.template_edited",
+
+        "Routers.<router name>.template_edited_dir",
+
+        "Routers.<router name>.template_encoded",
+
+        "Routers.<router name>.original",
+
+        "Routers.<router name>.migration_decoded",
+
+        "Routers.<router name>.migration_decoded_dir",
+
+        "Routers.<router name>.migration_edited",
+
+        "Routers.<router name>.migration_edited_dir",
+
+        "Routers.<router name>.migration_converted",
+
+        "Routers.<router name>.migration_converted_dir",
+
+        "Routers.<router name>.migration_encoded"
+
+    ],
+
+    "EDITABLE_FIELDS": [
+
+        "Common Locations.model_specs_readme_path.<VALUES>",
+
+        "Routers.<router name>",
+
+        "Routers.<router name>.specs.<VALUES>",
+
+        "Routers.<router name>.password.<VALUES>",
+
+        "Routers.<router name>.template.<VALUES>",
+
+        "Routers.<router name>.template_decoded.<VALUES>",
+
+        "Routers.<router name>.template_decoded_dir.<VALUES>",
+
+        "Routers.<router name>.template_edited.<VALUES>",
+
+        "Routers.<router name>.template_edited_dir.<VALUES>",
+
+        "Routers.<router name>.template_encoded.<VALUES>",
+
+        "Routers.<router name>.original.<VALUES>",
+
+        "Routers.<router name>.migration_decoded.<VALUES>",
+
+        "Routers.<router name>.migration_decoded_dir.<VALUES>",
+
+        "Routers.<router name>.migration_edited.<VALUES>",
+
+        "Routers.<router name>.migration_edited_dir.<VALUES>",
+
+        "Routers.<router name>.migration_converted.<VALUES>",
+
+        "Routers.<router name>.migration_converted_dir.<VALUES>",
+
+        "Routers.<router name>.migration_encoded.<VALUES>"
+
+    ],
+
+    "EXAMPLE": {
+
+        "Common Locations": {
+
+            "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
+
+        },
+
+        "Routers": {
+
+            "<router name>": {
+
+                "specs": "routers/model_specs/<router>-spec.json",
+
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<router>-password.txt",
+
+                "template": "~/Documents/TestingToolsData/routers/templates/<router>-template.cfg",
+
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<router>-decoded.tar.gz",
+
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<router>-decoded",
+
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<router>-edited.tar.gz",
+
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<router>-edited",
+
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<router>-encoded.cfg",
+
+                "original": "~/Documents/TestingToolsData/routers/original/<router>-original.cfg",
+
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<router>-decoded.tar.gz",
+
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<router>-decoded",
+
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<router>-edited.tar.gz",
+
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<router>-edited",
+
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<router>-converted.tar.gz",
+
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<router>-converted",
+
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<router>-encoded.cfg"
+
+            }
+
+        }
+
+    },
+
+    "DESCRIPTION": {
+
+        "Common Locations": "Shared router utility locations.",
+
+        "Common Locations.model_specs_readme_path": "Path to the model specifications help document.",
+
+        "Routers": "Router entries keyed by user-defined names. Add another router or model by adding a complete entry and its corresponding template, template password and model specifications.",
+
+        "Routers.<router name>": "Paths for this router entry. All required fields are strings; ~ expands to the user home directory. Migration transfers only matching logical config_fields labels from source to destination; other destination template settings remain as provided in the template.",
+
+        "Routers.<router name>.specs": "Path to the router model JSON specifications, including encryption, archive format and named config_fields for conversion.",
+
+        "Routers.<router name>.password": "Path to the password file for decoding the reference template. Physical router passwords are entered separately when required.",
+
+        "Routers.<router name>.template": "Path to the reference encrypted backup for this router model, used as the destination base for migration.",
+
+        "Routers.<router name>.template_decoded": "Decoded .tar.gz archive of the reference template.",
+
+        "Routers.<router name>.template_decoded_dir": "Directory containing the extracted reference template.",
+
+        "Routers.<router name>.template_edited": "Rebuilt .tar.gz archive of the edited reference template.",
+
+        "Routers.<router name>.template_edited_dir": "Directory containing the edited reference template.",
+
+        "Routers.<router name>.template_encoded": "Encrypted backup output from template editing/encoding.",
+
+        "Routers.<router name>.original": "Path to an actual physical source router backup, decoded with its own password for migration.",
+
+        "Routers.<router name>.migration_decoded": "Decoded .tar.gz archive from the physical source backup.",
+
+        "Routers.<router name>.migration_decoded_dir": "Directory containing the extracted physical source backup.",
+
+        "Routers.<router name>.migration_edited": "Reserved output path for an edited source .tar.gz archive.",
+
+        "Routers.<router name>.migration_edited_dir": "Directory containing the edited source settings to transfer.",
+
+        "Routers.<router name>.migration_converted": "Decoded .tar.gz destination archive, initially prepared from the destination model template and rebuilt at encoding.",
+
+        "Routers.<router name>.migration_converted_dir": "Directory containing the prepared destination template with converted source settings.",
+
+        "Routers.<router name>.migration_encoded": "Encrypted destination backup output, using the destination router password supplied during migration encoding."
+
+    }
+
+}
+
+why only one exmaple?
+…
+
+Because I used <router name> as a placeholder to keep the documentation generic.
+
+The EXAMPLE section shows the required structure for one router entry, but the Routers object supports as many entries as you need.
+
+However, you're right. Given that you're building a router-to-router migration tool, two examples would make more sense:
+
+"Routers": {
+    "<source router>": {
+        "specs": "...",
+        "password": "...",
+        "template": "...",
+        "...": "..."
+    },
+    "<destination router>": {
+        "specs": "...",
+        "password": "...",
+        "template": "...",
+        "...": "..."
+    }
+}
+
+Both examples should contain all 16 fields, with the source and destination using their own paths, templates, passwords and model specifications.
+
+That would also make it clear that the tool supports different router models, rather than appearing limited to one.
+
+I should have included two complete examples in RouterDoc.json.
+so 2 please show me full code so I can copy it
+
+Here is the complete RouterDoc.json with two full router examples, one source and one destination. Both contain all 16 configuration fields, so you can copy it directly.
+
+
+{
+    "FIXED_FIELDS": [
+        "Common Locations",
+        "Common Locations.model_specs_readme_path",
+        "Routers",
+        "Routers.<router name>.specs",
+        "Routers.<router name>.password",
+        "Routers.<router name>.template",
+        "Routers.<router name>.template_decoded",
+        "Routers.<router name>.template_decoded_dir",
+        "Routers.<router name>.template_edited",
+        "Routers.<router name>.template_edited_dir",
+        "Routers.<router name>.template_encoded",
+        "Routers.<router name>.original",
+        "Routers.<router name>.migration_decoded",
+        "Routers.<router name>.migration_decoded_dir",
+        "Routers.<router name>.migration_edited",
+        "Routers.<router name>.migration_edited_dir",
+        "Routers.<router name>.migration_converted",
+        "Routers.<router name>.migration_converted_dir",
+        "Routers.<router name>.migration_encoded"
+    ],
+    "EDITABLE_FIELDS": [
+        "Common Locations.model_specs_readme_path.<VALUES>",
+        "Routers.<router name>",
+        "Routers.<router name>.specs.<VALUES>",
+        "Routers.<router name>.password.<VALUES>",
+        "Routers.<router name>.template.<VALUES>",
+        "Routers.<router name>.template_decoded.<VALUES>",
+        "Routers.<router name>.template_decoded_dir.<VALUES>",
+        "Routers.<router name>.template_edited.<VALUES>",
+        "Routers.<router name>.template_edited_dir.<VALUES>",
+        "Routers.<router name>.template_encoded.<VALUES>",
+        "Routers.<router name>.original.<VALUES>",
+        "Routers.<router name>.migration_decoded.<VALUES>",
+        "Routers.<router name>.migration_decoded_dir.<VALUES>",
+        "Routers.<router name>.migration_edited.<VALUES>",
+        "Routers.<router name>.migration_edited_dir.<VALUES>",
+        "Routers.<router name>.migration_converted.<VALUES>",
+        "Routers.<router name>.migration_converted_dir.<VALUES>",
+        "Routers.<router name>.migration_encoded.<VALUES>"
+    ],
+    "EXAMPLE": {
+        "Common Locations": {
+            "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
+        },
+        "Routers": {
+            "<source router>": {
+                "specs": "routers/model_specs/<source-router>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<source-router>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<source-router>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<source-router>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<source-router>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<source-router>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<source-router>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<source-router>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<source-router>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<source-router>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<source-router>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<source-router>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<source-router>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<source-router>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<source-router>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<source-router>-encoded.cfg"
+            },
+            "<destination router>": {
+                "specs": "routers/model_specs/<destination-router>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<destination-router>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<destination-router>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<destination-router>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<destination-router>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<destination-router>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<destination-router>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<destination-router>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<destination-router>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<destination-router>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<destination-router>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<destination-router>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<destination-router>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<destination-router>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<destination-router>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<destination-router>-encoded.cfg"
+            }
+        }
+    },
+    "DESCRIPTION": {
+        "Common Locations": "Shared router utility locations.",
+        "Common Locations.model_specs_readme_path": "Path to the model specifications help document.",
+        "Routers": "Router entries keyed by user-defined names. Add another router or model by adding a complete entry and its corresponding template, template password and model specifications.",
+        "Routers.<router name>": "Paths for this router entry. All required fields are strings; ~ expands to the user home directory. Migration transfers only matching logical config_fields labels from source to destination; other destination template settings remain as provided in the template.",
+        "Routers.<router name>.specs": "Path to the router model JSON specifications, including encryption, archive format and named config_fields for conversion.",
+        "Routers.<router name>.password": "Path to the password file for decoding the reference template. Physical router passwords are entered separately when required.",
+        "Routers.<router name>.template": "Path to the reference encrypted backup for this router model, used as the destination base for migration.",
+        "Routers.<router name>.template_decoded": "Decoded .tar.gz archive of the reference template.",
+        "Routers.<router name>.template_decoded_dir": "Directory containing the extracted reference template.",
+        "Routers.<router name>.template_edited": "Rebuilt .tar.gz archive of the edited reference template.",
+        "Routers.<router name>.template_edited_dir": "Directory containing the edited reference template.",
+        "Routers.<router name>.template_encoded": "Encrypted backup output from template editing/encoding.",
+        "Routers.<router name>.original": "Path to an actual physical source router backup, decoded with its own password for migration.",
+        "Routers.<router name>.migration_decoded": "Decoded .tar.gz archive from the physical source backup.",
+        "Routers.<router name>.migration_decoded_dir": "Directory containing the extracted physical source backup.",
+        "Routers.<router name>.migration_edited": "Reserved output path for an edited source .tar.gz archive.",
+        "Routers.<router name>.migration_edited_dir": "Directory containing the edited source settings to transfer.",
+        "Routers.<router name>.migration_converted": "Decoded .tar.gz destination archive, initially prepared from the destination model template and rebuilt at encoding.",
+        "Routers.<router name>.migration_converted_dir": "Directory containing the prepared destination template with converted source settings.",
+        "Routers.<router name>.migration_encoded": "Encrypted destination backup output, using the destination router password supplied during migration encoding."
+    }
+}
+
+Both entries use exactly the same structure. When you add more routers, simply add another entry under Routers with its own name, model specifications, template, and file paths.
+router one router 2 they could both be source or destination correct?
+
+Correct. Router 1 and Router 2 can both be either the source or destination.
+
+    Router 1 → Router 2
+
+    Router 2 → Router 1
+
+    Router 1 → Router 1
+
+    Router 2 → Router 2
+
+The role is determined when you select the source and destination in the menu, not by their names in the JSON configuration.
+
+So the examples should be named <router 1> and <router 2>, not <source router> and <destination router>.
+
+Each router has its own template, password file, model specifications and configuration paths.
+
+And you can add Router 3, Router 4, etc. later without changing the workflow.
+so do it properly please and show me
+
+Here is the corrected, complete RouterDoc.json.
+
+Both examples are named <router 1> and <router 2>. Neither is permanently assigned as source or destination. You choose their roles when running the migration.
+
+
+{
+    "FIXED_FIELDS": [
+        "Common Locations",
+        "Common Locations.model_specs_readme_path",
+        "Routers",
+        "Routers.<router name>.specs",
+        "Routers.<router name>.password",
+        "Routers.<router name>.template",
+        "Routers.<router name>.template_decoded",
+        "Routers.<router name>.template_decoded_dir",
+        "Routers.<router name>.template_edited",
+        "Routers.<router name>.template_edited_dir",
+        "Routers.<router name>.template_encoded",
+        "Routers.<router name>.original",
+        "Routers.<router name>.migration_decoded",
+        "Routers.<router name>.migration_decoded_dir",
+        "Routers.<router name>.migration_edited",
+        "Routers.<router name>.migration_edited_dir",
+        "Routers.<router name>.migration_converted",
+        "Routers.<router name>.migration_converted_dir",
+        "Routers.<router name>.migration_encoded"
+    ],
+    "EDITABLE_FIELDS": [
+        "Common Locations.model_specs_readme_path.<VALUES>",
+        "Routers.<router name>",
+        "Routers.<router name>.specs.<VALUES>",
+        "Routers.<router name>.password.<VALUES>",
+        "Routers.<router name>.template.<VALUES>",
+        "Routers.<router name>.template_decoded.<VALUES>",
+        "Routers.<router name>.template_decoded_dir.<VALUES>",
+        "Routers.<router name>.template_edited.<VALUES>",
+        "Routers.<router name>.template_edited_dir.<VALUES>",
+        "Routers.<router name>.template_encoded.<VALUES>",
+        "Routers.<router name>.original.<VALUES>",
+        "Routers.<router name>.migration_decoded.<VALUES>",
+        "Routers.<router name>.migration_decoded_dir.<VALUES>",
+        "Routers.<router name>.migration_edited.<VALUES>",
+        "Routers.<router name>.migration_edited_dir.<VALUES>",
+        "Routers.<router name>.migration_converted.<VALUES>",
+        "Routers.<router name>.migration_converted_dir.<VALUES>",
+        "Routers.<router name>.migration_encoded.<VALUES>"
+    ],
+    "EXAMPLE": {
+        "Common Locations": {
+            "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
+        },
+        "Routers": {
+            "<router 1>": {
+                "specs": "routers/model_specs/<router-1>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<router-1>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<router-1>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<router-1>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<router-1>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<router-1>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<router-1>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<router-1>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<router-1>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<router-1>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<router-1>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<router-1>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<router-1>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<router-1>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<router-1>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<router-1>-encoded.cfg"
+            },
+            "<router 2>": {
+                "specs": "routers/model_specs/<router-2>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<router-2>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<router-2>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<router-2>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<router-2>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<router-2>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<router-2>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<router-2>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<router-2>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<router-2>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<router-2>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<router-2>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<router-2>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<router-2>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<router-2>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<router-2>-encoded.cfg"
+            }
+        }
+    },
+    "DESCRIPTION": {
+        "Common Locations": "Shared router utility locations.",
+        "Common Locations.model_specs_readme_path": "Path to the model specifications help document.",
+        "Routers": "Router entries keyed by user-defined names. Add any number of router entries, each with its own model specifications, template and template password. Any router can be selected as either source or destination during migration.",
+        "Routers.<router name>": "Paths for an individual router entry. All required fields are strings; ~ expands to the user home directory. Router entries are not permanently designated as source or destination. Migration transfers matching logical config_fields labels between the selected routers.",
+        "Routers.<router name>.specs": "Path to this router model's JSON specifications, including encryption, archive format and named config_fields used for conversion.",
+        "Routers.<router name>.password": "Path to the password file used to decode this router model's reference template. Physical router passwords are entered separately when required.",
+        "Routers.<router name>.template": "Path to this router model's reference encrypted backup. When selected as a migration destination, this template provides the base configuration.",
+        "Routers.<router name>.template_decoded": "Decoded .tar.gz archive of this router's reference template.",
+        "Routers.<router name>.template_decoded_dir": "Directory containing the extracted reference template.",
+        "Routers.<router name>.template_edited": "Rebuilt .tar.gz archive of the edited reference template.",
+        "Routers.<router name>.template_edited_dir": "Directory containing the edited reference template.",
+        "Routers.<router name>.template_encoded": "Encrypted backup output from template editing and encoding.",
+        "Routers.<router name>.original": "Path to this physical router's backup. Used when this router is selected as the migration source, with its actual router password.",
+        "Routers.<router name>.migration_decoded": "Decoded .tar.gz archive of this router's physical backup when selected as the migration source.",
+        "Routers.<router name>.migration_decoded_dir": "Directory containing the extracted physical source backup.",
+        "Routers.<router name>.migration_edited": "Reserved output path for an edited source .tar.gz archive.",
+        "Routers.<router name>.migration_edited_dir": "Directory containing the edited source configuration settings to transfer to the selected destination.",
+        "Routers.<router name>.migration_converted": "Decoded .tar.gz destination archive, initially prepared from this router's template when selected as the migration destination and rebuilt during encoding.",
+        "Routers.<router name>.migration_converted_dir": "Directory containing the prepared destination template with the converted source settings applied.",
+        "Routers.<router name>.migration_encoded": "Encrypted backup generated when this router is selected as the migration destination, using the destination router password supplied during encoding."
+    }
+}
+
+This now documents the configuration correctly: Router 1 ↔ Router 2, with either router selectable in either role. The same structure works when you add Router 3, Router 4, and additional models.
+Pasted text(9).txtDocument
+do we need to update this ?
+
+if so update it and give me full file I am going to copy and paste it over top
+Worked for 45s
+
+Yes. Your README.md needed updating because it still described the old router configuration structure and didn't cover the new migration functionality.
+
+I've updated the entire README, keeping the other utilities' documentation intact.
+ Download the complete updated README.md
+
+The updated file includes:
+
+    The current RouterConfig.json structure and all 16 router fields.
+
+    Router 1 and Router 2, either of which can be selected as source or destination.
+
+    Separate Same Model and Different Model workflows.
+
+    Source, destination and template password handling.
+
+    Conversion using matching logical fields in different model specifications.
+
+    The updated directory layout and output filenames.
+
+    The convert_router_config_fields() function.
+
+    Safety notes about restoring template-based configurations to physical routers.
+
+Replace your existing README.md with the complete contents of this file. Nothing needs to be merged manually.
+README_updated.mdDocument
+TestingTools
+
+A collection of terminal-based testing utilities built around a shared, reusable ToolLoader and a pipeline-style state machine.
 
 The main goals are to:
 
-- Keep tools modular.
-- Reuse common functions.
-- Maintain predictable execution (`pre → plan → confirm → exec`).
-- Avoid unnecessary tool-specific implementations.
-- Keep processing logic separate from shared display, file and pipeline helpers.
+    Keep tools modular.
+    Reuse common functions.
+    Maintain predictable execution (pre → plan → confirm → exec).
+    Avoid unnecessary tool-specific implementations.
+    Keep processing logic separate from shared display, file and pipeline helpers.
 
----
-
-## What's Included
-
-### WiFiScanner
+What's Included
+WiFiScanner
 
 A Wi-Fi utility that can:
 
-- List wireless interfaces.
-- Scan for nearby networks.
-- Show detailed information for selected networks.
-- Display BSS details.
-- Report wireless interface status.
+    List wireless interfaces.
+    Scan for nearby networks.
+    Show detailed information for selected networks.
+    Display BSS details.
+    Report wireless interface status.
 
-**Config:** `config/WiFiConfig.json`
+Config: config/WiFiConfig.json
 
-**Constants:** `constants/WiFiConstants.py`
+Constants: constants/WiFiConstants.py
 
-**Docs:** `doc/WiFiDoc.json`
+Docs: doc/WiFiDoc.json
 
-Some wireless adapters can intermittently report `Device or resource busy (-16)` from `iw scan`. This is generally a transient driver, supplicant or NetworkManager contention issue. Retrying the scan may resolve it.
-
-### NetworkScanner
+Some wireless adapters can intermittently report Device or resource busy (-16) from iw scan. This is generally a transient driver, supplicant or NetworkManager contention issue. Retrying the scan may resolve it.
+NetworkScanner
 
 A network utility that can:
 
-- List network interfaces.
-- Analyse a selected interface.
-- Show connected interfaces.
-- Display ARP neighbours using `ip neigh`.
-- Run TCP port scans against selected or manually entered hosts.
-- Report interface connection status.
+    List network interfaces.
+    Analyse a selected interface.
+    Show connected interfaces.
+    Display ARP neighbours using ip neigh.
+    Run TCP port scans against selected or manually entered hosts.
+    Report interface connection status.
 
-**Config:** `config/NetworkConfig.json`
+Config: config/NetworkConfig.json
 
-**Constants:** `constants/NetworkConstants.py`
+Constants: constants/NetworkConstants.py
 
-**Docs:** `doc/NetworkDoc.json`
+Docs: doc/NetworkDoc.json
+Email
 
-### Email
-
-An email and Outlook PST utility built around `pst-utils`.
+An email and Outlook PST utility built around pst-utils.
 
 The Email tool can:
 
-- View a PST summary.
-- List emails contained in a PST.
-- Select and view individual emails.
-- Convert PST files to mbox.
-- Convert PST files to separate EML files.
-- Extract contacts.
-- Extract attachments.
-- Display Email configuration help.
+    View a PST summary.
+    List emails contained in a PST.
+    Select and view individual emails.
+    Convert PST files to mbox.
+    Convert PST files to separate EML files.
+    Extract contacts.
+    Extract attachments.
+    Display Email configuration help.
 
 The source directory can contain multiple PST files. The tool builds a selection menu before processing the selected file.
 
-**Config:** `config/EmailConfig.json`
+Config: config/EmailConfig.json
 
-**Constants:** `constants/EmailConstants.py`
+Constants: constants/EmailConstants.py
 
-**Docs:** `doc/EmailDoc.json`
-
-#### Email Directory Layout
+Docs: doc/EmailDoc.json
+Email Directory Layout
 
 Email source and destination directories are configured by the Email utility.
 
 A typical layout is:
-
-```text
 email/
     email_source/
     email_dest/
-```
 
 Each PST receives its own output directory.
 
 For example:
-
-```text
 email_source/
     testPST.pst
 
@@ -99,248 +580,194 @@ email_dest/
         eml/
         contacts/
         attachments/
-```
 
 This keeps output from different PST files separate.
 
 Runtime email data may contain private information and should generally be excluded from Git.
+Dependencies
 
-#### Dependencies
+The Email utility uses pst-utils, including the readpst command for PST conversion and extraction.
+Router
 
-The Email utility uses `pst-utils`, including the `readpst` command for PST conversion and extraction.
-
----
-
-## Router
-
-A router configuration utility for decoding, inspecting, editing and re-encoding router backup files.
+A JSON-driven router configuration utility for decoding, viewing, editing, converting and encoding router backup files. It supports editing backups for the same model and transferring selected settings between different router models.
 
 The Router tool can:
 
-- Select a router model specification.
-- Select an original configuration backup.
-- Select the appropriate template router password file.
-- Decode encrypted router backups.
-- Save decoded archives.
-- Extract configuration files.
-- View configured router settings.
-- Edit supported configuration fields.
-- Rebuild configuration archives.
-- Encrypt updated backups for target routers.
-- Validate generated backups.
-- Display configuration and model specification help.
+    Select a router entry and load its model specifications.
+    Decode reference templates using their configured template password files.
+    Decode physical source router backups using a password entered at the prompt.
+    Save and extract decoded configuration archives.
+    View and edit supported configuration fields.
+    Prepare a destination configuration from its model template.
+    Transfer matching logical configuration fields between source and destination models.
+    Encode the converted configuration using the destination router's password.
+    Verify generated backups through local encryption/decryption checks.
+    Run the same-model or different-model workflow as a sequence of pipeline steps.
+    Display configuration and model specification help.
 
-**Config:** `config/RouterConfig.json`
+Config: config/RouterConfig.json
 
-**Constants:** `constants/RouterConstants.py`
+Constants: constants/RouterConstants.py
 
-**Docs:** `doc/RouterDoc.json`
+Docs: doc/RouterDoc.json
 
-**Module:** `modules/router_utils.py`
+Module: modules/router_utils.py
+JSON-Driven Router Support
 
-### JSON-Driven Router Support
+Router entries are configured under Routers in RouterConfig.json. Each entry has its own paths to a model specification, reference template, template password file, physical backup and generated files.
 
-Router models are configured through JSON rather than separate Python implementations for each model.
+A router is not permanently a source or destination. The menu determines its role for each migration. Router 1 can migrate to Router 2, Router 2 to Router 1, or either can be selected in both roles for testing. More router entries can be added without changing the workflow.
 
-Each model specification defines:
+Each model specification describes its backup structure and supported configuration fields, including:
 
-- Router model, firmware and hardware.
-- Encryption algorithm.
-- Encoded payload format.
-- Salt handling.
-- Password requirements and hashing.
-- Encryption key derivation.
-- Backup headers, checksums and trailers.
-- Archive format and compression.
-- Configuration file format.
-- Editable configuration keys.
+    Router model, firmware and hardware identifiers.
+    Encryption and encoded payload format.
+    Salt, hashing and key derivation rules.
+    Headers, checksums and trailers.
+    Archive format and compression.
+    Configuration file location and named configuration keys.
 
-The router model is an identifier, not a processing rule.
+The model identifier is not a processing rule. If a new model uses mechanisms already implemented in router_utils.py, support can be added through model JSON and a new router entry. Unsupported formats require appropriate reusable processing support.
 
-If another router uses mechanisms already supported by `router_utils.py`, adding support should require only another model JSON.
+Model specification paths are set per router using Routers.<router name>.specs.
+Router Directory Configuration
 
-If an unsupported mechanism is needed, implement a reusable Python helper rather than adding router-specific logic to ToolLoader.
+The configuration has two top-level sections:
 
-Model specifications are loaded from `Locations.model_specs_path`.
+    Common Locations.model_specs_readme_path — path to the model specification help document.
+    Routers — a mapping of user-defined router names to their settings and file paths.
 
-### Router Directory Configuration
+Each router entry has these required string fields:
+Field	Purpose
+specs	Model specification JSON
+password	Password file for the reference template
+template	Original encrypted reference template
+template_decoded	Decoded reference template archive
+template_decoded_dir	Extracted reference template directory
+template_edited	Rebuilt edited template archive
+template_edited_dir	Edited reference template directory
+template_encoded	Encoded backup produced by template editing
+original	Physical router backup used as a migration source
+migration_decoded	Decoded physical source backup archive
+migration_decoded_dir	Extracted physical source backup directory
+migration_edited	Reserved path for an edited source archive
+migration_edited_dir	Edited physical source configuration directory
+migration_converted	Prepared/rebuilt destination archive
+migration_converted_dir	Destination template directory with converted settings
+migration_encoded	Final encrypted destination backup
 
-All router locations are defined in `config/RouterConfig.json` under `Locations`.
+For example, paths may be configured under ~/Documents/TestingToolsData/routers/. The actual paths come from each router entry, not hardcoded model names. doc/RouterDoc.json contains complete examples for Router 1 and Router 2.
+Supported Backup Extensions
 
-| Configuration key | Purpose |
-|---|---|
-| `model_specs_path` | Router model JSON specifications |
-| `model_specs_readme_path` | Model specification documentation |
-| `template_router_password_path` | Template router password text files |
-| `config_path` | Original encrypted router templates |
-| `decoded_config_path` | Decoded archives and extracted configurations |
-| `edited_config_path` | Edited router configurations |
-| `updated_config_path` | Re-encoded router backups |
+Router backups may use .cfg or .bin extensions. The extension alone does not identify the internal backup format. The selected model specification determines how a file is decoded and encoded.
+Same-Model Workflow
 
-These paths are configurable. No router data directory is hardcoded into the processing workflow.
-
-Paths can be changed by editing `RouterConfig.json` without modifying the router utility code.
-
-### Supported Backup Extensions
-
-Router backup selection supports:
-
-```python
-CONFIG_EXTENSION = [".cfg", ".bin"]
-```
-
-This controls file selection only.
-
-**The file extension does not determine the internal backup format.**
-
-A `.bin` file may contain an entirely different encryption or archive structure.
-
-The model JSON determines how the utility processes the selected file.
-
-### Router Workflow
-
-The typical workflow is:
-
-```text
-Select Router Model
-        |
-        v
-Select Original Template
-        |
-        v
-Select Template Password File
-        |
-        v
-Decode Configuration
-        |
-        v
-Save Decoded Archive
-        |
-        v
-Extract Configuration
-        |
-        v
-View / Edit Configuration
-        |
-        v
-Save Edited Configuration
-        |
-        v
-Select Original Template
-and Template Password File
-        |
-        v
+The same-model workflow uses the selected model's template as its reference:
+Select Router
+    |
+    v
+Load Model Specifications
+    |
+    v
+Decode Template (template password file)
+    |
+    v
+Save and Extract Archive
+    |
+    v
+View / Edit Supported Fields
+    |
+    v
+Rebuild and Encode
+    |
+    v
 Enter Target Router Password
-        |
-        v
-Rebuild Archive
-        |
-        v
-Encrypt for Target Router
-        |
-        v
-Verify Generated Backup
-        |
-        v
-Save Updated Configuration
-```
+    |
+    v
+Verify and Save template_encoded
 
-The generic router functions perform the processing using the selected model specification.
+The original reference template remains unchanged. The existing encoder can also allow the template password as its output password in the standard template-editing flow, where permitted by the model settings and prompt.
+Different-Model Migration Workflow
 
-ToolLoader coordinates the pipeline.
+A source and a destination are selected separately. They may use different model specifications, internal configuration field names, backup formats and passwords.
+Select SOURCE Router and Load Source Specifications
+    |
+    v
+Decode Physical Source Backup (SOURCE router password)
+    |
+    v
+Save / Extract migration_decoded
+    |
+    v
+Edit Source Fields in migration_edited_dir
+    |
+    v
+Select DESTINATION Router and Load Destination Specifications
+    |
+    v
+Decode Destination TEMPLATE (destination template password file)
+    |
+    v
+Save / Extract migration_converted
+    |
+    v
+Copy Matching Logical Fields into migration_converted_dir
+    |
+    v
+Confirm Destination Changes
+    |
+    v
+Encode Using DESTINATION Router Password
+    |
+    v
+Verify and Save migration_encoded
 
-### Router Output Naming
+Conversion matches the logical field labels in the two model specifications, such as wifi_2g_ssid. The underlying configuration keys can differ between models. Only matching supported fields are transferred; other destination settings are retained from the destination model's template.
 
-The utility uses consistent filename suffixes for the different configuration stages.
+The destination is prepared from its reference template, not a backup retrieved from the destination physical router. Consequently, the output retains other template values, including any device-specific values that were not explicitly converted. Check device compatibility before attempting a restore.
 
-Given an original backup named `SmartModem_backup.cfg`:
+The menu also exposes the individual migration stages for testing. The Modify Router - Different Model (Run All) action chains decoding, editing, destination preparation, conversion and encoding.
+Router Output Naming
 
-```text
-Original:
-    SmartModem_backup.cfg
+Each router entry explicitly defines its output paths. An example layout is:
+routers/
+    templates/<router>-template.cfg
+    templatePasswords/<router>-password.txt
+    decoded/<router>-decoded.tar.gz
+    decoded/<router>-decoded/
+    edited/<router>-edited.tar.gz
+    edited/<router>-edited/
+    encoded/<router>-encoded.cfg
+    original/<router>-original.cfg
+    migration/
+        decoded/<router>-decoded.tar.gz
+        decoded/<router>-decoded/
+        edited/<router>-edited.tar.gz
+        edited/<router>-edited/
+        converted/<router>-converted.tar.gz
+        converted/<router>-converted/
+        encoded/<router>-encoded.cfg
 
-Decoded archive:
-    SmartModem_backup-decoded.tar.gz
+The paths are configurable; this layout is illustrative. Source files and reference templates are not intentionally overwritten by normal edit and migration operations. Generated files may be replaced only after an overwrite confirmation.
+Password Handling
 
-Extracted directory:
-    SmartModem_backup-decoded/
-
-Edited directory:
-    OfficeRouter-edited/
-
-Encoded backup:
-    OfficeRouter-encoded.cfg
-```
-
-When editing, the user can enter a new configuration name, such as `OfficeRouter`.
-
-If no name is entered, the original template filename is used:
-
-```text
-Edited directory:
-    SmartModem_backup-edited/
-
-Encoded backup:
-    SmartModem_backup-encoded.cfg
-```
-
-The original template name is retained during decoding. The new configuration name is used for editing and encoding.
-
-The original router backup remains unchanged.
-
-### Password Handling
-
-Some router backups require the factory Wi-Fi password of the physical router for encryption and decryption.
-
-The model specification determines whether a password is required:
-
-```json
+The model specification controls whether a password is required, for example:
 "password_required": true
-```
 
-The utility uses two distinct passwords.
+The workflows distinguish three password roles:
 
-#### Template Router Password
+    Template password — read from Routers.<router name>.password; used to decode that model's reference template.
+    Source router password — entered securely when decoding the selected physical source backup.
+    Destination router password — entered securely when encoding the converted destination configuration.
 
-A master template originates from one physical router.
+Physical routers can have different passwords even when they are the same model. A template password must not be assumed to be the physical source or destination password.
 
-The password belonging to that router is stored in a plain-text `.txt` file in the directory configured by `Locations.template_router_password_path`.
+Passwords entered interactively use getpass and are not intended to be stored in shared pipeline context. For migration encoding of password-protected models, the destination password is required rather than silently substituting the template password.
 
-Each password file contains only the password, without JSON formatting or quotation marks.
+The generated backup is decrypted locally using the chosen output password to verify that the encrypted payload round-trips correctly. This does not guarantee that the destination hardware will accept the backup.
+Editable and Convertible Router Fields
 
-During decoding:
-
-1. The utility lists available password files.
-2. The user selects the corresponding template password.
-3. The program reads the selected text file.
-4. The password is used to decrypt the master template.
-
-Encoding also uses a selected template password file to decrypt the original backup before rebuilding the archive.
-
-The template password is not stored in the model specification JSON.
-
-#### Target Router Password
-
-When creating a new configuration for another router:
-
-1. The program prompts for the target router's factory Wi-Fi password.
-2. Input is hidden using `getpass`.
-3. The edited configuration is encrypted using that password.
-4. The generated backup is decrypted again for local verification.
-
-The target password is not stored in the model JSON or shared pipeline context.
-
-Each target router may have a different factory password even when the model is identical.
-
-Password hashing and key derivation are determined by the selected model specification.
-
-### Editable Router Fields
-
-The `config_fields` section in each router model JSON determines which settings appear in the View and Edit menus.
-
-For example:
-
-```json
+The config_fields section of each model specification maps shared logical names to model-specific keys. For example:
 "config_fields": {
     "file": "config/.glbcfg",
     "wifi_2g_ssid": "ARC_WLAN_24G_SSID_0_ESSID",
@@ -348,68 +775,47 @@ For example:
     "wifi_5g_ssid": "ARC_WLAN_5G_SSID_0_ESSID",
     "wifi_5g_password": "ARC_WLAN_5G_SSID_0_WPA_Passphrase"
 }
-```
 
-The `file` entry identifies the configuration file inside the extracted archive.
+The file entry identifies the file inside the extracted archive. Other keys name settings presented to the user and used for cross-model matching.
 
-Other entries map readable field names to the actual configuration keys.
+A future model can map wifi_2g_ssid to a different underlying field while retaining that common logical name. Fields without a matching logical name are not automatically copied.
+Router Model Documentation
 
-Additional fields can be made editable by adding their mappings to the JSON, provided the parser supports their format.
+The model specification guide is configured at Common Locations.model_specs_readme_path. Use View Model Specifications Help to display it. doc/RouterDoc.json describes the router configuration keys and provides two example router entries; neither is permanently a source or destination.
+Overwrite Behaviour
 
-### Router Model Documentation
+TestingTools prompts before overwriting generated router archives, directories or encoded outputs. Declining preserves the existing output. This differs from unattended tooling that may be configured to replace generated files automatically.
+Backup Safety
 
-The router model specification README explains how to create specifications for additional router models.
+    Keep unchanged copies of original physical backups and reference templates.
+    Keep passwords and private router backups out of public repositories.
+    Verify the selected source and destination model specifications.
+    Review converted values before confirming changes.
+    Keep a recovery method for physical routers.
+    Verify firmware, hardware revision and device-specific settings before restoring a template-derived backup.
 
-Its path is defined by:
-
-`Locations.model_specs_readme_path`
-
-The **View Model Specifications Help** action displays the configured README in the terminal using the generic `display_readme()` helper.
-
-### Overwrite Behaviour
-
-TestingTools is interactive: when a generated router output already exists, the Router utility asks for confirmation before replacing it. Declining leaves the existing output unchanged. This differs from AutomationTools, where generated router outputs are intended to be replaced automatically without an overwrite prompt.
-
-### Backup Safety
-
-The utility preserves the original router backup and creates separate decoded, edited and updated outputs.
-
-Recommended precautions:
-
-- Keep an unchanged copy of original backups.
-- Confirm before overwriting existing generated output files or directories in the interactive TestingTools Router utility.
-- Keep private credentials and router backups out of public repositories.
-- Verify generated backups before restoring them.
-- Retain a recovery method for physical routers.
-- Match compatible hardware revisions and firmware where necessary.
-
-**A successful local encryption and decryption round trip does not guarantee that a physical router will accept a generated configuration.**
-
----
-
-## How It Works
+Local decoding, encoding and round-trip verification establish internal consistency, not physical-router restore compatibility.
+How It Works
 
 Each tool is primarily defined by a constants module.
 
 The constants module supplies:
 
-- Configuration path.
-- Documentation path.
-- JSON keys.
-- Validation rules.
-- Secondary validation.
-- Required user level.
-- Dependencies.
-- Status configuration.
-- Plan configuration.
-- Menu actions.
-- Pre-phase pipelines.
-- Execution pipelines.
-- Pipeline states.
+    Configuration path.
+    Documentation path.
+    JSON keys.
+    Validation rules.
+    Secondary validation.
+    Required user level.
+    Dependencies.
+    Status configuration.
+    Plan configuration.
+    Menu actions.
+    Pre-phase pipelines.
+    Execution pipelines.
+    Pipeline states.
 
 Reusable processing logic lives in modules such as:
-
-```text
 modules/
     display_utils.py
     file_utils.py
@@ -417,29 +823,23 @@ modules/
     email_utils.py
     router_utils.py
     state_machine_utils.py
-```
 
 The constants files connect these functions to the shared state-machine framework.
-
----
-
-## ToolLoader Flow
+ToolLoader Flow
 
 ToolLoader manages the general execution sequence:
 
-1. Load the selected tool constants.
-2. Check dependencies.
-3. Install missing dependencies if required.
-4. Load the tool configuration.
-5. Validate the configuration.
-6. Perform secondary validation.
-7. Compute status.
-8. Display available actions.
-9. Execute the selected pipeline.
+    Load the selected tool constants.
+    Check dependencies.
+    Install missing dependencies if required.
+    Load the tool configuration.
+    Validate the configuration.
+    Perform secondary validation.
+    Compute status.
+    Display available actions.
+    Execute the selected pipeline.
 
 A pipeline can contain:
-
-```text
 pre
  |
  v
@@ -450,29 +850,25 @@ confirm
  |
  v
 exec
-```
 
 Not every action requires every stage.
 
 Read-only actions may skip planning and confirmation, while modifying actions can require user confirmation.
+Pre-Phase
 
-### Pre-Phase
-
-The `pre` phase handles preparation and selection.
+The pre phase handles preparation and selection.
 
 Examples include:
 
-- Discovering interfaces.
-- Discovering ARP neighbours.
-- Finding PST files.
-- Selecting email files.
-- Selecting router model specifications.
-- Selecting original router backups.
-- Selecting extracted or edited configurations.
+    Discovering interfaces.
+    Discovering ARP neighbours.
+    Finding PST files.
+    Selecting email files.
+    Selecting router model specifications.
+    Selecting original router backups.
+    Selecting extracted or edited configurations.
 
 A typical pipeline entry:
-
-```python
 {
     "phase": "pre",
     "fn": get_files_by_extension,
@@ -482,32 +878,25 @@ A typical pipeline entry:
     ],
     "result": "pst_files",
 }
-```
 
 The result becomes available through:
-
-```python
 ctx.get("pst_files", [])
-```
+Exec-Phase
 
-### Exec-Phase
-
-The `exec` phase performs the requested action.
+The exec phase performs the requested action.
 
 Examples include:
 
-- Scanning ports.
-- Reading PST metadata.
-- Converting PST files.
-- Extracting email attachments.
-- Decrypting router backups.
-- Saving and extracting router archives.
-- Viewing and editing configuration fields.
-- Rebuilding and encrypting router backups.
+    Scanning ports.
+    Reading PST metadata.
+    Converting PST files.
+    Extracting email attachments.
+    Decrypting router backups.
+    Saving and extracting router archives.
+    Viewing and editing configuration fields.
+    Rebuilding and encrypting router backups.
 
 Example:
-
-```python
 {
     "phase": "exec",
     "fn": convert_pst_to_mbox,
@@ -517,51 +906,33 @@ Example:
     ],
     "result": "convert_ok",
 }
-```
-
----
-
-## Shared Pipeline Context
+Shared Pipeline Context
 
 Pipeline resolver functions use three arguments:
-
-```text
 job
 meta
 ctx
-```
 
-- `job` provides the current job where required.
-- `meta` contains the loaded tool configuration.
-- `ctx` contains results from earlier pipeline steps.
+    job provides the current job where required.
+    meta contains the loaded tool configuration.
+    ctx contains results from earlier pipeline steps.
 
 For example:
-
-```python
 lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR]
-```
 
 reads a configured location.
 
 Whereas:
-
-```python
 lambda job, meta, ctx: ctx.get("selected_pst")
-```
 
 reads a previously selected value.
 
 Sensitive passwords should remain inside the relevant utility functions rather than being stored in the shared pipeline context.
+Status System
 
----
-
-## Status System
-
-Each tool can provide a status function through `STATUS_FN_CONFIG`.
+Each tool can provide a status function through STATUS_FN_CONFIG.
 
 Example:
-
-```python
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_directory_status,
     "args": [
@@ -573,27 +944,18 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
         "equals": "data_present"
     },
 }
-```
 
 ToolLoader uses this to display whether the configured location contains data.
-
----
-
-## Configuration Validation
+Configuration Validation
 
 Each tool can define primary validation rules:
-
-```python
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
         LOCATIONS_KEY: dict,
     },
 }
-```
 
 Secondary validation can check nested configuration values:
-
-```python
 SECONDARY_VALIDATION: Dict[str, Any] = {
     LOCATIONS_KEY: {
         "required_job_fields": {
@@ -603,49 +965,33 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
         "allow_empty": False,
     },
 }
-```
 
 This verifies configuration structure before actions execute.
-
----
-
-## Configuration Documentation
+Configuration Documentation
 
 Each tool can provide a JSON documentation file.
 
 For example:
-
-```text
 doc/EmailDoc.json
-```
 
 Documentation can describe:
 
-- Required fields.
-- Editable values.
-- Example configurations.
-- Field descriptions.
+    Required fields.
+    Editable values.
+    Example configurations.
+    Field descriptions.
 
-The shared `display_config_doc()` helper displays configuration documentation in the terminal.
+The shared display_config_doc() helper displays configuration documentation in the terminal.
 
-The Router utility additionally uses `display_readme()` to display the model specification guide from its configured location.
-
----
-
-## Example Email Configuration
-
-```json
+The Router utility additionally uses display_readme() to display the model specification guide from its configured location.
+Example Email Configuration
 {
     "locations": {
         "source_dir": "email/email_source",
         "dest_dir": "email/email_dest"
     }
 }
-```
-
-## Example Email Actions
-
-```text
+Example Email Actions
 Select an Email operation:
 
 1. View PST summary
@@ -657,43 +1003,28 @@ Select an Email operation:
 7. Extract attachments
 8. Show config help
 9. Cancel
-```
-
----
-
-## Generic Helper Design
+Generic Helper Design
 
 Where possible, helper functions are generic.
 
 For example:
-
-```python
 get_files_by_extension(directory, extension)
-```
 
 This function is not tied to PST or router files.
 
 Email can use:
-
-```python
 ".pst"
-```
 
 Router can use:
-
-```python
 [".cfg", ".bin"]
-```
 
 The same helper accepts a single extension or a collection of extensions.
 
-Reusable file operations remain in `file_utils.py`.
+Reusable file operations remain in file_utils.py.
 
 Tool-specific functions remain in their relevant modules.
 
 For example:
-
-```text
 file_utils.py
     get_directory_status
     get_files_by_extension
@@ -716,29 +1047,18 @@ router_utils.py
     view_router_config_fields
     edit_router_config_fields
     encode_router_config
-```
+    convert_router_config_fields
 
 ToolLoader does not need router-specific encryption, email parsing or network scanning logic.
-
----
-
-## Running TestingTools
+Running TestingTools
 
 From the project directory:
-
-```bash
 python3 ToolLoader.py
-```
 
 The loader displays available tools and executes the selected utility through the shared state machine.
-
----
-
-## Project Structure
+Project Structure
 
 A simplified source-code structure:
-
-```text
 TestingTools/
 ├── ToolLoader.py
 ├── config/
@@ -761,20 +1081,15 @@ TestingTools/
     ├── file_utils.py
     ├── network_utils.py
     ├── email_utils.py
+    ├── router_utils.py
     └── state_machine_utils.py
-```
 
-Router models, documentation, password files and generated configurations are located using the paths in `RouterConfig.json`.
+Router models, documentation, password files and generated configurations are located using the paths in RouterConfig.json.
 
 They do not need to reside in fixed source-code directories.
-
----
-
-## Git Ignore
+Git Ignore
 
 Typical ignored files include:
-
-```gitignore
 # Python cache
 __pycache__/
 *.py[cod]
@@ -783,23 +1098,17 @@ __pycache__/
 # Virtual environments
 venv/
 .env/
-```
 
 Runtime files, passwords and private configurations stored inside the repository should also be ignored using paths that match their actual locations.
 
 Files stored outside the repository are not tracked by that repository.
 
 Avoid committing actual router credentials, private backups or generated configurations unless publication is intentional.
-
----
-
-## Design Philosophy
+Design Philosophy
 
 TestingTools uses reusable components rather than independent scripts for every operation.
 
 A typical tool consists of:
-
-```text
 Configuration
       +
 Constants
@@ -807,23 +1116,20 @@ Constants
 Reusable Module Functions
       +
 Shared ToolLoader
-```
 
 This maintains a common workflow for:
 
-- Dependency checks.
-- Configuration validation.
-- Status display.
-- Menu selection.
-- Preparation.
-- Planning.
-- Confirmation.
-- Execution.
-- Finalisation.
+    Dependency checks.
+    Configuration validation.
+    Status display.
+    Menu selection.
+    Preparation.
+    Planning.
+    Confirmation.
+    Execution.
+    Finalisation.
 
 The Router utility follows the same architecture:
-
-```text
 RouterConfig.json
         +
 RouterConstants.py
@@ -833,6 +1139,7 @@ Router Model JSON
 router_utils.py
         +
 Shared ToolLoader
-```
 
 Router models remain data-driven, configuration locations remain configurable, and ToolLoader remains independent of the processing details of individual tools.
+
+can you not

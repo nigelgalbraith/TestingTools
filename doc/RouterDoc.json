@@ -1,3 +1,4 @@
+
 {
     "FIXED_FIELDS": [
         "Common Locations",
@@ -6,11 +7,19 @@
         "Routers.<router name>.specs",
         "Routers.<router name>.password",
         "Routers.<router name>.template",
-        "Routers.<router name>.decoded",
-        "Routers.<router name>.decoded_dir",
-        "Routers.<router name>.edited",
-        "Routers.<router name>.edited_dir",
-        "Routers.<router name>.encoded"
+        "Routers.<router name>.template_decoded",
+        "Routers.<router name>.template_decoded_dir",
+        "Routers.<router name>.template_edited",
+        "Routers.<router name>.template_edited_dir",
+        "Routers.<router name>.template_encoded",
+        "Routers.<router name>.original",
+        "Routers.<router name>.migration_decoded",
+        "Routers.<router name>.migration_decoded_dir",
+        "Routers.<router name>.migration_edited",
+        "Routers.<router name>.migration_edited_dir",
+        "Routers.<router name>.migration_converted",
+        "Routers.<router name>.migration_converted_dir",
+        "Routers.<router name>.migration_encoded"
     ],
     "EDITABLE_FIELDS": [
         "Common Locations.model_specs_readme_path.<VALUES>",
@@ -18,41 +27,83 @@
         "Routers.<router name>.specs.<VALUES>",
         "Routers.<router name>.password.<VALUES>",
         "Routers.<router name>.template.<VALUES>",
-        "Routers.<router name>.decoded.<VALUES>",
-        "Routers.<router name>.decoded_dir.<VALUES>",
-        "Routers.<router name>.edited.<VALUES>",
-        "Routers.<router name>.edited_dir.<VALUES>",
-        "Routers.<router name>.encoded.<VALUES>"
+        "Routers.<router name>.template_decoded.<VALUES>",
+        "Routers.<router name>.template_decoded_dir.<VALUES>",
+        "Routers.<router name>.template_edited.<VALUES>",
+        "Routers.<router name>.template_edited_dir.<VALUES>",
+        "Routers.<router name>.template_encoded.<VALUES>",
+        "Routers.<router name>.original.<VALUES>",
+        "Routers.<router name>.migration_decoded.<VALUES>",
+        "Routers.<router name>.migration_decoded_dir.<VALUES>",
+        "Routers.<router name>.migration_edited.<VALUES>",
+        "Routers.<router name>.migration_edited_dir.<VALUES>",
+        "Routers.<router name>.migration_converted.<VALUES>",
+        "Routers.<router name>.migration_converted_dir.<VALUES>",
+        "Routers.<router name>.migration_encoded.<VALUES>"
     ],
     "EXAMPLE": {
         "Common Locations": {
             "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
         },
         "Routers": {
-            "<router name>": {
-                "specs": "routers/model_specs/<router>-spec.json",
-                "password": "~/Documents/routers/passwords/<router>-password.txt",
-                "template": "~/Documents/routers/templates/<router>-template.cfg",
-                "decoded": "~/Documents/routers/decoded/<router>-decoded.tar.gz",
-                "decoded_dir": "~/Documents/routers/decoded/<router>-decoded",
-                "edited": "~/Documents/routers/edited/<router>-edited.tar.gz",
-                "edited_dir": "~/Documents/routers/edited/<router>-edited",
-                "encoded": "~/Documents/routers/encoded/<router>-encoded.cfg"
+            "<router 1>": {
+                "specs": "routers/model_specs/<router-1>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<router-1>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<router-1>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<router-1>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<router-1>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<router-1>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<router-1>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<router-1>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<router-1>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<router-1>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<router-1>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<router-1>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<router-1>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<router-1>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<router-1>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<router-1>-encoded.cfg"
+            },
+            "<router 2>": {
+                "specs": "routers/model_specs/<router-2>-spec.json",
+                "password": "~/Documents/TestingToolsData/routers/templatePasswords/<router-2>-password.txt",
+                "template": "~/Documents/TestingToolsData/routers/templates/<router-2>-template.cfg",
+                "template_decoded": "~/Documents/TestingToolsData/routers/decoded/<router-2>-decoded.tar.gz",
+                "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/<router-2>-decoded",
+                "template_edited": "~/Documents/TestingToolsData/routers/edited/<router-2>-edited.tar.gz",
+                "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/<router-2>-edited",
+                "template_encoded": "~/Documents/TestingToolsData/routers/encoded/<router-2>-encoded.cfg",
+                "original": "~/Documents/TestingToolsData/routers/original/<router-2>-original.cfg",
+                "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/<router-2>-decoded.tar.gz",
+                "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/<router-2>-decoded",
+                "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/<router-2>-edited.tar.gz",
+                "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/<router-2>-edited",
+                "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/<router-2>-converted.tar.gz",
+                "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/<router-2>-converted",
+                "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/<router-2>-encoded.cfg"
             }
         }
     },
     "DESCRIPTION": {
         "Common Locations": "Shared router utility locations.",
         "Common Locations.model_specs_readme_path": "Path to the model specifications help document.",
-        "Routers": "Router entries keyed by user-defined router names. Add a router by adding an entry with all eight path fields. Names are dynamic; replace the example placeholders with your own names and paths.",
-        "Routers.<router name>": "Paths for the selected router. Values are file or directory paths as described below; ~ expands to the user home directory.",
-        "Routers.<router name>.specs": "Path to the router model JSON specifications defining encryption, archive layout and editable fields.",
-        "Routers.<router name>.password": "Path to the template password text file, read when the model requires a password.",
-        "Routers.<router name>.template": "Path to the original encrypted router backup used for decoding and rebuilding.",
-        "Routers.<router name>.decoded": "Path to the decoded .tar.gz archive.",
-        "Routers.<router name>.decoded_dir": "Directory for the extracted decoded configuration.",
-        "Routers.<router name>.edited": "Path to the edited .tar.gz archive created during encoding.",
-        "Routers.<router name>.edited_dir": "Directory for the edited configuration copied from decoded_dir and used for encoding.",
-        "Routers.<router name>.encoded": "Path to the newly encrypted router backup, verified by a local decryption round trip."
+        "Routers": "Router entries keyed by user-defined names. Add any number of router entries, each with its own model specifications, template and template password. Any router can be selected as either source or destination during migration.",
+        "Routers.<router name>": "Paths for an individual router entry. All required fields are strings; ~ expands to the user home directory. Router entries are not permanently designated as source or destination. Migration transfers matching logical config_fields labels between the selected routers.",
+        "Routers.<router name>.specs": "Path to this router model's JSON specifications, including encryption, archive format and named config_fields used for conversion.",
+        "Routers.<router name>.password": "Path to the password file used to decode this router model's reference template. Physical router passwords are entered separately when required.",
+        "Routers.<router name>.template": "Path to this router model's reference encrypted backup. When selected as a migration destination, this template provides the base configuration.",
+        "Routers.<router name>.template_decoded": "Decoded .tar.gz archive of this router's reference template.",
+        "Routers.<router name>.template_decoded_dir": "Directory containing the extracted reference template.",
+        "Routers.<router name>.template_edited": "Rebuilt .tar.gz archive of the edited reference template.",
+        "Routers.<router name>.template_edited_dir": "Directory containing the edited reference template.",
+        "Routers.<router name>.template_encoded": "Encrypted backup output from template editing and encoding.",
+        "Routers.<router name>.original": "Path to this physical router's backup. Used when this router is selected as the migration source, with its actual router password.",
+        "Routers.<router name>.migration_decoded": "Decoded .tar.gz archive of this router's physical backup when selected as the migration source.",
+        "Routers.<router name>.migration_decoded_dir": "Directory containing the extracted physical source backup.",
+        "Routers.<router name>.migration_edited": "Reserved output path for an edited source .tar.gz archive.",
+        "Routers.<router name>.migration_edited_dir": "Directory containing the edited source configuration settings to transfer to the selected destination.",
+        "Routers.<router name>.migration_converted": "Decoded .tar.gz destination archive, initially prepared from this router's template when selected as the migration destination and rebuilt during encoding.",
+        "Routers.<router name>.migration_converted_dir": "Directory containing the prepared destination template with the converted source settings applied.",
+        "Routers.<router name>.migration_encoded": "Encrypted backup generated when this router is selected as the migration destination, using the destination router password supplied during encoding."
     }
 }

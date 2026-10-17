@@ -344,22 +344,36 @@ def validate_directory(directory: Path) -> None:
         if path.is_symlink() or not (path.is_file() or path.is_dir()):
             raise ValueError(f"Unsafe configuration entry: {path}")
 
-
 # ---------------------------------------------------------------------
 # DECODE ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
+
 def decode_router_config(
     config_path: str,
     model_specs: dict,
-    password_path: str
+    password_path: str | None,
+    password_prompt: str = "Enter router password: "
 ) -> bytes | bool:
-    """Decode and validate an original backup using only declared mechanisms."""
+    """Decode and validate a router backup using its model specifications."""
     wrapper = parse_router_wrapper(
         Path(config_path).expanduser().read_bytes(),
         model_specs
     )
-    password = get_router_template_password(model_specs, password_path)
+    if password_path is None:
+        if model_specs.get("password_required", False):
+            try:
+                password = getpass(password_prompt)
+            except (EOFError, KeyboardInterrupt):
+                print("\nRouter password entry cancelled.")
+                return False
+            if not password:
+                print("Router password is required.")
+                return False
+        else:
+            password = ""
+    else:
+        password = get_router_template_password(model_specs, password_path)
     if password is False:
         return False
     decoded = decrypt_router_payload(
@@ -497,6 +511,95 @@ def extract_router_config(archive_path: str, output_dir: str, model_specs: dict)
         print(f"Failed to extract router configuration: {exc}")
         return False
 
+
+
+# ---------------------------------------------------------------------
+# CONVERT ROUTER CONFIGURATION FIELDS
+# ---------------------------------------------------------------------
+
+
+def convert_router_config_fields(source_dir: str, destination_dir: str, source_specs: dict, destination_specs: dict) -> str | bool:
+    """Transfer matching configured fields into the prepared destination."""
+    try:
+        source = Path(source_dir).expanduser()
+        destination = Path(destination_dir).expanduser()
+        validate_directory(source)
+        validate_directory(destination)
+        if not source.is_dir() or not destination.is_dir():
+            raise ValueError("Source or prepared destination directory is missing")
+        if source.resolve() == destination.resolve() or source.resolve() in destination.resolve().parents or destination.resolve() in source.resolve().parents:
+            raise ValueError("Source and destination directories must be separate")
+        source_relative = safe_relative(source_specs["config_fields"]["file"])
+        destination_relative = safe_relative(destination_specs["config_fields"]["file"])
+        source_file = source / source_relative
+        destination_file = destination / destination_relative
+        if not source_file.is_file() or not destination_file.is_file() or source_file.is_symlink() or destination_file.is_symlink():
+            raise ValueError("Missing or unsafe router configuration file")
+        source_lines, source_fields = parse_config_fields(source_file.read_text(encoding="utf-8"), source_specs)
+        destination_lines, destination_fields = parse_config_fields(destination_file.read_text(encoding="utf-8"), destination_specs)
+        changes = []
+        for label in sorted(source_fields.keys() & destination_fields.keys()):
+            source_index = source_fields[label][1]
+            destination_index = destination_fields[label][1]
+            value = source_lines[source_index].split("=", 1)[1].rstrip("\r\n")
+            previous = destination_lines[destination_index].split("=", 1)[1].rstrip("\r\n")
+            if value == previous:
+                continue
+            if any(char in value for char in ("\r", "\n", "\x00")):
+                raise ValueError(f"Invalid configuration value for {label}")
+            changes.append((label, destination_index, previous, value))
+        if not changes:
+            print("No matching configuration changes to transfer.")
+            return False
+        print("\nProposed destination changes:")
+        for label, index, previous, value in changes:
+            print(f"{label}: {previous} -> {value}")
+        if not confirm("\nApply these changes to the prepared destination? [y/n]: "):
+            print("Conversion cancelled.")
+            return False
+        for label, index, previous, value in changes:
+            line = destination_lines[index]
+            newline = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
+            destination_lines[index] = f"{line.split('=', 1)[0]}={value}{newline}"
+        destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        staging = Path(tempfile.mkdtemp(dir=destination.parent, prefix=f".{destination.name}."))
+        backup = staging / "original"
+        prepared = staging / "replacement"
+        try:
+            shutil.copytree(destination, prepared, symlinks=True)
+            validate_directory(prepared)
+            target = prepared / destination_relative
+            if target.is_symlink():
+                raise ValueError("Unsafe destination configuration file")
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=target.parent, prefix=".config.", delete=False) as temp_file:
+                temp_path = Path(temp_file.name)
+                temp_file.writelines(destination_lines)
+            try:
+                os.chmod(temp_path, 0o600)
+                os.replace(temp_path, target)
+            finally:
+                temp_path.unlink(missing_ok=True)
+            parse_config_fields(target.read_text(encoding="utf-8"), destination_specs)
+            validate_directory(prepared)
+            os.replace(destination, backup)
+            try:
+                os.replace(prepared, destination)
+            except BaseException:
+                os.replace(backup, destination)
+                raise
+            shutil.rmtree(backup)
+        finally:
+            if backup.exists():
+                print(f"Previous destination retained at: {backup}")
+                if prepared.exists():
+                    shutil.rmtree(prepared)
+            else:
+                shutil.rmtree(staging)
+        print(f"Converted configuration saved: {destination}")
+        return str(destination)
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError) as exc:
+        print(f"Failed to convert router configuration: {exc}")
+        return False
 
 
 # ---------------------------------------------------------------------
@@ -705,6 +808,7 @@ def encode_router_config(
     output_path: str,
     model_specs: dict,
     password_path: str,
+    password_prompt: str = "Enter target router password (Enter to use template password): ",
 ) -> str | bool:
     """Rebuild, encrypt and verify an edited backup without changing its source."""
     try:
@@ -737,7 +841,20 @@ def encode_router_config(
         original_archive = decrypt_router_payload(wrapper["encrypted"], template_password, model_specs)
         rebuilt_archive, changes = rebuild_router_archive(original_archive, str(directory), model_specs)
         validate_edited_fields(original_archive, directory, model_specs)
-        target_password = get_target_router_password(model_specs, template_password)
+        if model_specs.get("password_required", False):
+            if password_prompt == "Enter target router password (Enter to use template password): ":
+                target_password = get_target_router_password(model_specs, template_password)
+            else:
+                try:
+                    target_password = getpass(password_prompt)
+                except (EOFError, KeyboardInterrupt):
+                    print("\nDestination router password entry cancelled.")
+                    return False
+                if not target_password:
+                    print("Destination router password is required.")
+                    return False
+        else:
+            target_password = ""
         if target_password is False:
             return False
         encrypted = encrypt_router_payload(rebuilt_archive, target_password, model_specs)
