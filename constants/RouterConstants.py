@@ -1,8 +1,9 @@
+
 from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 from modules.display_utils import display_config_doc, select_from_list, display_readme
-from modules.file_utils import get_directory_status, get_files_by_extension
+from modules.file_utils import get_directory_status
 from modules.router_utils import (
     load_router_model_specs,
     decode_router_config,
@@ -27,13 +28,19 @@ CONFIG_DOC = "doc/RouterDoc.json"
 # JSON KEYS
 # ---------------------------------------------------------------------
 
-LOCATIONS_KEY = "Locations"
-CONFIG_FILE = "config_path"
-DECODED_CONFIG_FILE = "decoded_config_path"
-EDITED_CONFIG_FILE = "edited_config_path"
-UPDATED_CONFIG_FILE = "updated_config_path"
-MODEL_SPECS_PATH = "model_specs_path"
-TEMPLATE_ROUTER_PASSWORD_PATH = "template_router_password_path"
+COMMON_LOCATIONS_KEY = "Common Locations"
+ROUTERS_KEY = "Routers"
+MODEL_SPECS_README = "model_specs_readme_path"
+
+SPECS_KEY = "specs"
+PASSWORD_KEY = "password"
+TEMPLATE_KEY = "template"
+DECODED_KEY = "decoded"
+DECODED_DIR_KEY = "decoded_dir"
+EDITED_KEY = "edited"
+EDITED_DIR_KEY = "edited_dir"
+ENCODED_KEY = "encoded"
+
 
 # ---------------------------------------------------------------------
 # MODEL SPECIFICATION KEYS
@@ -49,19 +56,6 @@ PASSWORD_BASE_KEY = "password_base"
 PASSWORD_HASH_KEY = "password_hash"
 KEY_DERIVATION_KEY = "key_derivation"
 CONFIG_FIELDS_KEY = "config_fields"
-MODEL_SPECS_README = "model_specs_readme_path"
-
-# ---------------------------------------------------------------------
-# FILE EXTENSIONS
-# ---------------------------------------------------------------------
-
-CONFIG_EXTENSION = [".cfg", ".bin"]
-DECODED_EXTENSION = ".tar.gz"
-MODEL_SPECS_EXTENSION = ".json"
-
-DECODED_SUFFIX = "-decoded"
-EDITED_SUFFIX = "-edited"
-UPDATED_SUFFIX = "-encoded"
 
 
 # ---------------------------------------------------------------------
@@ -69,7 +63,10 @@ UPDATED_SUFFIX = "-encoded"
 # ---------------------------------------------------------------------
 
 VALIDATION_CONFIG: Dict[str, Any] = {
-    "required_job_fields": {LOCATIONS_KEY: dict},
+    "required_job_fields": {
+        COMMON_LOCATIONS_KEY: dict,
+        ROUTERS_KEY: dict,
+    },
 }
 
 
@@ -77,20 +74,31 @@ VALIDATION_CONFIG: Dict[str, Any] = {
 # SECONDARY VALIDATION
 # ---------------------------------------------------------------------
 
+
+
 SECONDARY_VALIDATION: Dict[str, Any] = {
-    LOCATIONS_KEY: {
+    COMMON_LOCATIONS_KEY: {
         "required_job_fields": {
-            CONFIG_FILE: str,
-            DECODED_CONFIG_FILE: str,
-            EDITED_CONFIG_FILE: str,
-            UPDATED_CONFIG_FILE: str,
-            MODEL_SPECS_PATH: str,
             MODEL_SPECS_README: str,
-            TEMPLATE_ROUTER_PASSWORD_PATH: str,
         },
         "allow_empty": False,
     },
+    ROUTERS_KEY: {
+        "required_job_fields": {
+            SPECS_KEY: str,
+            PASSWORD_KEY: str,
+            TEMPLATE_KEY: str,
+            DECODED_KEY: str,
+            DECODED_DIR_KEY: str,
+            EDITED_KEY: str,
+            EDITED_DIR_KEY: str,
+            ENCODED_KEY: str,
+        },
+        "dynamic_keys": True,
+        "allow_empty": False,
+    },
 }
+
 
 
 # ---------------------------------------------------------------------
@@ -108,7 +116,13 @@ INACTIVE_LABEL = "NO CONFIGS"
 
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_directory_status,
-    "args": [lambda job, meta, ctx: meta[LOCATIONS_KEY][CONFIG_FILE]],
+    "args": [
+        lambda job, meta, ctx: str(
+            Path(
+                next(iter(meta[ROUTERS_KEY].values()))[TEMPLATE_KEY]
+            ).expanduser().parent
+        )
+    ],
     "id_field": "location",
     "active_rule": {"field": "state", "equals": "data_present"},
 }
@@ -125,7 +139,7 @@ DEPENDENCIES = ["openssl"]
 # PLAN CONFIG
 # ---------------------------------------------------------------------
 
-PLAN_COLUMN_ORDER = [LOCATIONS_KEY]
+PLAN_COLUMN_ORDER = [ROUTERS_KEY]
 OPTIONAL_PLAN_COLUMNS: Dict[str, Any] = {}
 
 
@@ -202,112 +216,19 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 # ---------------------------------------------------------------------
-# SELECT ROUTER MODEL SPECS PRE
+# SELECT ROUTER PRE
 # ---------------------------------------------------------------------
 
-SELECT_ROUTER_MODEL_PRE = [
-    {
-        "phase": "pre",
-        "fn": get_files_by_extension,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][MODEL_SPECS_PATH],
-            lambda job, meta, ctx: MODEL_SPECS_EXTENSION,
-        ],
-        "result": "model_specs_files",
-    },
+SELECT_ROUTER_PRE = [
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select router model specifications",
-            lambda job, meta, ctx: ctx.get("model_specs_files", []),
+            lambda job, meta, ctx: "Select router",
+            lambda job, meta, ctx: list(meta[ROUTERS_KEY]),
         ],
-        "result": "selected_model_specs",
-        "when": lambda job, meta, ctx: bool(ctx.get("model_specs_files")),
-    },
-]
-
-
-# ---------------------------------------------------------------------
-# SELECT ROUTER CONFIGURATION PRE
-# ---------------------------------------------------------------------
-
-SELECT_ROUTER_CONFIG_PRE = [
-    {
-        "phase": "pre",
-        "fn": get_files_by_extension,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][CONFIG_FILE],
-            lambda job, meta, ctx: CONFIG_EXTENSION,
-        ],
-        "result": "config_files",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_model_specs")),
-    },
-    {
-        "phase": "pre",
-        "fn": select_from_list,
-        "args": [
-            lambda job, meta, ctx: "Select a router configuration",
-            lambda job, meta, ctx: ctx.get("config_files", []),
-        ],
-        "result": "selected_config",
-        "when": lambda job, meta, ctx: bool(ctx.get("config_files")),
-    },
-]
-
-
-# ---------------------------------------------------------------------
-# VIEW CONFIGURATION PRE
-# ---------------------------------------------------------------------
-
-VIEW_CONFIG_PRE = [
-    {
-        "phase": "pre",
-        "fn": select_from_list,
-        "args": [
-            lambda job, meta, ctx: "Select a decoded configuration",
-            lambda job, meta, ctx: [
-                str(path)
-                for path in sorted(Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser().iterdir())
-                if path.is_dir()
-            ],
-        ],
-        "result": "selected_decoded_config",
-        "when": lambda job, meta, ctx: (
-            Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser().is_dir()
-            and any(
-                path.is_dir()
-                for path in Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser().iterdir()
-            )
-        ),
-    },
-]
-
-
-# ---------------------------------------------------------------------
-# SELECT EDITED CONFIGURATION PRE
-# ---------------------------------------------------------------------
-
-SELECT_EDITED_CONFIG_PRE = [
-    {
-        "phase": "pre",
-        "fn": select_from_list,
-        "args": [
-            lambda job, meta, ctx: "Select an edited configuration",
-            lambda job, meta, ctx: [
-                str(path)
-                for path in sorted(Path(meta[LOCATIONS_KEY][EDITED_CONFIG_FILE]).expanduser().iterdir())
-                if path.is_dir()
-            ],
-        ],
-        "result": "selected_edited_config",
-        "when": lambda job, meta, ctx: (
-            Path(meta[LOCATIONS_KEY][EDITED_CONFIG_FILE]).expanduser().is_dir()
-            and any(
-                path.is_dir()
-                for path in Path(meta[LOCATIONS_KEY][EDITED_CONFIG_FILE]).expanduser().iterdir()
-            )
-        ),
+        "result": "selected_router",
+        "when": lambda job, meta, ctx: bool(meta.get(ROUTERS_KEY)),
     },
 ]
 
@@ -320,9 +241,12 @@ LOAD_ROUTER_MODEL_SPECS_PRE = [
     {
         "phase": "pre",
         "fn": load_router_model_specs,
-        "args": [lambda job, meta, ctx: ctx.get("selected_model_specs")],
+        "args": [
+            lambda job, meta, ctx:
+                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY]
+        ],
         "result": "model_specs",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_model_specs")),
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
     },
 ]
 
@@ -336,21 +260,18 @@ DECODE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": decode_router_config,
         "args": [
-            lambda job, meta, ctx: ctx["selected_config"],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][TEMPLATE_ROUTER_PASSWORD_PATH],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
         ],
         "result": "decoded_config",
-        "when": lambda job, meta, ctx: (
-            isinstance(ctx.get("model_specs"), dict)
-            and bool(ctx.get("selected_config"))
-        ),
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
 
 
 # ---------------------------------------------------------------------
-# SAVE DECODED CONFIGURATION
+# SAVE AND EXTRACT DECODED CONFIGURATION
 # ---------------------------------------------------------------------
 
 SAVE_ROUTER_CONFIG_EXEC = [
@@ -359,10 +280,7 @@ SAVE_ROUTER_CONFIG_EXEC = [
         "fn": save_router_config,
         "args": [
             lambda job, meta, ctx: ctx.get("decoded_config"),
-            lambda job, meta, ctx: str(
-                Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX + DECODED_EXTENSION)
-            ) if ctx.get("selected_config") else "",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "save_ok",
@@ -370,24 +288,13 @@ SAVE_ROUTER_CONFIG_EXEC = [
     },
 ]
 
-
-# ---------------------------------------------------------------------
-# EXTRACT DECODED CONFIGURATION
-# ---------------------------------------------------------------------
-
 EXTRACT_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
         "fn": extract_router_config,
         "args": [
-            lambda job, meta, ctx: str(
-                Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX + DECODED_EXTENSION)
-            ),
-            lambda job, meta, ctx: str(
-                Path(meta[LOCATIONS_KEY][DECODED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_config"]).stem + DECODED_SUFFIX)
-            ),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "extracted_path",
@@ -397,7 +304,7 @@ EXTRACT_ROUTER_CONFIG_EXEC = [
 
 
 # ---------------------------------------------------------------------
-# VIEW ROUTER CONFIGURATION FIELDS
+# VIEW / EDIT ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
 VIEW_ROUTER_CONFIG_EXEC = [
@@ -405,63 +312,38 @@ VIEW_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": view_router_config_fields,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_decoded_config"),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: (
-            bool(ctx.get("selected_decoded_config"))
-            and isinstance(ctx.get("model_specs"), dict)
-            and isinstance(ctx["model_specs"].get(CONFIG_FIELDS_KEY), dict)
-        ),
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
-
-
-# ---------------------------------------------------------------------
-# EDIT ROUTER CONFIGURATION FIELDS
-# ---------------------------------------------------------------------
 
 EDIT_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
         "fn": edit_router_config_fields,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_decoded_config"),
-            lambda job, meta, ctx: str(
-                Path(meta[LOCATIONS_KEY][EDITED_CONFIG_FILE]).expanduser()
-                / (Path(ctx["selected_decoded_config"]).name.removesuffix(DECODED_SUFFIX) + EDITED_SUFFIX)
-            ),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "edited_path",
-        "when": lambda job, meta, ctx: (
-            bool(ctx.get("selected_decoded_config"))
-            and isinstance(ctx.get("model_specs"), dict)
-            and isinstance(ctx["model_specs"].get(CONFIG_FIELDS_KEY), dict)
-        ),
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
-
-
-# ---------------------------------------------------------------------
-# VIEW EDITED ROUTER CONFIGURATION FIELDS
-# ---------------------------------------------------------------------
 
 VIEW_EDITED_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
         "fn": view_router_config_fields,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_edited_config"),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "view_edited_ok",
-        "when": lambda job, meta, ctx: (
-            bool(ctx.get("selected_edited_config"))
-            and isinstance(ctx.get("model_specs"), dict)
-            and isinstance(ctx["model_specs"].get(CONFIG_FIELDS_KEY), dict)
-        ),
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
 
@@ -470,26 +352,24 @@ VIEW_EDITED_ROUTER_CONFIG_EXEC = [
 # ENCODE ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
+
 ENCODE_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
         "fn": encode_router_config,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_edited_config"),
-            lambda job, meta, ctx: ctx.get("selected_config"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][UPDATED_CONFIG_FILE],
-            lambda job, meta, ctx: ctx.get("model_specs"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][TEMPLATE_ROUTER_PASSWORD_PATH],
-            lambda job, meta, ctx: Path(ctx["selected_edited_config"]).name.removesuffix(EDITED_SUFFIX),
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ENCODED_KEY],
+            lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
         ],
         "result": "encoded_path",
-        "when": lambda job, meta, ctx: (
-            bool(ctx.get("selected_edited_config"))
-            and bool(ctx.get("selected_config"))
-            and isinstance(ctx.get("model_specs"), dict)
-        ),
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # SHOW MODEL SPECIFICATIONS HELP
@@ -500,11 +380,13 @@ SHOW_MODEL_SPECS_HELP_EXEC = [
         "phase": "exec",
         "fn": display_readme,
         "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][MODEL_SPECS_README],
+            lambda job, meta, ctx:
+                meta[COMMON_LOCATIONS_KEY][MODEL_SPECS_README],
         ],
         "result": "ok",
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # SHOW CONFIG DOC
@@ -527,78 +409,47 @@ SHOW_CONFIG_DOC_EXEC = [
 PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     "DECODE_CONFIG": {
         "pipeline": [
-            {"phase": "pre", "fn": lambda: False, "args": [], "result": "extracted_path"},
-            {"phase": "exec", "fn": lambda: False, "args": [], "result": "extracted_path"},
-            *SELECT_ROUTER_MODEL_PRE,
-            *SELECT_ROUTER_CONFIG_PRE,
+            *SELECT_ROUTER_PRE,
             *LOAD_ROUTER_MODEL_SPECS_PRE,
             *DECODE_ROUTER_CONFIG_EXEC,
             *SAVE_ROUTER_CONFIG_EXEC,
             *EXTRACT_ROUTER_CONFIG_EXEC,
-            {"phase": "pre", "fn": lambda ready: ready,
-             "args": [lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict) and bool(ctx.get("selected_config"))],
-             "result": "extracted_path"},
         ],
         "label": "DECODE_CONFIG_COMPLETE",
         "success_key": "extracted_path",
     },
     "VIEW_CONFIG": {
         "pipeline": [
-            {"phase": "pre", "fn": lambda: False, "args": [], "result": "view_ok"},
-            {"phase": "exec", "fn": lambda: False, "args": [], "result": "view_ok"},
-            *SELECT_ROUTER_MODEL_PRE,
-            *VIEW_CONFIG_PRE,
+            *SELECT_ROUTER_PRE,
             *LOAD_ROUTER_MODEL_SPECS_PRE,
             *VIEW_ROUTER_CONFIG_EXEC,
-            {"phase": "pre", "fn": lambda ready: ready,
-             "args": [lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict) and bool(ctx.get("selected_decoded_config"))],
-             "result": "view_ok"},
         ],
         "label": "VIEW_CONFIG_COMPLETE",
         "success_key": "view_ok",
     },
     "EDIT_CONFIG": {
         "pipeline": [
-            {"phase": "pre", "fn": lambda: False, "args": [], "result": "edited_path"},
-            {"phase": "exec", "fn": lambda: False, "args": [], "result": "edited_path"},
-            *SELECT_ROUTER_MODEL_PRE,
-            *VIEW_CONFIG_PRE,
+            *SELECT_ROUTER_PRE,
             *LOAD_ROUTER_MODEL_SPECS_PRE,
             *EDIT_ROUTER_CONFIG_EXEC,
-            {"phase": "pre", "fn": lambda ready: ready,
-             "args": [lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict) and bool(ctx.get("selected_decoded_config"))],
-             "result": "edited_path"},
         ],
         "label": "EDIT_CONFIG_COMPLETE",
         "success_key": "edited_path",
     },
     "VIEW_EDITED_CONFIG": {
         "pipeline": [
-            {"phase": "pre", "fn": lambda: False, "args": [], "result": "view_edited_ok"},
-            {"phase": "exec", "fn": lambda: False, "args": [], "result": "view_edited_ok"},
-            *SELECT_ROUTER_MODEL_PRE,
-            *SELECT_EDITED_CONFIG_PRE,
+            *SELECT_ROUTER_PRE,
             *LOAD_ROUTER_MODEL_SPECS_PRE,
             *VIEW_EDITED_ROUTER_CONFIG_EXEC,
-            {"phase": "pre", "fn": lambda ready: ready,
-             "args": [lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict) and bool(ctx.get("selected_edited_config"))],
-             "result": "view_edited_ok"},
         ],
         "label": "VIEW_EDITED_CONFIG_COMPLETE",
         "success_key": "view_edited_ok",
     },
     "ENCODE_CONFIG": {
         "pipeline": [
-            {"phase": "pre", "fn": lambda: False, "args": [], "result": "encoded_path"},
-            {"phase": "exec", "fn": lambda: False, "args": [], "result": "encoded_path"},
-            *SELECT_ROUTER_MODEL_PRE,
-            *SELECT_EDITED_CONFIG_PRE,
-            *SELECT_ROUTER_CONFIG_PRE,
+            *SELECT_ROUTER_PRE,
             *LOAD_ROUTER_MODEL_SPECS_PRE,
             *ENCODE_ROUTER_CONFIG_EXEC,
-            {"phase": "pre", "fn": lambda ready: ready,
-             "args": [lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict) and bool(ctx.get("selected_edited_config")) and bool(ctx.get("selected_config"))],
-             "result": "encoded_path"},
         ],
         "label": "ENCODE_CONFIG_COMPLETE",
         "success_key": "encoded_path",

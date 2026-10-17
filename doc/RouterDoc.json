@@ -1,34 +1,58 @@
 {
     "FIXED_FIELDS": [
-        "Locations",
-        "Locations.config_path",
-        "Locations.model_specs_path",
-        "Locations.decoded_config_path",
-        "Locations.edited_config_path",
-        "Locations.updated_config_path"
+        "Common Locations",
+        "Common Locations.model_specs_readme_path",
+        "Routers",
+        "Routers.<router name>.specs",
+        "Routers.<router name>.password",
+        "Routers.<router name>.template",
+        "Routers.<router name>.decoded",
+        "Routers.<router name>.decoded_dir",
+        "Routers.<router name>.edited",
+        "Routers.<router name>.edited_dir",
+        "Routers.<router name>.encoded"
     ],
     "EDITABLE_FIELDS": [
-        "Locations.config_path",
-        "Locations.model_specs_path",
-        "Locations.decoded_config_path",
-        "Locations.edited_config_path",
-        "Locations.updated_config_path"
+        "Common Locations.model_specs_readme_path.<VALUES>",
+        "Routers.<router name>",
+        "Routers.<router name>.specs.<VALUES>",
+        "Routers.<router name>.password.<VALUES>",
+        "Routers.<router name>.template.<VALUES>",
+        "Routers.<router name>.decoded.<VALUES>",
+        "Routers.<router name>.decoded_dir.<VALUES>",
+        "Routers.<router name>.edited.<VALUES>",
+        "Routers.<router name>.edited_dir.<VALUES>",
+        "Routers.<router name>.encoded.<VALUES>"
     ],
     "EXAMPLE": {
-        "Locations": {
-            "config_path": "routers/templates",
-            "model_specs_path": "routers/model_specs",
-            "decoded_config_path": "~/Documents/Routers/decoded",
-            "edited_config_path": "~/Documents/Routers/edited",
-            "updated_config_path": "~/Documents/Routers/updated"
+        "Common Locations": {
+            "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
+        },
+        "Routers": {
+            "<router name>": {
+                "specs": "routers/model_specs/<router>-spec.json",
+                "password": "~/Documents/routers/passwords/<router>-password.txt",
+                "template": "~/Documents/routers/templates/<router>-template.cfg",
+                "decoded": "~/Documents/routers/decoded/<router>-decoded.tar.gz",
+                "decoded_dir": "~/Documents/routers/decoded/<router>-decoded",
+                "edited": "~/Documents/routers/edited/<router>-edited.tar.gz",
+                "edited_dir": "~/Documents/routers/edited/<router>-edited",
+                "encoded": "~/Documents/routers/encoded/<router>-encoded.cfg"
+            }
         }
     },
     "DESCRIPTION": {
-        "Locations": "Directories used by the router configuration utility.",
-        "Locations.config_path": "Directory containing original router backup files.",
-        "Locations.model_specs_path": "Directory containing router model JSON specifications. Add another router by creating a new JSON file here.",
-        "Locations.decoded_config_path": "Directory containing decoded router archives and extracted configurations.",
-        "Locations.edited_config_path": "Directory containing edited copies of router configurations.",
-        "Locations.updated_config_path": "Directory containing newly encoded router backup files."
+        "Common Locations": "Shared router utility locations.",
+        "Common Locations.model_specs_readme_path": "Path to the model specifications help document.",
+        "Routers": "Router entries keyed by user-defined router names. Add a router by adding an entry with all eight path fields. Names are dynamic; replace the example placeholders with your own names and paths.",
+        "Routers.<router name>": "Paths for the selected router. Values are file or directory paths as described below; ~ expands to the user home directory.",
+        "Routers.<router name>.specs": "Path to the router model JSON specifications defining encryption, archive layout and editable fields.",
+        "Routers.<router name>.password": "Path to the template password text file, read when the model requires a password.",
+        "Routers.<router name>.template": "Path to the original encrypted router backup used for decoding and rebuilding.",
+        "Routers.<router name>.decoded": "Path to the decoded .tar.gz archive.",
+        "Routers.<router name>.decoded_dir": "Directory for the extracted decoded configuration.",
+        "Routers.<router name>.edited": "Path to the edited .tar.gz archive created during encoding.",
+        "Routers.<router name>.edited_dir": "Directory for the edited configuration copied from decoded_dir and used for encoding.",
+        "Routers.<router name>.encoded": "Path to the newly encrypted router backup, verified by a local decryption round trip."
     }
 }

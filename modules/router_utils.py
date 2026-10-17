@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 import base64
 import binascii
@@ -13,6 +14,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 from getpass import getpass
+from modules.display_utils import confirm
 
 
 # ---------------------------------------------------------------------
@@ -22,7 +24,6 @@ from getpass import getpass
 ENCRYPTED_FILENAME = "config.enc"
 DECODED_EXTENSION = ".tar.gz"
 MODEL_SPECS_EXTENSION = ".json"
-
 
 CONFIG_FIELDS_KEY = "config_fields"
 CONFIG_FIELDS_FILE_KEY = "file"
@@ -44,48 +45,28 @@ def get_target_router_password(model_specs: dict, template_password: str) -> str
         print("\nTarget router password entry cancelled.")
         return False
 
+
 # ---------------------------------------------------------------------
 # GET TEMPLATE PASSWORD
 # ---------------------------------------------------------------------
 
-def get_router_template_password(model_specs: dict, password_dir: str) -> str | bool:
-    """Select and read a template router's factory password."""
+def get_router_template_password(model_specs: dict, password_path: str) -> str | bool:
+    """Read the selected router's configured template password file."""
     if not model_specs.get("password_required", False):
         return ""
-    directory = Path(password_dir).expanduser()
-    if not directory.is_dir():
-        print(f"Template password directory not found: {directory}")
-        return False
-    password_files = sorted(directory.glob("*.txt"))
-    if not password_files:
-        print("No template router password files found.")
-        return False
-    print("\nSelect Template Router Password")
-    print("--------------------------------")
-    for index, path in enumerate(password_files, 1):
-        print(f"{index}. {path.name}")
     try:
-        choice = input("\nSelect password file (0 to cancel): ").strip()
-        if choice == "0":
-            return False
-        index = int(choice) - 1
-        if not 0 <= index < len(password_files):
-            print("Invalid selection.")
-            return False
-        password = password_files[index].read_text(
-            encoding="utf-8"
-        ).strip()
+        path = Path(password_path).expanduser()
+        if not path.is_file():
+            raise FileNotFoundError(f"Template password file not found: {path}")
+        password = path.read_text(encoding="utf-8").strip()
         if not password:
-            print("Selected password file is empty.")
-            return False
+            raise ValueError("Template password file is empty")
         return password
-    except (ValueError, OSError) as exc:
+    except (OSError, ValueError, TypeError) as exc:
         print(f"Failed to load template password: {exc}")
         return False
-    except (EOFError, KeyboardInterrupt):
-        print("\nTemplate password selection cancelled.")
-        return False
-    
+
+
 # ---------------------------------------------------------------------
 # LOAD ROUTER MODEL SPECS
 # ---------------------------------------------------------------------
@@ -364,17 +345,21 @@ def validate_directory(directory: Path) -> None:
             raise ValueError(f"Unsafe configuration entry: {path}")
 
 
+# ---------------------------------------------------------------------
+# DECODE ROUTER CONFIGURATION
+# ---------------------------------------------------------------------
+
 def decode_router_config(
     config_path: str,
     model_specs: dict,
-    password_dir: str
+    password_path: str
 ) -> bytes | bool:
     """Decode and validate an original backup using only declared mechanisms."""
     wrapper = parse_router_wrapper(
         Path(config_path).expanduser().read_bytes(),
         model_specs
     )
-    password = get_router_template_password(model_specs, password_dir)
+    password = get_router_template_password(model_specs, password_path)
     if password is False:
         return False
     decoded = decrypt_router_payload(
@@ -405,6 +390,7 @@ def decode_router_config(
 # SAVE DECODED CONFIGURATION
 # ---------------------------------------------------------------------
 
+
 def save_router_config(decoded_config: bytes, decoded_config_path: str, model_specs: dict) -> bool:
     """Save the decoded router configuration as a tar.gz archive."""
     if not isinstance(decoded_config, bytes) or not decoded_config:
@@ -414,8 +400,14 @@ def save_router_config(decoded_config: bytes, decoded_config_path: str, model_sp
         path = Path(decoded_config_path).expanduser()
         if not path.name.endswith(DECODED_EXTENSION):
             raise ValueError(f"Decoded configuration path must end with {DECODED_EXTENSION}")
-        if path.exists() or path.is_symlink():
-            raise FileExistsError(f"Decoded archive already exists: {path}")
+        if path.is_symlink():
+            raise ValueError(f"Unsafe decoded archive symlink: {path}")
+        if path.exists():
+            if not path.is_file():
+                raise ValueError(f"Decoded archive destination is not a file: {path}")
+            if not confirm(f"Decoded archive already exists: {path}\nOverwrite? [y/n]: "):
+                print("Decoded archive overwrite cancelled.")
+                return False
         with tarfile.open(fileobj=io.BytesIO(decoded_config), mode=archive_mode(model_specs, "r")) as archive:
             validate_archive(archive)
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -424,7 +416,7 @@ def save_router_config(decoded_config: bytes, decoded_config_path: str, model_sp
             os.chmod(temp_path, 0o600)
             temp_file.write(decoded_config)
         try:
-            os.link(temp_path, path)
+            os.replace(temp_path, path)
         finally:
             temp_path.unlink(missing_ok=True)
         print(f"Saved decoded router configuration: {path}")
@@ -434,9 +426,11 @@ def save_router_config(decoded_config: bytes, decoded_config_path: str, model_sp
         return False
 
 
+
 # ---------------------------------------------------------------------
 # EXTRACT ROUTER CONFIG
 # ---------------------------------------------------------------------
+
 
 def extract_router_config(archive_path: str, output_dir: str, model_specs: dict) -> str | bool:
     """Safely extract the decoded router configuration."""
@@ -445,8 +439,14 @@ def extract_router_config(archive_path: str, output_dir: str, model_specs: dict)
         output = Path(output_dir).expanduser()
         if not archive_path.is_file():
             raise FileNotFoundError(f"Decoded archive not found: {archive_path}")
-        if output.exists() or output.is_symlink():
-            raise FileExistsError(f"Extraction directory already exists: {output}")
+        if any(path.is_symlink() for path in (output, *output.parents)):
+            raise ValueError(f"Unsafe extraction directory symlink: {output}")
+        if output.exists():
+            if not output.is_dir():
+                raise ValueError(f"Extraction destination is not a directory: {output}")
+            if not confirm(f"Extraction directory already exists: {output}\nOverwrite? [y/n]: "):
+                print("Extraction overwrite cancelled.")
+                return False
         with tarfile.open(archive_path, mode=archive_mode(model_specs, "r")) as archive:
             members = validate_archive(archive)
             if not members:
@@ -455,10 +455,14 @@ def extract_router_config(archive_path: str, output_dir: str, model_specs: dict)
                 relative = Path(member.name)
                 if relative.is_absolute() or ".." in relative.parts or not (member.isfile() or member.isdir()):
                     raise ValueError(f"Unsafe archive member: {member.name}")
-            output.mkdir(parents=True, mode=0o700)
+            output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            staging = Path(tempfile.mkdtemp(dir=output.parent, prefix=f".{output.name}."))
+            backup = staging / "original"
+            prepared = staging / "replacement"
             try:
+                prepared.mkdir(mode=0o700)
                 for member in members:
-                    destination = output / member.name
+                    destination = prepared / member.name
                     if member.isdir():
                         destination.mkdir(parents=True, exist_ok=True, mode=0o700)
                     else:
@@ -469,14 +473,30 @@ def extract_router_config(archive_path: str, output_dir: str, model_specs: dict)
                         with stream, destination.open("xb") as target:
                             shutil.copyfileobj(stream, target)
                         destination.chmod(0o600)
-            except Exception:
-                shutil.rmtree(output)
-                raise
+                validate_directory(prepared)
+                if output.exists():
+                    os.replace(output, backup)
+                try:
+                    os.replace(prepared, output)
+                except BaseException:
+                    if backup.exists():
+                        os.replace(backup, output)
+                    raise
+                if backup.exists():
+                    shutil.rmtree(backup)
+            finally:
+                if backup.exists():
+                    print(f"Original configuration retained at: {backup}")
+                    if prepared.exists():
+                        shutil.rmtree(prepared)
+                else:
+                    shutil.rmtree(staging)
         print(f"Extracted router configuration: {output}")
         return str(output)
     except (OSError, ValueError, TypeError, tarfile.TarError) as exc:
         print(f"Failed to extract router configuration: {exc}")
         return False
+
 
 
 # ---------------------------------------------------------------------
@@ -521,9 +541,9 @@ def view_router_config_fields(config_dir: str, model_specs: dict) -> bool:
 # EDIT ROUTER CONFIG FIELDS
 # ---------------------------------------------------------------------
 
+
 def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dict) -> str | bool:
     """Copy and edit selected router configuration fields."""
-    from constants.RouterConstants import EDITED_SUFFIX
     try:
         config_fields = model_specs["config_fields"]
         source = Path(config_dir).expanduser()
@@ -531,13 +551,10 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
         destination = Path(edited_dir).expanduser()
         if not source.is_dir():
             raise NotADirectoryError(f"Decoded configuration directory not found: {source}")
-        configuration_name = input("Configuration name (blank for default; letters, numbers, _ or -): ").strip()
-        if configuration_name:
-            if not re.fullmatch(r"[A-Za-z0-9_-]+", configuration_name):
-                raise ValueError("Invalid configuration name: use only letters, numbers, _ or -")
-            destination = destination.with_name(f"{configuration_name}{EDITED_SUFFIX}")
-        if destination.exists() or destination.is_symlink():
-            raise FileExistsError(f"Edited configuration already exists: {destination}")
+        if any(path.is_symlink() for path in (destination, *destination.parents)):
+            raise ValueError(f"Unsafe edited configuration symlink: {destination}")
+        if destination.exists() and not destination.is_dir():
+            raise ValueError(f"Edited configuration destination is not a directory: {destination}")
         relative = Path(config_fields[CONFIG_FIELDS_FILE_KEY])
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError("Invalid configuration file path")
@@ -565,19 +582,28 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
             for label, (key, index) in fields.items():
                 if index in changes:
                     print(f"{label}: {lines[index].split('=', 1)[1].rstrip()} -> {changes[index]}")
-        confirmation = input("\nSave configuration for encoding? [y/n]: ").strip().lower()
-        if confirmation not in ("y", "yes"):
+        if not confirm("\nSave configuration for encoding? [y/n]: "):
             print("Configuration editing cancelled.")
             return False
+        if destination.exists():
+            if not confirm(f"Edited configuration already exists: {destination}\nOverwrite? [y/n]: "):
+                print("Edited configuration overwrite cancelled.")
+                return False
         for index, value in changes.items():
             line = lines[index]
             prefix = line.split("=", 1)[0]
             newline = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
             lines[index] = f"{prefix}={value}{newline}"
+        if source.resolve() in destination.resolve().parents:
+            raise ValueError("Edited destination cannot be inside the source directory")
         destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        shutil.copytree(source, destination, symlinks=True)
+        staging = Path(tempfile.mkdtemp(dir=destination.parent, prefix=f".{destination.name}."))
+        backup = staging / "original"
+        prepared = staging / "replacement"
         try:
-            target = destination / relative
+            shutil.copytree(source, prepared, symlinks=True)
+            validate_directory(prepared)
+            target = prepared / relative
             if target.is_symlink():
                 raise ValueError(f"Unsafe configuration file: {target}")
             with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=target.parent, prefix=".config.", delete=False) as temp_file:
@@ -588,14 +614,31 @@ def edit_router_config_fields(config_dir: str, edited_dir: str, model_specs: dic
                 os.replace(temp_path, target)
             finally:
                 temp_path.unlink(missing_ok=True)
-        except Exception:
-            shutil.rmtree(destination)
-            raise
+            parse_config_fields(target.read_bytes().decode("utf-8"), model_specs)
+            validate_directory(prepared)
+            if destination.exists():
+                os.replace(destination, backup)
+            try:
+                os.replace(prepared, destination)
+            except BaseException:
+                if backup.exists():
+                    os.replace(backup, destination)
+                raise
+            if backup.exists():
+                shutil.rmtree(backup)
+        finally:
+            if backup.exists():
+                print(f"Original configuration retained at: {backup}")
+                if prepared.exists():
+                    shutil.rmtree(prepared)
+            else:
+                shutil.rmtree(staging)
         print(f"Saved edited router configuration: {destination}")
         return str(destination)
     except (OSError, ValueError, TypeError, KeyError, UnicodeError) as exc:
         print(f"Failed to edit router configuration: {exc}")
         return False
+
 
 # ---------------------------------------------------------------------
 # REBUILD ROUTER ARCHIVE
@@ -654,110 +697,106 @@ def rebuild_router_archive(original_archive: bytes, edited_dir: str, model_specs
 # ENCODE ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
+
 def encode_router_config(
     edited_dir: str,
     original_cfg: str,
-    output_dir: str,
+    edited_archive_path: str,
+    output_path: str,
     model_specs: dict,
-    password_dir: str,
-    configuration_name: str
+    password_path: str,
 ) -> str | bool:
     """Rebuild, encrypt and verify an edited backup without changing its source."""
-    from constants.RouterConstants import EDITED_SUFFIX, UPDATED_SUFFIX
     try:
         validate_model_specs(model_specs)
         directory = Path(edited_dir).expanduser()
         original = Path(original_cfg).expanduser()
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", configuration_name):
-            raise ValueError("Invalid configuration name: use only letters, numbers, _ or -")
-        if directory.name != configuration_name + EDITED_SUFFIX:
-            raise ValueError(
-                "Edited configuration directory does not match configuration name"
-            )
-        output = Path(output_dir).expanduser() / f"{configuration_name}{UPDATED_SUFFIX}{original.suffix}"
-        if output.exists() or output.is_symlink():
-            raise FileExistsError(
-                f"Updated backup already exists: {output}"
-            )
-        wrapper = parse_router_wrapper(
-            original.read_bytes(),
-            model_specs
-        )
-        # Select the password file belonging to the master template router
-        template_password = get_router_template_password(model_specs, password_dir)
+        edited_archive = Path(edited_archive_path).expanduser()
+        output = Path(output_path).expanduser()
+        if not edited_archive.name.endswith(DECODED_EXTENSION):
+            raise ValueError(f"Edited archive path must end with {DECODED_EXTENSION}")
+        if edited_archive.resolve() == output.resolve():
+            raise ValueError("Output destinations must be different files")
+        for path in (edited_archive, output):
+            if any(parent.is_symlink() for parent in (path, *path.parents)):
+                raise ValueError(f"Unsafe output symlink: {path}")
+            if path.exists() and not path.is_file():
+                raise ValueError(f"Output destination is not a file: {path}")
+        existing = [path for path in (edited_archive, output) if path.exists()]
+        if existing:
+            print("\nExisting output files:")
+            for path in existing:
+                print(f"  {path}")
+            if not confirm("Overwrite existing output files? [y/n]: "):
+                print("Encoding overwrite cancelled.")
+                return False
+        wrapper = parse_router_wrapper(original.read_bytes(), model_specs)
+        template_password = get_router_template_password(model_specs, password_path)
         if template_password is False:
             return False
-        original_archive = decrypt_router_payload(
-            wrapper["encrypted"],
-            template_password,
-            model_specs
-        )
-        rebuilt_archive, changes = rebuild_router_archive(
-            original_archive,
-            str(directory),
-            model_specs
-        )
-        validate_edited_fields(
-            original_archive,
-            directory,
-            model_specs
-        )
-        # Encrypt for target router using its factory password
+        original_archive = decrypt_router_payload(wrapper["encrypted"], template_password, model_specs)
+        rebuilt_archive, changes = rebuild_router_archive(original_archive, str(directory), model_specs)
+        validate_edited_fields(original_archive, directory, model_specs)
         target_password = get_target_router_password(model_specs, template_password)
         if target_password is False:
             return False
-        encrypted = encrypt_router_payload(
-            rebuilt_archive,
-            target_password,
-            model_specs
-        )
-        rebuilt = rebuild_router_wrapper(
-            encode_router_payload(encrypted, model_specs),
-            wrapper["header"],
-            model_specs
-        )
-        # Verify using target router password
+        encrypted = encrypt_router_payload(rebuilt_archive, target_password, model_specs)
+        rebuilt = rebuild_router_wrapper(encode_router_payload(encrypted, model_specs), wrapper["header"], model_specs)
         verified = parse_router_wrapper(rebuilt, model_specs)
-        decrypted = decrypt_router_payload(
-            verified["encrypted"],
-            target_password,
-            model_specs
-        )
+        decrypted = decrypt_router_payload(verified["encrypted"], target_password, model_specs)
         if decrypted != rebuilt_archive:
-            raise ValueError(
-                "Generated backup failed decryption verification"
-            )
-        with tarfile.open(
-            fileobj=io.BytesIO(decrypted),
-            mode=archive_mode(model_specs, "r")
-        ) as archive:
+            raise ValueError("Generated backup failed decryption verification")
+        with tarfile.open(fileobj=io.BytesIO(decrypted), mode=archive_mode(model_specs, "r")) as archive:
             validate_archive(archive)
-        output.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-            mode=0o700
-        )
-        with output.open("xb") as target:
-            os.chmod(output, 0o600)
-            target.write(rebuilt)
-        print(
-            "Modified files: " +
-            (", ".join(changes) or "none; original compressed archive retained")
-        )
-        print(
-            f"Updated router backup: {output}; "
-            "checksum and local round-trip verified."
-        )
+        edited_archive.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        staged = []
+        backups = {}
+        replaced = []
+        try:
+            for path, data in ((edited_archive, rebuilt_archive), (output, rebuilt)):
+                staging = Path(tempfile.mkdtemp(dir=path.parent, prefix=f".{path.name}."))
+                staged.append((path, staging))
+                prepared = staging / "replacement"
+                with prepared.open("xb") as temp_file:
+                    os.chmod(prepared, 0o600)
+                    temp_file.write(data)
+                if prepared.read_bytes() != data:
+                    raise ValueError(f"Generated output failed write verification: {path}")
+            try:
+                for path, staging in staged:
+                    if path.exists():
+                        backup = staging / "original"
+                        os.replace(path, backup)
+                        backups[path] = backup
+                    os.replace(staging / "replacement", path)
+                    replaced.append(path)
+            except BaseException:
+                for path, staging in reversed(staged):
+                    try:
+                        if path in backups:
+                            os.replace(backups[path], path)
+                            del backups[path]
+                        elif path in replaced:
+                            path.unlink()
+                    except OSError as exc:
+                        print(f"Failed to restore output {path}: {exc}")
+                raise
+            for path, backup in list(backups.items()):
+                backup.unlink()
+                del backups[path]
+        finally:
+            for path, staging in staged:
+                if path in backups:
+                    print(f"Original output retained at: {backups[path]}")
+                    (staging / "replacement").unlink(missing_ok=True)
+                else:
+                    shutil.rmtree(staging)
+        print("Modified files: " + (", ".join(changes) or "none; original compressed archive retained"))
+        print(f"Saved edited router archive: {edited_archive}")
+        print(f"Updated router backup: {output}; checksum and local round-trip verified.")
         return str(output)
-    except (
-        OSError,
-        ValueError,
-        KeyError,
-        TypeError,
-        tarfile.TarError,
-        EOFError,
-        subprocess.SubprocessError
-    ) as exc:
+    except (OSError, ValueError, KeyError, TypeError, tarfile.TarError, EOFError, subprocess.SubprocessError) as exc:
         print(f"Failed to encode router configuration: {exc}")
         return False
 

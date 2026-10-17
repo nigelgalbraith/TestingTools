@@ -1,11 +1,28 @@
+
 {
-    "Locations": {
-        "model_specs_path": "routers/model_specs",
-        "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md",
-        "template_router_password_path": "~/Documents/TestingToolsData/routers/templatePasswords",
-        "config_path": "~/Documents/TestingToolsData/routers/templates",
-        "decoded_config_path": "~/Documents/TestingToolsData/routers/decoded",
-        "edited_config_path": "~/Documents/TestingToolsData/routers/edited",
-        "updated_config_path": "~/Documents/TestingToolsData/routers/encoded"
+  "Common Locations": {
+    "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
+  },
+  "Routers": {
+    "Spark SmartModem VRV9517": {
+      "specs": "routers/model_specs/Spark_SmartModem_VRV9517-spec.json",
+      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV9517-password.txt",
+      "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV9517-template.cfg",
+      "decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded.tar.gz",
+      "decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded",
+      "edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited.tar.gz",
+      "edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited",
+      "encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV9517-encoded.cfg"
+    },
+    "Spark SmartModem VRV951 B": {
+      "specs": "routers/model_specs/Spark_SmartModem_VRV951_B-spec.json",
+      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV951_B-password.txt",
+      "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV951_B-template.cfg",
+      "decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV951_B-decoded.tar.gz",
+      "decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV951_B-decoded",
+      "edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV951_B-edited.tar.gz",
+      "edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV951_B-edited",
+      "encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV951_B-encoded.cfg"
     }
+  }
 }

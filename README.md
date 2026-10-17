@@ -1,3 +1,4 @@
+
 # TestingTools
 
 A collection of terminal-based testing utilities built around a **shared, reusable ToolLoader** and a **pipeline-style state machine**.
@@ -248,7 +249,6 @@ The generic router functions perform the processing using the selected model spe
 
 ToolLoader coordinates the pipeline.
 
-
 ### Router Output Naming
 
 The utility uses consistent filename suffixes for the different configuration stages.
@@ -366,6 +366,10 @@ Its path is defined by:
 
 The **View Model Specifications Help** action displays the configured README in the terminal using the generic `display_readme()` helper.
 
+### Overwrite Behaviour
+
+TestingTools is interactive: when a generated router output already exists, the Router utility asks for confirmation before replacing it. Declining leaves the existing output unchanged. This differs from AutomationTools, where generated router outputs are intended to be replaced automatically without an overwrite prompt.
+
 ### Backup Safety
 
 The utility preserves the original router backup and creates separate decoded, edited and updated outputs.
@@ -373,7 +377,7 @@ The utility preserves the original router backup and creates separate decoded, e
 Recommended precautions:
 
 - Keep an unchanged copy of original backups.
-- Avoid overwriting existing output files.
+- Confirm before overwriting existing generated output files or directories in the interactive TestingTools Router utility.
 - Keep private credentials and router backups out of public repositories.
 - Verify generated backups before restoring them.
 - Retain a recovery method for physical routers.
@@ -757,7 +761,6 @@ TestingTools/
     ├── file_utils.py
     ├── network_utils.py
     ├── email_utils.py
-    ├── router_utils.py
     └── state_machine_utils.py
 ```
 

@@ -254,6 +254,7 @@ class StateMachine:
             primary_ok = primary_ok and ok
         self.state = State.DISPLAY_VERIFICATION if not primary_ok else State.SECONDARY_VALIDATION
 
+
     def validate_secondary_keys(self, secondary_validation: Dict) -> None:
         """Validate nested required fields for config sections."""
         if not isinstance(secondary_validation, dict) or not secondary_validation:
@@ -270,6 +271,7 @@ class StateMachine:
                 continue
             required_fields = spec.get("required_job_fields") or {}
             allow_empty = bool(spec.get("allow_empty", False))
+            dynamic_keys = bool(spec.get("dynamic_keys", False))
             if not required_fields:
                 self.verification_outcomes[f"Secondary: {section_key} (no required_job_fields)"] = False
                 all_ok = False
@@ -280,6 +282,27 @@ class StateMachine:
                 all_ok = False
                 continue
             if isinstance(section_val, dict):
+                if dynamic_keys:
+                    if not section_val and not allow_empty:
+                        self.verification_outcomes[f"Secondary: {section_key} (empty not allowed)"] = False
+                        all_ok = False
+                        continue
+                    for item_key, item in section_val.items():
+                        if not isinstance(item, dict):
+                            self.verification_outcomes[f"Secondary: {section_key}.{item_key} (not a dict)"] = False
+                            all_ok = False
+                            continue
+                        for field, expected in required_fields.items():
+                            types = expected if isinstance(expected, tuple) else (expected,)
+                            expected_str = " or ".join(t.__name__ for t in types)
+                            if field not in item:
+                                self.verification_outcomes[f"Secondary: {section_key}.{item_key}.{field} ({expected_str})"] = False
+                                all_ok = False
+                                continue
+                            ok = isinstance(item.get(field), types)
+                            self.verification_outcomes[f"Secondary: {section_key}.{item_key}.{field} ({expected_str})"] = ok
+                            all_ok = all_ok and ok
+                    continue
                 for field, expected in required_fields.items():
                     types = expected if isinstance(expected, tuple) else (expected,)
                     expected_str = " or ".join(t.__name__ for t in types)
@@ -320,6 +343,7 @@ class StateMachine:
         if not all_ok:
             self.verification_notes.append("[WARN] Secondary validation failed for one or more nested fields.")
         self.state = State.DISPLAY_VERIFICATION
+
 
     def display_verification_outcome(self, config_doc: Optional[str] = None) -> None:
         """Display combined verification results; exit on failure or continue on success."""
