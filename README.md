@@ -1,292 +1,285 @@
-TestingTools
-A collection of terminal-based testing utilities built around a shared, reusable ToolLoader and a pipeline-style state machine.
 
-The main goals are to:
+# TestingTools
 
-Keep tools modular.
-Reuse common functions.
-Maintain predictable execution (pre → plan → confirm → exec).
-Avoid unnecessary tool-specific implementations.
-Keep processing logic separate from shared display, file and pipeline helpers.
-What's Included
-WiFiScanner
-A Wi-Fi utility that can:
+TestingTools is a collection of terminal-based utilities built around a shared, reusable `ToolLoader` and a pipeline-style state machine.
 
-List wireless interfaces.
-Scan for nearby networks.
-Show detailed information for selected networks.
-Display BSS details.
-Report wireless interface status.
-Config: config/WiFiConfig.json
+The project focuses on modularity, reusable helper functions, predictable execution, and separation of concerns. Tool-specific processing remains in dedicated modules, while shared functionality handles configuration, validation, file operations, display, and pipeline execution.
 
-Constants: constants/WiFiConstants.py
+## Design Goals
 
-Docs: doc/WiFiDoc.json
+- **Modular tools:** Keep each utility focused on its own responsibilities.
+- **Reusable helpers:** Share common functionality instead of duplicating implementations.
+- **Predictable execution:** Use a consistent pre → plan → confirm → exec workflow where appropriate.
+- **Separation of concerns:** Keep processing logic separate from shared display, file, and pipeline helpers.
+- **Configuration-driven behaviour:** Define tool behaviour and locations through JSON configuration and constants.
+- **Extensibility:** Add new tools and supported formats without unnecessarily modifying `ToolLoader`.
 
-Some wireless adapters can intermittently report Device or resource busy (-16) from iw scan. This is generally a transient driver, supplicant or NetworkManager contention issue. Retrying the scan may resolve it.
+## Available Tools
 
-NetworkScanner
+### WiFiScanner
+
+A wireless network utility that can:
+
+- List wireless interfaces.
+- Scan for nearby wireless networks.
+- Display detailed information about selected networks.
+- Show Basic Service Set (BSS) details.
+- Report wireless interface status.
+
+#### Files
+
+- **Config:** `config/WiFiConfig.json`
+- **Constants:** `constants/WiFiConstants.py`
+- **Documentation:** `doc/WiFiDoc.json`
+
+#### Troubleshooting
+
+Some wireless adapters may intermittently return `Device or resource busy (-16)` when running `iw scan`. This is generally a transient driver, supplicant, or NetworkManager contention issue. Retrying the scan may resolve it.
+
+### NetworkScanner
+
 A network utility that can:
 
-List network interfaces.
-Analyse a selected interface.
-Show connected interfaces.
-Display ARP neighbours using ip neigh.
-Run TCP port scans against selected or manually entered hosts.
-Report interface connection status.
-Config: config/NetworkConfig.json
+- List network interfaces.
+- Analyse a selected interface.
+- Show connected interfaces.
+- Display ARP neighbours using `ip neigh`.
+- Run TCP port scans against selected or manually entered hosts.
+- Report interface connection status.
 
-Constants: constants/NetworkConstants.py
+#### Files
 
-Docs: doc/NetworkDoc.json
+- **Config:** `config/NetworkConfig.json`
+- **Constants:** `constants/NetworkConstants.py`
+- **Documentation:** `doc/NetworkDoc.json`
 
-Email
-An email and Outlook PST utility built around pst-utils.
+### Email
 
-The Email tool can:
+An email and Outlook PST utility built around `pst-utils`.
 
-View a PST summary.
-List emails contained in a PST.
-Select and view individual emails.
-Convert PST files to mbox.
-Convert PST files to separate EML files.
-Extract contacts.
-Extract attachments.
-Display Email configuration help.
-The source directory can contain multiple PST files. The tool builds a selection menu before processing the selected file.
+It supports:
 
-Config: config/EmailConfig.json
+- Viewing PST summaries.
+- Listing emails contained in a PST.
+- Selecting and viewing individual emails.
+- Converting PST files to mbox.
+- Converting PST files into separate EML files.
+- Extracting contacts.
+- Extracting attachments.
+- Displaying email configuration help.
 
-Constants: constants/EmailConstants.py
+The source directory can contain multiple PST files. The utility presents a selection menu so the user can choose which file to process.
 
-Docs: doc/EmailDoc.json
+#### Files
 
-Email Directory Layout
-Email source and destination directories are configured by the Email utility.
+- **Config:** `config/EmailConfig.json`
+- **Constants:** `constants/EmailConstants.py`
+- **Documentation:** `doc/EmailDoc.json`
+
+#### Email Directory Layout
+
+Source and destination directories are configured through the Email utility.
 
 A typical layout is:
 
+```text
 email/
-    email_source/
-    email_dest/
-Each PST receives its own output directory.
+├── email_source/
+└── email_dest/
+```
+
+Each PST receives its own output directory to keep generated files separate.
 
 For example:
 
+```text
 email_source/
-    testPST.pst
+└── testPST.pst
 
 email_dest/
-    testPST/
-        mbox/
-        eml/
-        contacts/
-        attachments/
-This keeps output from different PST files separate.
+└── testPST/
+    ├── mbox/
+    ├── eml/
+    ├── contacts/
+    └── attachments/
+```
+
+#### Dependencies
+
+The Email utility uses `pst-utils`, including the `readpst` command, for PST conversion and extraction.
 
 Runtime email data may contain private information and should generally be excluded from Git.
 
-Dependencies
-The Email utility uses pst-utils, including the readpst command for PST conversion and extraction.
+### Router
 
-Router
-A router configuration utility for decoding, inspecting, editing and re-encoding router backup files.
+A configuration utility for decoding, inspecting, editing, rebuilding, and re-encoding router backup files.
 
-The Router tool can:
+It supports:
 
-Select a router model specification.
-Select an original configuration backup.
-Select the appropriate template router password file.
-Decode encrypted router backups.
-Save decoded archives.
-Extract configuration files.
-View configured router settings.
-Edit supported configuration fields.
-Rebuild configuration archives.
-Encrypt updated backups for target routers.
-Validate generated backups.
-Display configuration and model specification help.
-Config: config/RouterConfig.json
+- Selecting a router model specification.
+- Selecting an original configuration backup.
+- Selecting the appropriate template router password file.
+- Decoding encrypted router backups.
+- Saving decoded archives.
+- Extracting configuration files.
+- Viewing and editing supported configuration fields.
+- Rebuilding configuration archives.
+- Encrypting updated backups for target routers.
+- Validating generated backups.
+- Displaying configuration and model specification help.
 
-Constants: constants/RouterConstants.py
+#### Files
 
-Docs: doc/RouterDoc.json
+- **Config:** `config/RouterConfig.json`
+- **Constants:** `constants/RouterConstants.py`
+- **Documentation:** `doc/RouterDoc.json`
+- **Processing module:** `modules/router_utils.py`
 
-Module: modules/router_utils.py
+#### JSON-Driven Router Support
 
-JSON-Driven Router Support
-Router models are configured through JSON rather than separate Python implementations for each model.
+Router models are defined through JSON specifications rather than separate Python implementations for each model.
 
-Each model specification defines:
+Each model specification can define:
 
-Router model, firmware and hardware.
-Encryption algorithm.
-Encoded payload format.
-Salt handling.
-Password requirements and hashing.
-Encryption key derivation.
-Backup headers, checksums and trailers.
-Archive format and compression.
-Configuration file format.
-Editable configuration keys.
-The router model is an identifier, not a processing rule.
+- Router model, firmware, and hardware details.
+- Encryption algorithm.
+- Encoded payload format.
+- Salt handling.
+- Password requirements and hashing.
+- Encryption key derivation.
+- Backup headers, checksums, and trailers.
+- Archive format and compression.
+- Configuration file format.
+- Editable configuration keys.
 
-If another router uses mechanisms already supported by router_utils.py, adding support should require only another model JSON.
+The router model identifier is used to select the appropriate specification; it does not determine processing logic directly.
 
-If an unsupported mechanism is needed, implement a reusable Python helper rather than adding router-specific logic to ToolLoader.
+If a new router uses mechanisms already supported by `router_utils.py`, adding support should generally require only another model JSON file. If a new mechanism is needed, implement a reusable helper in Python rather than adding router-specific logic to `ToolLoader`.
 
-Model specifications are loaded from Locations.model_specs_path.
+Model specifications are loaded from `Locations.model_specs_path`.
 
-Router Directory Configuration
-All router locations are defined in config/RouterConfig.json under Locations.
+#### Router Directory Configuration
 
-Configuration key	Purpose
-model_specs_path	Router model JSON specifications
-model_specs_readme_path	Model specification documentation
-template_router_password_path	Template router password text files
-config_path	Original encrypted router templates
-decoded_config_path	Decoded archives and extracted configurations
-edited_config_path	Edited router configurations
-updated_config_path	Re-encoded router backups
-These paths are configurable. No router data directory is hardcoded into the processing workflow.
+All router paths are defined in `config/RouterConfig.json` under `Locations`.
 
-Paths can be changed by editing RouterConfig.json without modifying the router utility code.
+| Configuration key | Purpose |
+|---|---|
+| `model_specs_path` | Router model JSON specifications |
+| `model_specs_readme_path` | Model specification documentation |
+| `template_router_password_path` | Template router password text files |
+| `config_path` | Original encrypted router templates |
+| `decoded_config_path` | Decoded archives and extracted configurations |
+| `edited_config_path` | Edited router configurations |
+| `updated_config_path` | Re-encoded router backups |
 
-Supported Backup Extensions
-Router backup selection supports:
+These paths are configurable. Router processing does not depend on hardcoded data directories, so locations can be changed through `RouterConfig.json` without modifying the utility code.
 
+#### Supported Backup Extensions
+
+Router backup selection supports the following extensions:
+
+```python
 CONFIG_EXTENSION = [".cfg", ".bin"]
-This controls file selection only.
+```
 
-The file extension does not determine the internal backup format.
+This setting controls file selection only. A file extension does not determine the backup's internal encryption or archive format.
 
-A .bin file may contain an entirely different encryption or archive structure.
+For example, a `.bin` file may use a completely different structure from another `.bin` file. The selected model JSON determines how the backup is processed.
 
-The model JSON determines how the utility processes the selected file.
+#### Router Workflow
 
-Router Workflow
 The typical workflow is:
 
-Select Router Model
-        |
-        v
-Select Original Template
-        |
-        v
-Select Template Password File
-        |
-        v
-Decode Configuration
-        |
-        v
-Save Decoded Archive
-        |
-        v
-Extract Configuration
-        |
-        v
-View / Edit Configuration
-        |
-        v
-Save Edited Configuration
-        |
-        v
-Select Original Template
-and Template Password File
-        |
-        v
-Enter Target Router Password
-        |
-        v
-Rebuild Archive
-        |
-        v
-Encrypt for Target Router
-        |
-        v
-Verify Generated Backup
-        |
-        v
-Save Updated Configuration
-The generic router functions perform the processing using the selected model specification.
+1. Select the router model.
+2. Select the original backup template.
+3. Select the corresponding template password file.
+4. Decode the configuration.
+5. Save the decoded archive.
+6. Extract the configuration files.
+7. View or edit supported configuration fields.
+8. Save the edited configuration.
+9. Select the original backup template and its password file again for encoding.
+10. Enter the target router's factory Wi-Fi password.
+11. Rebuild the configuration archive.
+12. Encrypt the backup for the target router.
+13. Decrypt the generated backup for local verification.
+14. Save the updated configuration.
 
-ToolLoader coordinates the pipeline.
+The generic router functions perform the processing using the selected model specification. `ToolLoader` coordinates the workflow through the shared pipeline.
 
-Router Output Naming
-The utility uses consistent filename suffixes for the different configuration stages.
+#### Router Output Naming
 
-Given an original backup named SmartModem_backup.cfg:
+The utility uses consistent filename suffixes to distinguish each processing stage.
 
-Original:
-    SmartModem_backup.cfg
+Given an original backup named `SmartModem_backup.cfg`:
 
-Decoded archive:
-    SmartModem_backup-decoded.tar.gz
+| Stage | Output |
+|---|---|
+| Original | `SmartModem_backup.cfg` |
+| Decoded archive | `SmartModem_backup-decoded.tar.gz` |
+| Extracted directory | `SmartModem_backup-decoded/` |
+| Edited directory | `OfficeRouter-edited/` |
+| Encoded backup | `OfficeRouter-encoded.cfg` |
 
-Extracted directory:
-    SmartModem_backup-decoded/
+When editing, the user can enter a new configuration name, such as `OfficeRouter`.
 
-Edited directory:
-    OfficeRouter-edited/
+If no name is entered, the original template filename is retained:
 
-Encoded backup:
-    OfficeRouter-encoded.cfg
-When editing, the user can enter a new configuration name, such as OfficeRouter.
+```text
+SmartModem_backup-edited/
+SmartModem_backup-encoded.cfg
+```
 
-If no name is entered, the original template filename is used:
-
-Edited directory:
-    SmartModem_backup-edited/
-
-Encoded backup:
-    SmartModem_backup-encoded.cfg
-The original template name is retained during decoding. The new configuration name is used for editing and encoding.
+The original template name is retained during decoding. A new configuration name, when provided, is used for editing and encoding.
 
 The original router backup remains unchanged.
 
-Password Handling
+#### Router Password Handling
+
 Some router backups require the factory Wi-Fi password of the physical router for encryption and decryption.
 
 The model specification determines whether a password is required:
 
+```json
 "password_required": true
+```
+
 The utility uses two distinct passwords.
 
-Template Router Password
-A master template originates from one physical router.
+##### 1. Template Router Password
 
-The password belonging to that router is stored in a plain-text .txt file in the directory configured by Locations.template_router_password_path.
+A master template originates from a physical router. Its password is stored in a plain-text `.txt` file under the directory configured by `Locations.template_router_password_path`.
 
 Each password file contains only the password, without JSON formatting or quotation marks.
 
-During decoding:
+During decoding, the utility:
 
-The utility lists available password files.
-The user selects the corresponding template password.
-The program reads the selected text file.
-The password is used to decrypt the master template.
-Encoding also uses a selected template password file to decrypt the original backup before rebuilding the archive.
+1. Lists the available password files.
+2. Prompts the user to select the matching template password.
+3. Reads the selected file.
+4. Uses the password to decrypt the original backup.
+
+Encoding also requires selecting the appropriate template password file to decrypt the original backup before rebuilding the archive.
 
 The template password is not stored in the model specification JSON.
 
-Target Router Password
-When creating a new configuration for another router:
+##### 2. Target Router Password
 
-The program prompts for the target router's factory Wi-Fi password.
-Input is hidden using getpass.
-The edited configuration is encrypted using that password.
-The generated backup is decrypted again for local verification.
+When creating a configuration for another router, the utility prompts for that router's factory Wi-Fi password using `getpass`, which hides the input.
+
+The password is used to encrypt the updated configuration. The utility then decrypts the generated backup for local verification.
+
 The target password is not stored in the model JSON or shared pipeline context.
 
-Each target router may have a different factory password even when the model is identical.
+Each target router may have a different factory password, even when the router model is identical. Password hashing and key derivation are determined by the selected model specification.
 
-Password hashing and key derivation are determined by the selected model specification.
+#### Editable Router Fields
 
-Editable Router Fields
-The config_fields section in each router model JSON determines which settings appear in the View and Edit menus.
+The `config_fields` section of each model JSON determines which settings appear in the View and Edit menus.
 
 For example:
 
+```json
 "config_fields": {
     "file": "config/.glbcfg",
     "wifi_2g_ssid": "ARC_WLAN_24G_SSID_0_ESSID",
@@ -294,370 +287,102 @@ For example:
     "wifi_5g_ssid": "ARC_WLAN_5G_SSID_0_ESSID",
     "wifi_5g_password": "ARC_WLAN_5G_SSID_0_WPA_Passphrase"
 }
-The file entry identifies the configuration file inside the extracted archive.
+```
 
-Other entries map readable field names to the actual configuration keys.
+The `file` entry identifies the configuration file inside the extracted archive. The remaining entries map readable field names to the actual configuration keys.
 
-Additional fields can be made editable by adding their mappings to the JSON, provided the parser supports their format.
+Additional fields can be made editable by adding mappings to the JSON, provided the configuration parser supports their format.
 
-Router Model Documentation
+#### Router Model Documentation
+
 The router model specification README explains how to create specifications for additional router models.
 
-Its path is defined by:
+Its location is configured through:
 
+```python
 Locations.model_specs_readme_path
+```
 
-The View Model Specifications Help action displays the configured README in the terminal using the generic display_readme() helper.
+The View Model Specifications Help action displays the configured README in the terminal using the shared `display_readme()` helper.
 
-Overwrite Behaviour
-TestingTools is interactive: when a generated router output already exists, the Router utility asks for confirmation before replacing it. Declining leaves the existing output unchanged. This differs from AutomationTools, where generated router outputs are intended to be replaced automatically without an overwrite prompt.
+#### Overwrite Behaviour
 
-Backup Safety
-The utility preserves the original router backup and creates separate decoded, edited and updated outputs.
+TestingTools is interactive. If a generated router output already exists, the utility asks for confirmation before replacing it.
+
+Declining the prompt leaves the existing output unchanged.
+
+This differs from AutomationTools, where generated router outputs are intended to be replaced automatically without an overwrite prompt.
+
+#### Router Backup Safety
+
+The utility preserves the original router backup and creates separate decoded, edited, and updated outputs.
 
 Recommended precautions:
 
-Keep an unchanged copy of original backups.
-Confirm before overwriting existing generated output files or directories in the interactive TestingTools Router utility.
-Keep private credentials and router backups out of public repositories.
-Verify generated backups before restoring them.
-Retain a recovery method for physical routers.
-Match compatible hardware revisions and firmware where necessary.
-A successful local encryption and decryption round trip does not guarantee that a physical router will accept a generated configuration.
+- Keep an unchanged copy of original backups.
+- Confirm overwrite prompts carefully when replacing generated files or directories.
+- Keep private credentials, password files, and router backups out of public repositories.
+- Verify generated backups before restoring them.
+- Retain a recovery method for physical routers.
+- Confirm hardware revision and firmware compatibility where necessary.
 
-How It Works
-Each tool is primarily defined by a constants module.
+A successful local encryption and decryption round trip does not guarantee that a physical router will accept the generated configuration.
 
-The constants module supplies:
+## Architecture
 
-Configuration path.
-Documentation path.
-JSON keys.
-Validation rules.
-Secondary validation.
-Required user level.
-Dependencies.
-Status configuration.
-Plan configuration.
-Menu actions.
-Pre-phase pipelines.
-Execution pipelines.
-Pipeline states.
-Reusable processing logic lives in modules such as:
-
-modules/
-    display_utils.py
-    file_utils.py
-    network_utils.py
-    email_utils.py
-    router_utils.py
-    state_machine_utils.py
-The constants files connect these functions to the shared state-machine framework.
-
-ToolLoader Flow
-ToolLoader manages the general execution sequence:
-
-Load the selected tool constants.
-Check dependencies.
-Install missing dependencies if required.
-Load the tool configuration.
-Validate the configuration.
-Perform secondary validation.
-Compute status.
-Display available actions.
-Execute the selected pipeline.
-A pipeline can contain:
-
-pre
- |
- v
-plan
- |
- v
-confirm
- |
- v
-exec
-Not every action requires every stage.
-
-Read-only actions may skip planning and confirmation, while modifying actions can require user confirmation.
-
-Pre-Phase
-The pre phase handles preparation and selection.
-
-Examples include:
-
-Discovering interfaces.
-Discovering ARP neighbours.
-Finding PST files.
-Selecting email files.
-Selecting router model specifications.
-Selecting original router backups.
-Selecting extracted or edited configurations.
-A typical pipeline entry:
-
-{
-    "phase": "pre",
-    "fn": get_files_by_extension,
-    "args": [
-        lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR],
-        lambda job, meta, ctx: ".pst",
-    ],
-    "result": "pst_files",
-}
-The result becomes available through:
-
-ctx.get("pst_files", [])
-Exec-Phase
-The exec phase performs the requested action.
-
-Examples include:
-
-Scanning ports.
-Reading PST metadata.
-Converting PST files.
-Extracting email attachments.
-Decrypting router backups.
-Saving and extracting router archives.
-Viewing and editing configuration fields.
-Rebuilding and encrypting router backups.
-Example:
-
-{
-    "phase": "exec",
-    "fn": convert_pst_to_mbox,
-    "args": [
-        lambda job, meta, ctx: ctx.get("selected_pst"),
-        lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
-    ],
-    "result": "convert_ok",
-}
-Shared Pipeline Context
-Pipeline resolver functions use three arguments:
-
-job
-meta
-ctx
-job provides the current job where required.
-meta contains the loaded tool configuration.
-ctx contains results from earlier pipeline steps.
-For example:
-
-lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR]
-reads a configured location.
-
-Whereas:
-
-lambda job, meta, ctx: ctx.get("selected_pst")
-reads a previously selected value.
-
-Sensitive passwords should remain inside the relevant utility functions rather than being stored in the shared pipeline context.
-
-Status System
-Each tool can provide a status function through STATUS_FN_CONFIG.
-
-Example:
-
-STATUS_FN_CONFIG: Dict[str, Any] = {
-    "fn": get_directory_status,
-    "args": [
-        lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR],
-    ],
-    "id_field": "location",
-    "active_rule": {
-        "field": "state",
-        "equals": "data_present"
-    },
-}
-ToolLoader uses this to display whether the configured location contains data.
-
-Configuration Validation
-Each tool can define primary validation rules:
-
-VALIDATION_CONFIG: Dict[str, Any] = {
-    "required_job_fields": {
-        LOCATIONS_KEY: dict,
-    },
-}
-Secondary validation can check nested configuration values:
-
-SECONDARY_VALIDATION: Dict[str, Any] = {
-    LOCATIONS_KEY: {
-        "required_job_fields": {
-            SOURCE_DIR: str,
-            DEST_DIR: str,
-        },
-        "allow_empty": False,
-    },
-}
-This verifies configuration structure before actions execute.
-
-Configuration Documentation
-Each tool can provide a JSON documentation file.
-
-For example:
-
-doc/EmailDoc.json
-Documentation can describe:
-
-Required fields.
-Editable values.
-Example configurations.
-Field descriptions.
-The shared display_config_doc() helper displays configuration documentation in the terminal.
-
-The Router utility additionally uses display_readme() to display the model specification guide from its configured location.
-
-Example Email Configuration
-{
-    "locations": {
-        "source_dir": "email/email_source",
-        "dest_dir": "email/email_dest"
-    }
-}
-Example Email Actions
-Select an Email operation:
-
-1. View PST summary
-2. List emails
-3. View email
-4. Convert PST to mbox
-5. Convert PST to EML
-6. Extract contacts
-7. Extract attachments
-8. Show config help
-9. Cancel
-Generic Helper Design
-Where possible, helper functions are generic.
-
-For example:
-
-get_files_by_extension(directory, extension)
-This function is not tied to PST or router files.
-
-Email can use:
-
-".pst"
-Router can use:
-
-[".cfg", ".bin"]
-The same helper accepts a single extension or a collection of extensions.
-
-Reusable file operations remain in file_utils.py.
-
-Tool-specific functions remain in their relevant modules.
-
-For example:
-
-file_utils.py
-    get_directory_status
-    get_files_by_extension
-
-email_utils.py
-    get_pst_summary
-    get_pst_email_rows
-    get_pst_email_files
-    get_email_details
-    convert_pst_to_mbox
-    convert_pst_to_eml
-    extract_pst_contacts
-    extract_pst_attachments
-
-router_utils.py
-    load_router_model_specs
-    decode_router_config
-    save_router_config
-    extract_router_config
-    view_router_config_fields
-    edit_router_config_fields
-    encode_router_config
-ToolLoader does not need router-specific encryption, email parsing or network scanning logic.
-
-Running TestingTools
-From the project directory:
-
-python3 ToolLoader.py
-The loader displays available tools and executes the selected utility through the shared state machine.
-
-Project Structure
-A simplified source-code structure:
-
-TestingTools/
-├── ToolLoader.py
-├── config/
-│   ├── WiFiConfig.json
-│   ├── NetworkConfig.json
-│   ├── EmailConfig.json
-│   └── RouterConfig.json
-├── constants/
-│   ├── WiFiConstants.py
-│   ├── NetworkConstants.py
-│   ├── EmailConstants.py
-│   └── RouterConstants.py
-├── doc/
-│   ├── WiFiDoc.json
-│   ├── NetworkDoc.json
-│   ├── EmailDoc.json
-│   └── RouterDoc.json
-└── modules/
-    ├── display_utils.py
-    ├── file_utils.py
-    ├── network_utils.py
-    ├── email_utils.py
-    └── state_machine_utils.py
-Router models, documentation, password files and generated configurations are located using the paths in RouterConfig.json.
-
-They do not need to reside in fixed source-code directories.
-
-Git Ignore
-Typical ignored files include:
-
-# Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-venv/
-.env/
-Runtime files, passwords and private configurations stored inside the repository should also be ignored using paths that match their actual locations.
-
-Files stored outside the repository are not tracked by that repository.
-
-Avoid committing actual router credentials, private backups or generated configurations unless publication is intentional.
-
-Design Philosophy
-TestingTools uses reusable components rather than independent scripts for every operation.
+Each tool is primarily defined by its constants module, which connects tool-specific configuration to the shared state-machine framework.
 
 A typical tool consists of:
 
+```text
 Configuration
-      +
+     +
 Constants
-      +
+     +
 Reusable Module Functions
-      +
+     +
 Shared ToolLoader
-This maintains a common workflow for:
+```
 
-Dependency checks.
-Configuration validation.
-Status display.
-Menu selection.
-Preparation.
-Planning.
-Confirmation.
-Execution.
-Finalisation.
-The Router utility follows the same architecture:
+### Tool Constants
 
-RouterConfig.json
-        +
-RouterConstants.py
-        +
-Router Model JSON
-        +
-router_utils.py
-        +
-Shared ToolLoader
-Router models remain data-driven, configuration locations remain configurable, and ToolLoader remains independent of the processing details of individual tools.
+The constants module supplies the information required to configure and execute a tool, including:
+
+- Configuration and documentation paths.
+- JSON keys and validation rules.
+- Secondary validation.
+- Required user level.
+- Dependency definitions.
+- Status configuration.
+- Plan configuration.
+- Menu actions.
+- Pre-phase pipelines.
+- Execution pipelines.
+- Pipeline states.
+
+This keeps tool-specific workflow definitions separate from the shared execution engine.
+
+### Shared Modules
+
+Reusable processing and support functions live in modules such as:
+
+```text
+modules/
+├── display_utils.py
+├── file_utils.py
+├── network_utils.py
+├── email_utils.py
+├── router_utils.py
+└── state_machine_utils.py
+```
+
+Responsibilities are divided by function:
+
+| Module | Responsibility |
+|---|---|
+| `display_utils.py` | Shared terminal display and documentation helpers |
+| `file_utils.py` | Generic file operations and directory status |
+| `network_utils.py` | Network interface, neighbour, and scanning operations |
+| `email_utils.py` | PST parsing, conversion, and extraction |
+| `router_utils.py` | Router model loading, backup processing, and configuration editing |
+| `state_machine_utils.py` | Shared state-machine and pipeline execution helpers |
