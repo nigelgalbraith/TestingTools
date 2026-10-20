@@ -645,5 +645,3 @@ router_utils.py
 Shared ToolLoader
 
 Router models remain data-driven, configuration locations remain configurable, and ToolLoader remains independent of the processing details of individual tools.
-
-can you not
