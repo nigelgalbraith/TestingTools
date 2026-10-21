@@ -392,8 +392,6 @@ sudo apt install pst-utils
 | `attachments_dir` | Extracted email attachments |
 | `work_dir` | Temporary PST email-viewing workspace |
 
-The old `source_dir` and `dest_dir` configuration keys are no longer used.
-
 ### Directory Layout
 
 A typical directory layout is:
