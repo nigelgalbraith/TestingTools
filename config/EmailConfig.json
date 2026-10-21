@@ -1,7 +1,11 @@
 {
   "locations": {
-    "source_dir": "~/Documents/TestingToolsData/email/email_source",
-    "dest_dir": "~/Documents/TestingToolsData/email/email_dest",
+    "pst_dir": "~/Documents/TestingToolsData/email/pst",
+    "mbox_dir": "~/Documents/TestingToolsData/email/mbox",
+    "eml_dir": "~/Documents/TestingToolsData/email/eml",
+    "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
+    "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
+    "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
     "work_dir": "/tmp/toolloader_email_view"
   }
 }

@@ -20,6 +20,7 @@ from modules.email_utils import (
     get_pst_summary,
     select_email,
     select_email_folder,
+    extract_pst_calendars,
 )
 from modules.file_utils import (
     get_directory_status,
@@ -41,9 +42,17 @@ CONFIG_DOC = "doc/EmailDoc.json"
 # ---------------------------------------------------------------------
 
 LOCATIONS_KEY = "locations"
-SOURCE_DIR = "source_dir"
-DEST_DIR = "dest_dir"
+PST_DIR = "pst_dir"
+MBOX_DIR = "mbox_dir"
+EML_DIR = "eml_dir"
+CONTACTS_DIR = "contacts_dir"
+CALENDARS_DIR = "calendars_dir"
+ATTACHMENTS_DIR = "attachments_dir"
 WORK_DIR = "work_dir"
+
+# ---------------------------------------------------------------------
+# VALIDATION CONFIG
+# ---------------------------------------------------------------------
 
 
 VALIDATION_CONFIG: Dict[str, Any] = {
@@ -53,11 +62,19 @@ VALIDATION_CONFIG: Dict[str, Any] = {
 }
 
 
+# ---------------------------------------------------------------------
+# SECONDARY VALIDATION
+# ---------------------------------------------------------------------
+
 SECONDARY_VALIDATION: Dict[str, Any] = {
     LOCATIONS_KEY: {
         "required_job_fields": {
-            SOURCE_DIR: str,
-            DEST_DIR: str,
+            PST_DIR: str,
+            MBOX_DIR: str,
+            EML_DIR: str,
+            CONTACTS_DIR: str,
+            CALENDARS_DIR: str,
+            ATTACHMENTS_DIR: str,
             WORK_DIR: str,
         },
         "allow_empty": False,
@@ -82,7 +99,7 @@ INACTIVE_LABEL = "NO DATA PRESENT"
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_directory_status,
     "args": [
-        lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR],
+        lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
     ],
     "id_field": "location",
     "active_rule": {"field": "state", "equals": "data_present"},
@@ -164,6 +181,14 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
         "skip_prepare_plan": False,
         "skip_confirm": False,
     },
+    "Extract calendars": {
+        "verb": "extract",
+        "prompt": "Extract calendars? [y/n]: ",
+        "execute_state": "EXTRACT_CALENDARS",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": False,
+        "skip_confirm": False,
+    },
     "Extract attachments": {
         "verb": "extract",
         "prompt": "Extract attachments? [y/n]: ",
@@ -199,7 +224,7 @@ PST_FILE_SELECTION_PRE = [
         "phase": "pre",
         "fn": get_files_by_extension,
         "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][SOURCE_DIR],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
             lambda job, meta, ctx: ".pst",
         ],
         "result": "pst_files",
@@ -341,7 +366,7 @@ CONVERT_PST_MBOX_EXEC = [
         "fn": convert_pst_to_mbox,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][MBOX_DIR],
         ],
         "result": "convert_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
@@ -355,7 +380,7 @@ CONVERT_PST_EML_EXEC = [
         "fn": convert_pst_to_eml,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][EML_DIR],
         ],
         "result": "convert_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
@@ -369,13 +394,25 @@ EXTRACT_CONTACTS_EXEC = [
         "fn": extract_pst_contacts,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][CONTACTS_DIR],
         ],
         "result": "extract_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
+EXTRACT_CALENDARS_EXEC = [
+    {
+        "phase": "exec",
+        "fn": extract_pst_calendars,
+        "args": [
+            lambda job, meta, ctx: ctx.get("selected_pst"),
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][CALENDARS_DIR],
+        ],
+        "result": "extract_ok",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+    },
+]
 
 EXTRACT_ATTACHMENTS_EXEC = [
     {
@@ -383,7 +420,7 @@ EXTRACT_ATTACHMENTS_EXEC = [
         "fn": extract_pst_attachments,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][DEST_DIR],
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][ATTACHMENTS_DIR],
         ],
         "result": "extract_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
@@ -451,6 +488,14 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "pipeline": [
             *PST_FILE_SELECTION_PRE,
             *EXTRACT_CONTACTS_EXEC,
+        ],
+        "label": "EXTRACT_COMPLETE",
+        "success_key": "extract_ok",
+    },
+    "EXTRACT_CALENDARS": {
+        "pipeline": [
+            *PST_FILE_SELECTION_PRE,
+            *EXTRACT_CALENDARS_EXEC,
         ],
         "label": "EXTRACT_COMPLETE",
         "success_key": "extract_ok",

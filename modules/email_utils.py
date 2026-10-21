@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from modules.file_utils import expand_path
+from modules.display_utils import confirm
 
 
 EMAIL_COLUMN_WIDTHS = {
@@ -57,9 +58,21 @@ def _run_readpst(args: list[str]) -> subprocess.CompletedProcess:
     )
 
 
-def _get_pst_output_dir(pst_file: str, dest_dir: str) -> Path:
-    """Return the output directory for a PST file."""
-    output_dir = Path(expand_path(dest_dir)) / Path(pst_file).stem
+def _get_pst_output_dir(pst_file: str, dest_dir: str) -> Path | None:
+    """Create a PST-named output folder, confirming before overwrite."""
+    pst_path = Path(pst_file)
+    if not pst_path.is_file():
+        print(f"[ERROR] PST file not found: {pst_file}")
+        return None
+    output_dir = Path(expand_path(dest_dir)) / pst_path.stem
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            print(f"[ERROR] Output path is not a directory: {output_dir}")
+            return None
+        if not confirm(f"Overwrite existing folder {output_dir}? [y/n]: "):
+            print("[INFO] Operation cancelled.")
+            return None
+        shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -104,6 +117,28 @@ def count_mbox_messages(mbox_file: str) -> int:
     except Exception:
         return 0
 
+def _flatten_extracted_files(output_dir: Path, extension: str) -> int:
+    """Move extracted files into the PST output directory and remove empty folders."""
+    count = 0
+    for source in list(output_dir.rglob("*")):
+        if not source.is_file() or source.suffix.lower() != extension.lower():
+            continue
+        if source.parent != output_dir:
+            target = output_dir / source.name
+            number = 2
+            while target.exists():
+                target = output_dir / f"{source.stem}_{number}{source.suffix}"
+                number += 1
+            shutil.move(str(source), str(target))
+        count += 1
+    for directory in sorted(
+        (p for p in output_dir.rglob("*") if p.is_dir()),
+        key=lambda p: len(p.parts),
+        reverse=True,
+    ):
+        if not any(directory.iterdir()):
+            directory.rmdir()
+    return count
 
 # ---------------------------------------------------------------------
 # PST FILE PROCESSING
@@ -177,8 +212,9 @@ def convert_pst_to_mbox(pst_file: str, dest_dir: str) -> bool:
         if not pst_path.is_file():
             print(f"[ERROR] PST file not found: {pst_file}")
             return False
-        output_dir = _get_pst_output_dir(pst_file, dest_dir) / "mbox"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir = _get_pst_output_dir(pst_file, dest_dir)
+        if output_dir is None:
+            return False
         before = set(output_dir.glob("*"))
         r = _run_readpst(["-o", str(output_dir), str(pst_path)])
         if r.returncode != 0:
@@ -207,8 +243,9 @@ def convert_pst_to_mbox(pst_file: str, dest_dir: str) -> bool:
 def convert_pst_to_eml(pst_file: str, dest_dir: str) -> bool:
     """Convert a PST file to separate EML files using readpst."""
     try:
-        output_dir = _get_pst_output_dir(pst_file, dest_dir) / "eml"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir = _get_pst_output_dir(pst_file, dest_dir)
+        if output_dir is None:
+            return False
         before = set(output_dir.rglob("*.eml"))
         r = _run_readpst(["-e", "-o", str(output_dir), pst_file])
         if r.returncode != 0:
@@ -306,17 +343,22 @@ def browse_pst_emails(pst_file: str, page_size: int = 25) -> bool:
 def extract_pst_contacts(pst_file: str, dest_dir: str) -> bool:
     """Extract PST contacts as VCard files."""
     try:
-        output_dir = _get_pst_output_dir(pst_file, dest_dir) / "contacts"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        before = set(output_dir.rglob("*.vcf"))
-        r = _run_readpst(["-e", "-t", "c", "-cv", "-o", str(output_dir), pst_file])
+        output_dir = _get_pst_output_dir(pst_file, dest_dir)
+        if output_dir is None:
+            return False
+        r = _run_readpst([
+            "-e",
+            "-t", "c",
+            "-cv",
+            "-o", str(output_dir),
+            pst_file,
+        ])
         if r.returncode != 0:
             print(f"[ERROR] Failed to extract contacts: {pst_file}")
             if r.stderr:
                 print(r.stderr.strip())
             return False
-        after = set(output_dir.rglob("*.vcf"))
-        count = len(after - before)
+        count = _flatten_extracted_files(output_dir, ".vcf")
         if count == 0:
             print("[INFO] No contacts found.")
         else:
@@ -328,15 +370,48 @@ def extract_pst_contacts(pst_file: str, dest_dir: str) -> bool:
         return False
 
 
+def extract_pst_calendars(pst_file: str, dest_dir: str) -> bool:
+    """Extract PST calendar appointments as iCalendar files."""
+    try:
+        output_dir = _get_pst_output_dir(pst_file, dest_dir)
+        if output_dir is None:
+            return False
+        r = _run_readpst([
+            "-e",
+            "-t", "a",
+            "-o", str(output_dir),
+            pst_file,
+        ])
+        if r.returncode != 0:
+            print(f"[ERROR] Failed to extract calendars: {pst_file}")
+            if r.stderr:
+                print(r.stderr.strip())
+            return False
+        count = _flatten_extracted_files(output_dir, ".ics")
+        if count == 0:
+            print("[INFO] No calendar appointments found.")
+        else:
+            print(f"[INFO] Calendar appointments extracted: {count}")
+        print(f"[INFO] Output directory: {output_dir}")
+        return True
+    except Exception as e:
+        print(f"[ERROR] Calendar extraction failed: {e}")
+        return False
+
+
 def extract_pst_attachments(pst_file: str, dest_dir: str) -> bool:
     """Extract attachments from all emails contained in a PST file."""
+    if not Path(pst_file).is_file():
+        print(f"[ERROR] PST file not found: {pst_file}")
+        return False
     temp_dir = _extract_eml_temp(pst_file)
     if not temp_dir:
         print(f"[ERROR] Failed to read PST: {pst_file}")
         return False
     try:
-        output_dir = _get_pst_output_dir(pst_file, dest_dir) / "attachments"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir = _get_pst_output_dir(pst_file, dest_dir)
+        if output_dir is None:
+            return False
         count = 0
         for email_file in temp_dir.rglob("*.eml"):
             try:

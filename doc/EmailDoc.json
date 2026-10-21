@@ -1,22 +1,42 @@
 {
   "FIXED_FIELDS": [
     "locations",
-    "locations.source_dir",
-    "locations.dest_dir"
+    "locations.pst_dir",
+    "locations.mbox_dir",
+    "locations.eml_dir",
+    "locations.contacts_dir",
+    "locations.calendars_dir",
+    "locations.attachments_dir",
+    "locations.work_dir"
   ],
   "EDITABLE_FIELDS": [
-    "locations.source_dir.<VALUES>",
-    "locations.dest_dir.<VALUES>"
+    "locations.pst_dir.<VALUES>",
+    "locations.mbox_dir.<VALUES>",
+    "locations.eml_dir.<VALUES>",
+    "locations.contacts_dir.<VALUES>",
+    "locations.calendars_dir.<VALUES>",
+    "locations.attachments_dir.<VALUES>",
+    "locations.work_dir.<VALUES>"
   ],
   "EXAMPLE": {
     "locations": {
-      "source_dir": "email/email_source",
-      "dest_dir": "email/email_dest"
+      "pst_dir": "~/Documents/TestingToolsData/email/pst",
+      "mbox_dir": "~/Documents/TestingToolsData/email/mbox",
+      "eml_dir": "~/Documents/TestingToolsData/email/eml",
+      "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
+      "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
+      "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
+      "work_dir": "/tmp/toolloader_email_view"
     }
   },
   "DESCRIPTION": {
-    "locations": "Email source and destination directory configuration.",
-    "locations.source_dir": "Directory containing the email files to process.",
-    "locations.dest_dir": "Directory where converted or extracted email data will be written."
+    "locations": "Directory configuration for PST processing, conversion and extraction.",
+    "locations.pst_dir": "Directory containing the source PST files.",
+    "locations.mbox_dir": "Directory where converted MBOX files are written.",
+    "locations.eml_dir": "Directory where converted EML files are written.",
+    "locations.contacts_dir": "Directory where extracted contacts are saved as VCard (.vcf) files.",
+    "locations.calendars_dir": "Directory where extracted calendar appointments are saved as iCalendar (.ics) files.",
+    "locations.attachments_dir": "Directory where extracted email attachments are saved.",
+    "locations.work_dir": "Temporary working directory used when viewing and processing PST emails."
   }
 }
