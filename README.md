@@ -640,12 +640,6 @@ The configuration is organised into two top-level sections:
 }
 ```
 
-The router entry above is illustrative and does not show every required path.
-
-Unlike the earlier configuration structure, the current implementation does not use a single top-level `Locations` dictionary for all router paths.
-
-Each configured router model has its own paths.
-
 ### Router Path Keys
 
 Each router model defines the following configuration keys:
