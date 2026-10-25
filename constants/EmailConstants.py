@@ -7,6 +7,7 @@ from modules.display_utils import (
     display_config_doc,
     print_dict_table,
     select_from_list,
+    display_readme,
 )
 from modules.email_utils import (
     browse_pst_emails,
@@ -21,6 +22,12 @@ from modules.email_utils import (
     select_email,
     select_email_folder,
     extract_pst_calendars,
+    list_email_search_configs,
+    run_email_searches,
+    display_email_search_results,
+    load_email_search_results,
+    select_pst_files,
+    run_pst_files,
 )
 from modules.file_utils import (
     get_directory_status,
@@ -49,6 +56,8 @@ CONTACTS_DIR = "contacts_dir"
 CALENDARS_DIR = "calendars_dir"
 ATTACHMENTS_DIR = "attachments_dir"
 WORK_DIR = "work_dir"
+SEARCH_README = "search_readme_path"
+SEARCH_CONFIGS_KEY = "search_configs"
 
 # ---------------------------------------------------------------------
 # VALIDATION CONFIG
@@ -58,6 +67,7 @@ WORK_DIR = "work_dir"
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
         LOCATIONS_KEY: dict,
+        SEARCH_CONFIGS_KEY: list,
     },
 }
 
@@ -76,6 +86,7 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
             CALENDARS_DIR: str,
             ATTACHMENTS_DIR: str,
             WORK_DIR: str,
+            SEARCH_README: str,
         },
         "allow_empty": False,
     }
@@ -197,6 +208,30 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
         "skip_prepare_plan": False,
         "skip_confirm": False,
     },
+    "Search emails": {
+        "verb": "search",
+        "prompt": "Search emails? [y/n]: ",
+        "execute_state": "SEARCH_EMAILS",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "View Search Results": {
+        "verb": "view_search_results",
+        "prompt": "View saved email search results? [y/n]: ",
+        "execute_state": "VIEW_SEARCH_RESULTS",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
+    "View Email Search Help": {
+        "verb": "search_help",
+        "prompt": "View email search help? [y/n]: ",
+        "execute_state": "SHOW_EMAIL_SEARCH_HELP",
+        "post_state": "MENU_SELECTION",
+        "skip_prepare_plan": True,
+        "skip_confirm": True,
+    },
     "Show config help": {
         "verb": "help",
         "prompt": "Show config help now? [y/n]: ",
@@ -219,7 +254,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
 
-PST_FILE_SELECTION_PRE = [
+PST_SINGLE_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": get_files_by_extension,
@@ -237,14 +272,19 @@ PST_FILE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("pst_files", []),
         ],
         "result": "selected_pst",
-        "when": lambda job, meta, ctx: len(ctx.get("pst_files", [])) > 0,
+        "when": lambda job, meta, ctx: bool(ctx.get("pst_files")),
     },
+]
+
+
+PST_FILE_SELECTION_PRE = [
     {
         "phase": "pre",
-        "fn": clear_pst_files,
+        "fn": select_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx,
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
         ],
+        "result": "selected_pst",
     },
 ]
 
@@ -281,6 +321,16 @@ VIEW_EMAIL_PRE = [
     },
 ]
 
+SEARCH_EMAILS_PRE = [
+    {
+        "phase": "pre",
+        "fn": list_email_search_configs,
+        "args": [
+            lambda job, meta, ctx: meta[SEARCH_CONFIGS_KEY],
+        ],
+        "result": "selected_search_config",
+    },
+]
 
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
@@ -363,10 +413,11 @@ VIEW_EMAIL_EXEC = [
 CONVERT_PST_MBOX_EXEC = [
     {
         "phase": "exec",
-        "fn": convert_pst_to_mbox,
+        "fn": run_pst_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][MBOX_DIR],
+            lambda job, meta, ctx: convert_pst_to_mbox,
         ],
         "result": "convert_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
@@ -377,10 +428,11 @@ CONVERT_PST_MBOX_EXEC = [
 CONVERT_PST_EML_EXEC = [
     {
         "phase": "exec",
-        "fn": convert_pst_to_eml,
+        "fn": run_pst_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][EML_DIR],
+            lambda job, meta, ctx: convert_pst_to_eml,
         ],
         "result": "convert_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
@@ -391,42 +443,104 @@ CONVERT_PST_EML_EXEC = [
 EXTRACT_CONTACTS_EXEC = [
     {
         "phase": "exec",
-        "fn": extract_pst_contacts,
+        "fn": run_pst_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][CONTACTS_DIR],
+            lambda job, meta, ctx: extract_pst_contacts,
         ],
         "result": "extract_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
+
 
 EXTRACT_CALENDARS_EXEC = [
     {
         "phase": "exec",
-        "fn": extract_pst_calendars,
+        "fn": run_pst_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][CALENDARS_DIR],
+            lambda job, meta, ctx: extract_pst_calendars,
         ],
         "result": "extract_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
+
 
 EXTRACT_ATTACHMENTS_EXEC = [
     {
         "phase": "exec",
-        "fn": extract_pst_attachments,
+        "fn": run_pst_files,
         "args": [
             lambda job, meta, ctx: ctx.get("selected_pst"),
             lambda job, meta, ctx: meta[LOCATIONS_KEY][ATTACHMENTS_DIR],
+            lambda job, meta, ctx: extract_pst_attachments,
         ],
         "result": "extract_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
     },
 ]
 
+
+SEARCH_EMAILS_EXEC = [
+    {
+        "phase": "exec",
+        "fn": run_email_searches,
+        "args": [
+            lambda job, meta, ctx: ctx.get("selected_search_config"),
+        ],
+        "result": "search_results",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_search_config")),
+    },
+    {
+        "phase": "exec",
+        "fn": display_email_search_results,
+        "args": [
+            lambda job, meta, ctx: ctx.get("search_results", []),
+            lambda job, meta, ctx: ctx.get("selected_search_config"),
+        ],
+        "result": "search_ok",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),
+    },
+]
+
+
+VIEW_SEARCH_RESULTS_EXEC = [
+    {
+        "phase": "exec",
+        "fn": load_email_search_results,
+        "args": [
+            lambda job, meta, ctx: ctx.get("selected_search_config"),
+        ],
+        "result": "search_results",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_search_config")),
+    },
+    {
+        "phase": "exec",
+        "fn": display_email_search_results,
+        "args": [
+            lambda job, meta, ctx: ctx.get("search_results", []),
+            lambda job, meta, ctx: ctx.get("selected_search_config"),
+        ],
+        "result": "view_ok",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),
+    },
+]
+
+
+SHOW_EMAIL_SEARCH_HELP_EXEC = [
+    {
+        "phase": "exec",
+        "fn": display_readme,
+        "args": [
+            lambda job, meta, ctx: meta[LOCATIONS_KEY][SEARCH_README],
+        ],
+        "result": "ok",
+    },
+]
 
 SHOW_CONFIG_DOC_EXEC = [
     {
@@ -445,7 +559,7 @@ SHOW_CONFIG_DOC_EXEC = [
 PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     "VIEW_PST_SUMMARY": {
         "pipeline": [
-            *PST_FILE_SELECTION_PRE,
+            *PST_SINGLE_SELECTION_PRE,
             *VIEW_PST_SUMMARY_EXEC,
         ],
         "label": "SUMMARY_COMPLETE",
@@ -453,7 +567,7 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     },
     "LIST_EMAILS": {
         "pipeline": [
-            *PST_FILE_SELECTION_PRE,
+            *PST_SINGLE_SELECTION_PRE,
             *LIST_EMAILS_EXEC,
         ],
         "label": "LIST_COMPLETE",
@@ -461,7 +575,7 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     },
     "VIEW_EMAIL": {
         "pipeline": [
-            *PST_FILE_SELECTION_PRE,
+            *PST_SINGLE_SELECTION_PRE,
             *VIEW_EMAIL_PRE,
             *VIEW_EMAIL_EXEC,
         ],
@@ -507,6 +621,27 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         ],
         "label": "EXTRACT_COMPLETE",
         "success_key": "extract_ok",
+    },
+    "SEARCH_EMAILS": {
+        "pipeline": [
+            *SEARCH_EMAILS_PRE,
+            *SEARCH_EMAILS_EXEC,
+        ],
+        "label": "SEARCH_COMPLETE",
+        "success_key": "search_ok",
+    },
+    "VIEW_SEARCH_RESULTS": {
+        "pipeline": [
+            *SEARCH_EMAILS_PRE,
+            *VIEW_SEARCH_RESULTS_EXEC,
+        ],
+        "label": "VIEW_SEARCH_RESULTS_COMPLETE",
+        "success_key": "view_ok",
+    },
+    "SHOW_EMAIL_SEARCH_HELP": {
+        "pipeline": [*SHOW_EMAIL_SEARCH_HELP_EXEC],
+        "label": "SHOW_EMAIL_SEARCH_HELP_COMPLETE",
+        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [

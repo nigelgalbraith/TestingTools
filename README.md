@@ -331,7 +331,7 @@ A matching checksum provides evidence that the compared content is identical und
 
 ## Email Utility
 
-The Email utility provides Outlook PST browsing, conversion, and extraction using `pst-utils` and Python email-processing functions.
+The Email utility provides Outlook PST browsing, conversion, extraction, and EML email searching using `pst-utils` and Python email-processing functions.
 
 ### Features
 
@@ -343,6 +343,12 @@ The Email utility provides Outlook PST browsing, conversion, and extraction usin
 - Extract Outlook contacts as vCards.
 - Extract calendar appointments as iCalendar files.
 - Extract email attachments.
+- Search EML files using configurable search criteria.
+- Run individual or multiple email search configurations.
+- Save matching emails to configured results directories.
+- View previously saved email search results.
+- Display paginated search results and view individual emails.
+- Display email search help.
 - Display configuration help.
 
 ### Files
@@ -351,6 +357,9 @@ The Email utility provides Outlook PST browsing, conversion, and extraction usin
 - `modules/email_utils.py`
 - `config/EmailConfig.json`
 - `doc/EmailDoc.json`
+- `doc/SearchReadMe.md`
+
+Email search criteria are defined in separate JSON configuration files referenced by `search_configs` in `EmailConfig.json`.
 
 ### Dependencies
 
@@ -375,10 +384,18 @@ sudo apt install pst-utils
     "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
     "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
     "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
-    "work_dir": "/tmp/toolloader_email_view"
-  }
+    "work_dir": "/tmp/toolloader_email_view",
+    "search_readme_path": "doc/SearchReadMe.md"
+  },
+  "search_configs": [
+    "config/InvoiceSearch.json",
+    "config/AddressSearch.json",
+    "config/ProjectSearch.json"
+  ]
 }
 ```
+
+The search configuration paths above illustrate the three available search configurations. Each referenced file contains its own search criteria and source and destination paths.
 
 ### Directory Configuration
 
@@ -391,6 +408,8 @@ sudo apt install pst-utils
 | `calendars_dir` | Extracted calendar appointments |
 | `attachments_dir` | Extracted email attachments |
 | `work_dir` | Temporary PST email-viewing workspace |
+| `search_readme_path` | Email search documentation |
+| `search_configs` | List of available email search configuration files |
 
 ### Directory Layout
 
@@ -405,8 +424,11 @@ email/
 ├── eml/
 ├── contacts/
 ├── calendars/
-└── attachments/
+├── attachments/
+└── search_results/
 ```
+
+The `search_results` directory is illustrative. Actual search result locations are defined by `results_location` in each search configuration.
 
 The utility lists PST files from the configured `pst_dir` and prompts the user to select a file.
 
@@ -455,6 +477,8 @@ Output is written beneath the configured `mbox_dir` in a directory named after t
 The Convert PST to EML operation extracts emails into individual EML files.
 
 Output is written beneath the configured `eml_dir` in a directory named after the selected PST.
+
+These EML files can also be used as input for email searches.
 
 ### Contact Extraction
 
@@ -511,6 +535,108 @@ Output is written beneath the configured `attachments_dir` in a directory named 
 
 Attachment extraction is handled by Python email-processing logic after obtaining temporary email files from the PST.
 
+### Email Searching
+
+The Search emails operation searches EML files using criteria defined in JSON search configuration files.
+
+Available search configurations are listed under `search_configs` in `EmailConfig.json`.
+
+The user can select an individual search configuration or All Search Configurations.
+
+Each search configuration defines:
+
+| Configuration key | Purpose |
+|---|---|
+| `search_location` | Directory containing EML files to search |
+| `results_location` | Directory where matching EML files are saved |
+| `match_mode` | Determines how search criteria are combined |
+| `search_criteria` | Fields and keywords used to identify matching emails |
+
+Search criteria support the following email fields:
+
+- `from` — Sender.
+- `to` — Recipient.
+- `subject` — Email subject.
+- `body` — Email body.
+
+The supported matching modes are:
+
+- **ANY:** An email matches when at least one configured search criterion is satisfied.
+- **ALL:** An email matches when all configured search criteria are satisfied.
+
+The search operation reads EML files recursively from `search_location` and copies matching emails to `results_location`.
+
+When multiple configurations are selected, each configuration is processed using its own criteria and output directory.
+
+Search results are displayed in a paginated table.
+
+### Viewing Saved Search Results
+
+The View Search Results operation loads previously saved search results without executing another search.
+
+The user can select an individual search configuration or All Search Configurations.
+
+For each selected configuration, the utility reads the configured `results_location` and loads the saved EML files.
+
+When All Search Configurations is selected, the results are combined into a single paginated table.
+
+The display includes an Email Search Summary showing the selected configurations, match modes, search locations, and criteria.
+
+The results table contains:
+
+| Column | Purpose |
+|---|---|
+| `No` | Email selection number |
+| `Date` | Email date |
+| `From` | Email sender |
+| `Subject` | Email subject |
+| `Matched` | Matching criteria or originating search configuration |
+
+When running a search, the `Matched` column identifies which email fields matched the configured criteria.
+
+When viewing saved results, the `Matched` column identifies the originating search configuration, such as `InvoiceSearch`, `AddressSearch`, or `ProjectSearch`.
+
+Saved results reflect the EML files currently present in the configured results directories. The original search criteria are not reapplied when viewing them.
+
+### Search Result Navigation
+
+Search results are displayed in pages of 25 emails by default.
+
+The following commands are available:
+
+| Command | Action |
+|---|---|
+| `N` | Display the next page |
+| `P` | Display the previous page |
+| Number | View the selected email |
+| `Q` | Quit the results viewer |
+
+Selecting an email number displays its details and body.
+
+Pressing `N` on the final page displays:
+
+```text
+Already on the last page.
+```
+
+Pressing `P` on the first page displays:
+
+```text
+Already on the first page.
+```
+
+Invalid input displays:
+
+```text
+Invalid selection.
+```
+
+### Email Search Documentation
+
+The View Email Search Help operation displays the search documentation referenced by `locations.search_readme_path`.
+
+The guide explains search configuration settings, supported criteria, matching modes, search execution, and saved-result viewing.
+
 ### Generic File Flattening
 
 Contact and calendar extraction share the helper:
@@ -554,17 +680,20 @@ Declining the overwrite prompt cancels the operation and preserves the existing 
 
 The utility does not automatically create numbered PST output directories such as `unittest-2`.
 
+Email search output uses the `results_location` defined by each search configuration.
+
 ### Email Data Privacy
 
-PST files may contain:
+PST files, EML files, and extracted content may contain:
 
 - Personal emails.
 - Contact details.
 - Calendar appointments.
 - Attachments.
 - Private business information.
+- Sensitive information contained in saved search results.
 
-Source PST files and extracted output should generally be kept outside public Git repositories.
+Source PST files, extracted output, and saved email search results should generally be kept outside public Git repositories.
 
 ## Router Utility
 

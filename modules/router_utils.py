@@ -519,7 +519,7 @@ def extract_router_config(archive_path: str, output_dir: str, model_specs: dict)
 
 
 def convert_router_config_fields(source_dir: str, destination_dir: str, source_specs: dict, destination_specs: dict) -> str | bool:
-    """Transfer matching configured fields into the prepared destination."""
+    """Transfer matching configured fields into the prepared destination and report skipped fields."""
     try:
         source = Path(source_dir).expanduser()
         destination = Path(destination_dir).expanduser()
@@ -537,6 +537,7 @@ def convert_router_config_fields(source_dir: str, destination_dir: str, source_s
             raise ValueError("Missing or unsafe router configuration file")
         source_lines, source_fields = parse_config_fields(source_file.read_text(encoding="utf-8"), source_specs)
         destination_lines, destination_fields = parse_config_fields(destination_file.read_text(encoding="utf-8"), destination_specs)
+        skipped_fields = sorted(source_fields.keys() - destination_fields.keys())
         changes = []
         for label in sorted(source_fields.keys() & destination_fields.keys()):
             source_index = source_fields[label][1]
@@ -548,12 +549,24 @@ def convert_router_config_fields(source_dir: str, destination_dir: str, source_s
             if any(char in value for char in ("\r", "\n", "\x00")):
                 raise ValueError(f"Invalid configuration value for {label}")
             changes.append((label, destination_index, previous, value))
+        print("\nSkipped source fields:")
+        print("-" * 50)
+        if skipped_fields:
+            for label in skipped_fields:
+                print(f"{label}: Not defined in destination")
+        else:
+            print("None")
         if not changes:
-            print("No matching configuration changes to transfer.")
+            print("\nNo matching configuration changes to transfer.")
             return False
         print("\nProposed destination changes:")
+        print("-" * 50)
         for label, index, previous, value in changes:
             print(f"{label}: {previous} -> {value}")
+        print("\nConversion summary:")
+        print("-" * 50)
+        print(f"Fields to update : {len(changes)}")
+        print(f"Fields skipped   : {len(skipped_fields)}")
         if not confirm("\nApply these changes to the prepared destination? [y/n]: "):
             print("Conversion cancelled.")
             return False

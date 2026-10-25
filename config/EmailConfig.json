@@ -1,3 +1,4 @@
+
 {
   "locations": {
     "pst_dir": "~/Documents/TestingToolsData/email/pst",
@@ -6,6 +7,12 @@
     "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
     "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
     "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
-    "work_dir": "/tmp/toolloader_email_view"
-  }
+    "work_dir": "/tmp/toolloader_email_view",
+    "search_readme_path": "email/SearchReadMe.md"
+  },
+  "search_configs": [
+    "~/Documents/TestingToolsData/email/search/InvoiceSearch.json",
+    "~/Documents/TestingToolsData/email/search/AddressSearch.json",
+    "~/Documents/TestingToolsData/email/search/ProjectSearch.json"
+  ]
 }

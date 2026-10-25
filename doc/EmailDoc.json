@@ -7,7 +7,9 @@
     "locations.contacts_dir",
     "locations.calendars_dir",
     "locations.attachments_dir",
-    "locations.work_dir"
+    "locations.work_dir",
+    "locations.search_readme_path",
+    "search_configs"
   ],
   "EDITABLE_FIELDS": [
     "locations.pst_dir.<VALUES>",
@@ -16,7 +18,9 @@
     "locations.contacts_dir.<VALUES>",
     "locations.calendars_dir.<VALUES>",
     "locations.attachments_dir.<VALUES>",
-    "locations.work_dir.<VALUES>"
+    "locations.work_dir.<VALUES>",
+    "locations.search_readme_path.<VALUES>",
+    "search_configs.<VALUES>"
   ],
   "EXAMPLE": {
     "locations": {
@@ -26,17 +30,25 @@
       "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
       "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
       "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
-      "work_dir": "/tmp/toolloader_email_view"
-    }
+      "work_dir": "/tmp/toolloader_email_view",
+      "search_readme_path": "email/SearchReadMe.md"
+    },
+    "search_configs": [
+      "~/Documents/TestingToolsData/email/search/InvoiceSearch.json",
+      "~/Documents/TestingToolsData/email/search/AddressSearch.json",
+      "~/Documents/TestingToolsData/email/search/ProjectSearch.json"
+    ]
   },
   "DESCRIPTION": {
-    "locations": "Directory configuration for PST processing, conversion and extraction.",
+    "locations": "Path configuration for PST processing, conversion, extraction and email search help.",
     "locations.pst_dir": "Directory containing the source PST files.",
     "locations.mbox_dir": "Directory where converted MBOX files are written.",
     "locations.eml_dir": "Directory where converted EML files are written.",
     "locations.contacts_dir": "Directory where extracted contacts are saved as VCard (.vcf) files.",
     "locations.calendars_dir": "Directory where extracted calendar appointments are saved as iCalendar (.ics) files.",
     "locations.attachments_dir": "Directory where extracted email attachments are saved.",
-    "locations.work_dir": "Temporary working directory used when viewing and processing PST emails."
+    "locations.work_dir": "Temporary working directory used when viewing and processing PST emails.",
+    "locations.search_readme_path": "Path to the Markdown guide displayed by View Email Search Help.",
+    "search_configs": "List of paths to JSON email search configurations. Each defines search_location, results_location, match and criteria. Search emails runs the selected configurations and saves matching emails; View Search Results loads saved EML files from their results_location directories without rerunning searches. All Search Configurations combines results into one paginated table; when viewing saved results, Matched identifies the configuration by its filename stem."
   }
 }
