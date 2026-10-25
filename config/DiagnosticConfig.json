@@ -1,6 +1,19 @@
 {
   "general": {
     "temperature_warning": 80,
-    "memory_usage_warning": 90
+    "memory_usage_warning": 90,
+    "command_timeout": 15,
+    "kernel_error_limit": 50
+  },
+  "cpu": {
+    "fields": {
+      "Model name": "Model",
+      "Architecture": "Architecture",
+      "CPU(s)": "Logical CPUs",
+      "Core(s) per socket": "Cores per Socket",
+      "Socket(s)": "Sockets",
+      "Thread(s) per core": "Threads per Core",
+      "Virtualization": "Virtualization"
+    }
   }
 }

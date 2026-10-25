@@ -6,6 +6,80 @@
   "port_scan": {
     "ports": [22, 80, 443, 445, 3389, 5985, 5986],
     "timeout": 0.5,
-    "workers": 200
+    "workers": 200,
+    "port_info": {
+      "21": {
+        "service": "ftp",
+        "note": ""
+      },
+      "22": {
+        "service": "ssh",
+        "note": ""
+      },
+      "23": {
+        "service": "telnet",
+        "note": "Telnet is plaintext. Avoid."
+      },
+      "25": {
+        "service": "smtp",
+        "note": ""
+      },
+      "53": {
+        "service": "dns",
+        "note": ""
+      },
+      "80": {
+        "service": "http",
+        "note": ""
+      },
+      "110": {
+        "service": "pop3",
+        "note": ""
+      },
+      "139": {
+        "service": "netbios",
+        "note": ""
+      },
+      "143": {
+        "service": "imap",
+        "note": ""
+      },
+      "443": {
+        "service": "https",
+        "note": ""
+      },
+      "445": {
+        "service": "smb",
+        "note": "SMB exposure. Watch lateral movement."
+      },
+      "3389": {
+        "service": "rdp",
+        "note": "RDP exposed. Bruteforce target."
+      },
+      "5985": {
+        "service": "winrm",
+        "note": "WinRM exposed. Admin surface."
+      },
+      "5986": {
+        "service": "winrm-ssl",
+        "note": "WinRM SSL exposed. Admin surface."
+      },
+      "3306": {
+        "service": "mysql",
+        "note": ""
+      },
+      "5432": {
+        "service": "postgres",
+        "note": ""
+      },
+      "6379": {
+        "service": "redis",
+        "note": "Redis exposed. Often misconfigured."
+      },
+      "8080": {
+        "service": "http-alt",
+        "note": ""
+      }
+    }
   }
 }

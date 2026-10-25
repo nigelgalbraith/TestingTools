@@ -27,6 +27,20 @@ class PortResult:
 # ---------------------------------------------------------------------
 
 
+def _tcp_connect_open(host: str, port: int, timeout: float) -> bool:
+    """Return True if TCP connect succeeds."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------
+# NETWORK OPERATIONS
+# ---------------------------------------------------------------------
+
+
 def get_arp_neighbors() -> List[str]:
     """Return a list of neighbor IPs from `ip neigh` (best-effort)."""
     rows = get_arp_neighbor_rows()
@@ -76,65 +90,24 @@ def prompt_for_target(default: Optional[str] = None) -> Optional[str]:
     return s or default
 
 
-def _tcp_connect_open(host: str, port: int, timeout: float) -> bool:
-    """Return True if TCP connect succeeds."""
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except Exception:
-        return False
-
-
-def _service_lookup(port: int) -> str:
-    """Return a simple service guess for common ports."""
-    common = {
-        21: "ftp",
-        22: "ssh",
-        23: "telnet",
-        25: "smtp",
-        53: "dns",
-        80: "http",
-        110: "pop3",
-        139: "netbios",
-        143: "imap",
-        443: "https",
-        445: "smb",
-        3389: "rdp",
-        5985: "winrm",
-        5986: "winrm-ssl",
-        3306: "mysql",
-        5432: "postgres",
-        6379: "redis",
-        8080: "http-alt",
-    }
-    return common.get(port, "")
-
-
-def _risk_note(port: int) -> str:
-    """Return a blunt, practical note for a few high-signal ports."""
-    notes = {
-        23: "Telnet is plaintext. Avoid.",
-        445: "SMB exposure. Watch lateral movement.",
-        3389: "RDP exposed. Bruteforce target.",
-        5985: "WinRM exposed. Admin surface.",
-        5986: "WinRM SSL exposed. Admin surface.",
-        6379: "Redis exposed. Often misconfigured.",
-    }
-    return notes.get(port, "")
-
-
-# ---------------------------------------------------------------------
-# MAIN OPS
-# ---------------------------------------------------------------------
-
-
 def scan_tcp_ports(
     host: str,
     ports: List[int],
-    timeout: float = 0.5,
-    workers: int = 200,
+    port_info: Dict[str, Dict[str, str]],
+    timeout: float,
+    workers: int,
 ) -> List[Dict[str, Any]]:
     """TCP connect scan for a list of ports; returns list of dicts for table display."""
+    if not isinstance(port_info, dict):
+        raise ValueError("port_scan.port_info must be a dictionary")
+    for key, info in port_info.items():
+        if not isinstance(key, str) or not key.isascii() or not key.isdigit() or not 1 <= int(key) <= 65535:
+            raise ValueError(f"Invalid port_scan.port_info key: {key!r}; expected a numeric port string in 1-65535")
+        if not isinstance(info, dict):
+            raise ValueError(f"port_scan.port_info.{key} must be a dictionary")
+        for field in ("service", "note"):
+            if not isinstance(info.get(field), str):
+                raise ValueError(f"port_scan.port_info.{key}.{field} must be a string")
     if not host or not ports:
         return []
     ports = sorted(set(int(p) for p in ports if isinstance(p, int) or str(p).isdigit()))
@@ -149,12 +122,13 @@ def scan_tcp_ports(
             except Exception:
                 is_open = False
             if is_open:
+                info = port_info.get(str(p), {})
                 results.append(
                     PortResult(
                         port=p,
                         open=True,
-                        service=_service_lookup(p),
-                        note=_risk_note(p),
+                        service=info.get("service", ""),
+                        note=info.get("note", ""),
                     )
                 )
     results.sort(key=lambda x: x.port)

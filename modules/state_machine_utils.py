@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 
 # ---------------------------------------------------------------------
-# CONSTANTS / CLI
+# COMMAND LINE ARGUMENTS
 # ---------------------------------------------------------------------
 
 
@@ -80,7 +80,7 @@ def parse_args(consts: Any) -> argparse.Namespace:
 
 
 # ---------------------------------------------------------------------
-# ARG RESOLUTION / CONDITIONS
+# ARGUMENT RESOLUTION AND CONDITIONS
 # ---------------------------------------------------------------------
 
 

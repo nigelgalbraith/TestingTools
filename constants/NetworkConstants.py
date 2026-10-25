@@ -38,6 +38,7 @@ CONFIG_DOC = "doc/NetworkDoc.json"
 GENERAL_KEY = "general"
 PORT_SCAN_KEY = "port_scan"
 PORTS_KEY = "ports"
+PORT_INFO_KEY = "port_info"
 TIMEOUT_KEY = "timeout"
 WORKERS_KEY = "workers"
 
@@ -62,6 +63,7 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
     PORT_SCAN_KEY: {
         "required_job_fields": {
             PORTS_KEY: list,
+            PORT_INFO_KEY: dict,
             TIMEOUT_KEY: (int, float),
             WORKERS_KEY: int,
         },
@@ -280,8 +282,9 @@ PORT_SCAN_EXEC = [
         "args": [
             lambda job, meta, ctx: ctx.get("target"),
             lambda job, meta, ctx: meta[PORT_SCAN_KEY][PORTS_KEY],
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY].get(TIMEOUT_KEY, 0.5),
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY].get(WORKERS_KEY, 200),
+            lambda job, meta, ctx: meta[PORT_SCAN_KEY][PORT_INFO_KEY],
+            lambda job, meta, ctx: meta[PORT_SCAN_KEY][TIMEOUT_KEY],
+            lambda job, meta, ctx: meta[PORT_SCAN_KEY][WORKERS_KEY],
         ],
         "result": "open_ports",
         "when": lambda job, meta, ctx: bool(ctx.get("target")),

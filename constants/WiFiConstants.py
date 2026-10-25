@@ -33,6 +33,8 @@ CONFIG_DOC = "doc/WiFiDoc.json"
 
 GENERAL_KEY = "general"
 SCAN_TIMEOUT_KEY = "scan_timeout"
+INTERFACE_TIMEOUT_KEY = "interface_timeout"
+STATUS_TIMEOUT_KEY = "status_timeout"
 NETWORK_SUMMARY_COLUMNS_KEY = "network_summary_columns"
 NETWORK_SUMMARY_NAME_KEY = "name"
 NETWORK_SUMMARY_KEY_KEY = "key"
@@ -58,7 +60,9 @@ VALIDATION_CONFIG: Dict[str, Any] = {
 SECONDARY_VALIDATION: Dict[str, Any] = {
     GENERAL_KEY: {
         "required_job_fields": {
-            SCAN_TIMEOUT_KEY: int,
+            SCAN_TIMEOUT_KEY: (int, float),
+            INTERFACE_TIMEOUT_KEY: (int, float),
+            STATUS_TIMEOUT_KEY: (int, float),
         },
         "allow_empty": False,
     },
@@ -88,7 +92,8 @@ INACTIVE_LABEL = "DISCONNECTED"
 
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": check_wifi_status,
-    "args": [],
+    "args": [lambda job, meta, ctx: meta[GENERAL_KEY][INTERFACE_TIMEOUT_KEY],
+             lambda job, meta, ctx: meta[GENERAL_KEY][STATUS_TIMEOUT_KEY]],
     "id_field": "device",
     "active_rule": {"field": "state", "equals": "connected"},
 }
@@ -165,7 +170,7 @@ INTERFACE_SELECTION_PRE = [
         "phase": "pre",
         "fn": get_wireless_interfaces,
         "args": [
-            lambda job, meta, ctx: 10,
+            lambda job, meta, ctx: meta[GENERAL_KEY][INTERFACE_TIMEOUT_KEY],
         ],
         "result": "interfaces",
     },
@@ -270,7 +275,7 @@ ANALYZE_NETWORK_EXEC = [
         "args": [
             lambda job, meta, ctx: ctx.get("selected_interface"),
             lambda job, meta, ctx: ctx.get("selected_network", {}),
-            lambda job, meta, ctx: meta[GENERAL_KEY].get(SCAN_TIMEOUT_KEY, 8),
+            lambda job, meta, ctx: meta[GENERAL_KEY][SCAN_TIMEOUT_KEY],
         ],
         "result": "analysis_ok",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_network")),

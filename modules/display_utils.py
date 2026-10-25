@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional
 
 
 # ---------------------------------------------------------------------
-# CONSTANTS
+# FILE CONSTANTS
 # ---------------------------------------------------------------------
 
 MAX_COL_WIDTH = 60
@@ -115,7 +115,7 @@ def wrap_in_box(val: Any, title: str | None = None, indent: int = 2, pad: int = 
 
 
 # ---------------------------------------------------------------------
-# DISPLAY / PRINTING
+# DISPLAY OPERATIONS
 # ---------------------------------------------------------------------
 
 
@@ -259,18 +259,38 @@ def confirm(
         )
 
 
-def select_from_list(title: str, options: list[str]) -> str | None:
+def select_from_list(
+    title: str, options: list[str], allow_all: bool = False, *, retry_invalid: bool = False
+) -> str | list[str] | None:
     """Render a numbered menu and return the selected option (or None on invalid input)."""
+    # Email callers opt into retrying invalid input; Q still cancels.
     if not options:
         return None
     print(f"\n{title}:")
     for i, opt in enumerate(options, start=1):
         print(f"{i}) {opt}")
-    try:
-        idx = int(input(f"Enter your selection (1-{len(options)}): ").strip())
-    except ValueError:
-        return None
-    return options[idx - 1] if 1 <= idx <= len(options) else None
+    selection_count = len(options) + int(allow_all)
+    if allow_all:
+        print(f"{selection_count}) All")
+    while True:
+        prompt = (
+            f"Enter your selection (1-{selection_count}, Q to cancel): "
+            if allow_all else f"Enter your selection (1-{selection_count}): "
+        )
+        choice = input(prompt).strip()
+        if allow_all and choice.lower() == "q":
+            return None
+        try:
+            idx = int(choice)
+        except ValueError:
+            idx = 0
+        if allow_all and idx == selection_count:
+            return list(options)
+        if 1 <= idx <= len(options):
+            return options[idx - 1]
+        if not retry_invalid:
+            return None
+        print("Invalid selection.")
 
 
 def pick_constants_interactively(choices: dict[str, tuple[str, Optional[int]]]) -> str:
@@ -321,7 +341,7 @@ def pick_constants_interactively(choices: dict[str, tuple[str, Optional[int]]]) 
 
 
 # ---------------------------------------------------------------------
-# CONFIG DOC HELPERS
+# CONFIGURATION HELP
 # ---------------------------------------------------------------------
 
 
@@ -379,7 +399,7 @@ def format_config_help(doc_path: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------
-# DISPLAY MODEL SPECIFICATIONS HELP
+# README DISPLAY
 # ---------------------------------------------------------------------
 
 def display_readme(readme_path: str) -> bool:

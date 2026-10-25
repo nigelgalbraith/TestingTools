@@ -15,10 +15,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from modules.file_utils import expand_path
+from modules.display_utils import select_from_list
 
 
 # ---------------------------------------------------------------------
-# COMMAND HELPERS
+# HELPERS
 # ---------------------------------------------------------------------
 
 
@@ -119,7 +120,7 @@ def _same_source_destination(device: str, destination: Path) -> bool:
 
 
 # ---------------------------------------------------------------------
-# STATUS
+# RECOVERY OPERATIONS
 # ---------------------------------------------------------------------
 
 
@@ -128,10 +129,6 @@ def get_recovery_status(destination: str) -> List[Dict[str, Any]]:
     destination_path = _get_recovery_destination(destination)
     ready = destination_path is not None and destination_path.is_dir()
     return [{"data_recovery": "Data recovery", "ready": ready}]
-
-# ---------------------------------------------------------------------
-# DRIVE LIST AND SELECTION
-# ---------------------------------------------------------------------
 
 
 def get_drive_list() -> List[Dict[str, Any]]:
@@ -172,21 +169,11 @@ def select_drive(title: str, drives: List[Dict[str, Any]], destination: str) -> 
         return None
     print(f"\nRecovery destination: {destination_path}")
     print(f"Destination drive excluded: {destination_drive}")
-    print(f"\n{title}:")
-    for index, drive in enumerate(available_drives, start=1):
-        print(f"{index}) {drive.get('Device', '')} - {drive.get('Model', 'Unknown')} - {drive.get('Size', 'Unknown')} - {drive.get('Type', 'Unknown')}")
-    try:
-        choice = int(input(f"Enter your selection (1-{len(available_drives)}): ").strip())
-    except ValueError:
+    options = [f"{drive.get('Device', '')} - {drive.get('Model', 'Unknown')} - {drive.get('Size', 'Unknown')} - {drive.get('Type', 'Unknown')}" for drive in available_drives]
+    selection = select_from_list(title, options)
+    if selection is None:
         return None
-    if not 1 <= choice <= len(available_drives):
-        return None
-    return str(available_drives[choice - 1].get("Device") or "") or None
-
-
-# ---------------------------------------------------------------------
-# PERMISSIONS
-# ---------------------------------------------------------------------
+    return str(available_drives[options.index(selection)].get("Device") or "") or None
 
 
 def restore_recovery_permissions(destination: str) -> List[Dict[str, Any]]:
@@ -207,11 +194,6 @@ def restore_recovery_permissions(destination: str) -> List[Dict[str, Any]]:
     except (OSError, ValueError):
         return [{"Destination": str(destination_path), "Result": "Unable to restore recovery permissions", "Status": "FAIL"}]
     return [{"Destination": str(destination_path), "Result": "Recovery permissions restored", "Status": "PASS"}]
-
-
-# ---------------------------------------------------------------------
-# DDRESCUE
-# ---------------------------------------------------------------------
 
 
 def run_ddrescue_image(device: str, destination: str, retries: int, resume: bool) -> List[Dict[str, Any]]:
@@ -238,11 +220,6 @@ def run_ddrescue_image(device: str, destination: str, retries: int, resume: bool
     return [{"Source": device, "Image": str(image_path), "Map": str(map_path), "Result": "Recovery image completed", "Status": "PASS"}]
 
 
-# ---------------------------------------------------------------------
-# TESTDISK
-# ---------------------------------------------------------------------
-
-
 def run_testdisk(device: str, log_destination: str) -> List[Dict[str, Any]]:
     """Launch TestDisk interactively for one source drive."""
     log_path = (Path.cwd() / expand_path(log_destination)).resolve()
@@ -259,11 +236,6 @@ def run_testdisk(device: str, log_destination: str) -> List[Dict[str, Any]]:
     if result != 0:
         return [{"Device": device, "Result": f"TestDisk exited with status {result}", "Status": "WARNING"}]
     return [{"Device": device, "Result": "TestDisk session completed", "Status": "PASS"}]
-
-
-# ---------------------------------------------------------------------
-# PHOTOREC
-# ---------------------------------------------------------------------
 
 
 def run_photorec(device: str, destination: str) -> List[Dict[str, Any]]:

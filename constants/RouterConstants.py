@@ -66,6 +66,7 @@ VALIDATION_CONFIG: Dict[str, Any] = {
 # SECONDARY VALIDATION
 # ---------------------------------------------------------------------
 
+# Password and device-key fields are optional; credentials follow the model specification.
 SECONDARY_VALIDATION: Dict[str, Any] = {
     COMMON_LOCATIONS_KEY: {
         "required_job_fields": {
@@ -76,7 +77,6 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
     ROUTERS_KEY: {
         "required_job_fields": {
             SPECS_KEY: str,
-            PASSWORD_KEY: str,
             TEMPLATE_KEY: str,
             DECODED_KEY: str,
             DECODED_DIR_KEY: str,
@@ -323,7 +323,7 @@ DECODE_ROUTER_CONFIG_EXEC = [
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(PASSWORD_KEY),
             lambda job, meta, ctx: "Enter router password: ",
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
@@ -426,7 +426,7 @@ ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ENCODED_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(PASSWORD_KEY),
             lambda job, meta, ctx: "Enter target router password (Enter to use template password): ",
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
@@ -518,7 +518,7 @@ MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_ENCODED_KEY],
             lambda job, meta, ctx: ctx["destination_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(PASSWORD_KEY),
             lambda job, meta, ctx: "Enter DESTINATION router password: ",
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],
@@ -586,7 +586,7 @@ MIGRATION_CONVERT_DECODE_EXEC = [
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
             lambda job, meta, ctx: ctx["destination_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(PASSWORD_KEY),
             lambda job, meta, ctx: "Enter router password: ",
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],

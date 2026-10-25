@@ -3,29 +3,123 @@
     "general",
     "general.scan_timeout",
     "port_scan",
-    "port_scan.ports"
+    "port_scan.ports",
+    "port_scan.timeout",
+    "port_scan.workers",
+    "port_scan.port_info",
+    "port_scan.port_info.<PORT>.service",
+    "port_scan.port_info.<PORT>.note"
   ],
   "EDITABLE_FIELDS": [
     "general.scan_timeout.<VALUES>",
     "port_scan.ports.<VALUES>",
     "port_scan.timeout.<VALUES>",
-    "port_scan.workers.<VALUES>"
+    "port_scan.workers.<VALUES>",
+    "port_scan.port_info.<PORT>",
+    "port_scan.port_info.<PORT>.service.<VALUES>",
+    "port_scan.port_info.<PORT>.note.<VALUES>"
   ],
   "EXAMPLE": {
     "general": {
       "scan_timeout": 30
     },
     "port_scan": {
-      "ports": [22, 80, 443, 445, 3389, 5985, 5986],
+      "ports": [
+        22,
+        80,
+        443,
+        445,
+        3389,
+        5985,
+        5986
+      ],
       "timeout": 0.5,
-      "workers": 200
+      "workers": 200,
+      "port_info": {
+        "21": {
+          "service": "ftp",
+          "note": ""
+        },
+        "22": {
+          "service": "ssh",
+          "note": ""
+        },
+        "23": {
+          "service": "telnet",
+          "note": "Telnet is plaintext. Avoid."
+        },
+        "25": {
+          "service": "smtp",
+          "note": ""
+        },
+        "53": {
+          "service": "dns",
+          "note": ""
+        },
+        "80": {
+          "service": "http",
+          "note": ""
+        },
+        "110": {
+          "service": "pop3",
+          "note": ""
+        },
+        "139": {
+          "service": "netbios",
+          "note": ""
+        },
+        "143": {
+          "service": "imap",
+          "note": ""
+        },
+        "443": {
+          "service": "https",
+          "note": ""
+        },
+        "445": {
+          "service": "smb",
+          "note": "SMB exposure. Watch lateral movement."
+        },
+        "3389": {
+          "service": "rdp",
+          "note": "RDP exposed. Bruteforce target."
+        },
+        "5985": {
+          "service": "winrm",
+          "note": "WinRM exposed. Admin surface."
+        },
+        "5986": {
+          "service": "winrm-ssl",
+          "note": "WinRM SSL exposed. Admin surface."
+        },
+        "3306": {
+          "service": "mysql",
+          "note": ""
+        },
+        "5432": {
+          "service": "postgres",
+          "note": ""
+        },
+        "6379": {
+          "service": "redis",
+          "note": "Redis exposed. Often misconfigured."
+        },
+        "8080": {
+          "service": "http-alt",
+          "note": ""
+        }
+      }
     }
   },
   "DESCRIPTION": {
-    "general": "General runtime configuration.",
-    "general.scan_timeout": "Seconds to wait for an iw scan to complete.",
-    "port_scan.ports": "List of TCP ports to scan on discovered hosts.",
-    "port_scan.timeout": "Seconds to wait for a response when scanning each port.",
-    "port_scan.workers": "Number of concurrent threads to use when scanning ports."
+    "general": "Required dictionary. Retained general configuration; its scan_timeout setting is not consumed by the Network workflows.",
+    "general.scan_timeout": "Legacy configuration value currently unused by Network operations. TCP scans use port_scan.timeout; this setting does not control WiFi scans.",
+    "port_scan.ports": "Required list of TCP ports to scan. Results contain open ports only, sorted numerically with duplicates removed. Ports need not have metadata.",
+    "port_scan.timeout": "Required number of seconds passed to each TCP connection attempt. A positive value is recommended; configuration validation checks the type, not the range.",
+    "port_scan.workers": "Required integer controlling concurrent connection attempts. The scanner clamps values below 1 to 1.",
+    "port_scan.port_info": "Required dictionary, possibly empty, keyed by ASCII numeric TCP port strings in 1-65535. Entries require string service and note fields. Unlisted ports display empty metadata.",
+    "port_scan": "Required dictionary containing ports, timeout, workers and port_info.",
+    "port_scan.port_info.<PORT>.service": "Required string in each metadata entry. Service label displayed for an open port; may be empty.",
+    "port_scan.port_info.<PORT>.note": "Required string in each metadata entry. Risk note displayed for an open port; may be empty."
   }
 }

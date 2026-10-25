@@ -17,12 +17,14 @@ from typing import Any, Dict, List
 
 
 # ---------------------------------------------------------------------
-# COMMAND HELPERS
+# HELPERS
 # ---------------------------------------------------------------------
 
 
-def _run_command(command: List[str], timeout: int = 15) -> subprocess.CompletedProcess | None:
+def _run_command(command: List[str], timeout: int | float) -> subprocess.CompletedProcess | None:
     """Run a command and return the result."""
+    if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
+        raise ValueError("general.command_timeout must be a positive number")
     try:
         return subprocess.run(
             command,
@@ -54,7 +56,7 @@ def _format_bytes(value: int) -> str:
 
 
 # ---------------------------------------------------------------------
-# STATUS
+# SYSTEM DIAGNOSTICS
 # ---------------------------------------------------------------------
 
 
@@ -67,11 +69,6 @@ def get_diagnostic_status() -> List[Dict[str, Any]]:
             "ready": ready,
         }
     ]
-
-
-# ---------------------------------------------------------------------
-# SYSTEM SUMMARY
-# ---------------------------------------------------------------------
 
 
 def get_system_summary() -> List[Dict[str, Any]]:
@@ -112,14 +109,11 @@ def get_system_summary() -> List[Dict[str, Any]]:
     ]
 
 
-# ---------------------------------------------------------------------
-# CPU
-# ---------------------------------------------------------------------
-
-
-def get_cpu_info() -> List[Dict[str, Any]]:
+def get_cpu_info(fields: Dict[str, str], command_timeout: int | float) -> List[Dict[str, Any]]:
     """Return CPU information."""
-    result = _run_command(["lscpu"])
+    if not isinstance(fields, dict) or not all(isinstance(key, str) and isinstance(value, str) for key, value in fields.items()):
+        raise ValueError("cpu.fields must be a dictionary of strings to strings")
+    result = _run_command(["lscpu"], command_timeout)
     if result is None or result.returncode != 0:
         return [
             {
@@ -133,28 +127,14 @@ def get_cpu_info() -> List[Dict[str, Any]]:
             continue
         key, value = line.split(":", 1)
         values[key.strip()] = value.strip()
-    fields = [
-        ("Model name", "Model"),
-        ("Architecture", "Architecture"),
-        ("CPU(s)", "Logical CPUs"),
-        ("Core(s) per socket", "Cores per Socket"),
-        ("Socket(s)", "Sockets"),
-        ("Thread(s) per core", "Threads per Core"),
-        ("Virtualization", "Virtualization"),
-    ]
     return [
         {
             "Key": display_name,
             "Value": values[source_name],
         }
-        for source_name, display_name in fields
+        for source_name, display_name in fields.items()
         if source_name in values
     ]
-
-
-# ---------------------------------------------------------------------
-# MEMORY
-# ---------------------------------------------------------------------
 
 
 def get_memory_status(warning_threshold: int | float) -> List[Dict[str, Any]]:
@@ -203,11 +183,6 @@ def get_memory_status(warning_threshold: int | float) -> List[Dict[str, Any]]:
     ]
 
 
-# ---------------------------------------------------------------------
-# TEMPERATURES
-# ---------------------------------------------------------------------
-
-
 def get_temperature_status(warning_threshold: int | float) -> List[Dict[str, Any]]:
     """Return temperatures from Linux thermal zones."""
     rows: List[Dict[str, Any]] = []
@@ -248,11 +223,6 @@ def get_temperature_status(warning_threshold: int | float) -> List[Dict[str, Any
             }
         )
     return rows
-
-
-# ---------------------------------------------------------------------
-# BATTERY
-# ---------------------------------------------------------------------
 
 
 def get_battery_health() -> List[Dict[str, Any]]:
@@ -306,16 +276,11 @@ def get_battery_health() -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# HARDWARE
-# ---------------------------------------------------------------------
-
-
-def get_hardware_devices() -> List[Dict[str, Any]]:
+def get_hardware_devices(command_timeout: int | float) -> List[Dict[str, Any]]:
     """Return detected PCI and USB devices."""
     rows: List[Dict[str, Any]] = []
     if shutil.which("lspci"):
-        result = _run_command(["lspci"])
+        result = _run_command(["lspci"], command_timeout)
         if result is not None and result.returncode == 0:
             for line in result.stdout.splitlines():
                 if line.strip():
@@ -326,7 +291,7 @@ def get_hardware_devices() -> List[Dict[str, Any]]:
                         }
                     )
     if shutil.which("lsusb"):
-        result = _run_command(["lsusb"])
+        result = _run_command(["lsusb"], command_timeout)
         if result is not None and result.returncode == 0:
             for line in result.stdout.splitlines():
                 if line.strip():
@@ -346,18 +311,16 @@ def get_hardware_devices() -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# SYSTEM ERRORS
-# ---------------------------------------------------------------------
-
-
-def get_system_errors() -> List[Dict[str, Any]]:
+def get_system_errors(command_timeout: int | float, kernel_error_limit: int) -> List[Dict[str, Any]]:
     """Return important kernel errors from the live environment."""
+    if type(kernel_error_limit) is not int or kernel_error_limit <= 0:
+        raise ValueError("general.kernel_error_limit must be a positive integer")
     result = _run_command(
         [
             "dmesg",
             "--level=err,crit,alert,emerg",
-        ]
+        ],
+        command_timeout,
     )
     if result is None or result.returncode != 0:
         return [
@@ -386,24 +349,21 @@ def get_system_errors() -> List[Dict[str, Any]]:
             "Message": message,
             "Status": "ERROR",
         }
-        for message in messages[-50:]
+        for message in messages[-kernel_error_limit:]
     ]
-
-
-# ---------------------------------------------------------------------
-# FULL REPORT
-# ---------------------------------------------------------------------
 
 
 def get_full_diagnostic_report(
     temperature_warning: int | float,
     memory_usage_warning: int | float,
+    command_timeout: int | float,
+    kernel_error_limit: int,
 ) -> List[Dict[str, Any]]:
     """Return a concise overall system diagnostic report."""
     rows: List[Dict[str, Any]] = []
     memory = get_memory_status(memory_usage_warning)
     temperatures = get_temperature_status(temperature_warning)
-    errors = get_system_errors()
+    errors = get_system_errors(command_timeout, kernel_error_limit)
     memory_warning = any(row.get("Status") == "WARNING" for row in memory)
     temperature_warning_found = any(
         row.get("Status") == "WARNING"

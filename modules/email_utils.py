@@ -15,9 +15,13 @@ from email.parser import BytesParser
 from pathlib import Path
 from typing import Any, Dict, List
 
-from modules.display_utils import confirm
+from modules.display_utils import confirm, select_from_list
 from modules.file_utils import expand_path
 
+
+# ---------------------------------------------------------------------
+# FILE CONSTANTS
+# ---------------------------------------------------------------------
 
 EMAIL_COLUMN_WIDTHS = {
     "From": 50,
@@ -128,8 +132,39 @@ def _flatten_extracted_files(output_dir: Path, extension: str) -> int:
     return count
 
 
+def count_mbox_messages(mbox_file: str) -> int:
+    """Return the number of messages in an mbox file."""
+    try:
+        box = mailbox.mbox(mbox_file)
+        return len(box)
+    except Exception:
+        return 0
+
+
+def get_email_folders(email_files: list[str]) -> dict[str, list[str]]:
+    """Group email paths by parent folder and sort each folder naturally."""
+    folders: dict[str, list[str]] = {}
+    for email_file in email_files:
+        folder = Path(email_file).parent.name
+        folders.setdefault(folder, []).append(email_file)
+    for files in folders.values():
+        files.sort(key=_natural_email_sort_key)
+    return folders
+
+
 # ---------------------------------------------------------------------
-# PST SELECTION AND EXECUTION
+# PRE STEPS
+# ---------------------------------------------------------------------
+
+
+def clear_pst_files(ctx: dict) -> bool:
+    """Remove temporary PST discovery data from context."""
+    ctx.pop("pst_files", None)
+    return True
+
+
+# ---------------------------------------------------------------------
+# PST SELECTION AND INFORMATION
 # ---------------------------------------------------------------------
 
 
@@ -140,57 +175,7 @@ def select_pst_files(pst_dir: str) -> str | list[str] | None:
     if not pst_files:
         print("No PST files available.")
         return None
-    print("\nSelect a PST file:")
-    print("-" * 50)
-    for index, pst_file in enumerate(pst_files, 1):
-        print(f"{index}. {Path(pst_file).name}")
-    print(f"{len(pst_files) + 1}. All PST Files")
-    while True:
-        selection = input("\nSelect number (Q to cancel): ").strip()
-        if selection.lower() == "q":
-            return None
-        if selection.isdigit():
-            selected = int(selection)
-            if 1 <= selected <= len(pst_files):
-                return pst_files[selected - 1]
-            if selected == len(pst_files) + 1:
-                return pst_files
-        print("Invalid selection.")
-
-
-def run_pst_files(pst_files: str | list[str], dest_dir: str, operation) -> bool:
-    """Run a conversion or extraction operation on selected PST files."""
-    if not pst_files:
-        return False
-    if isinstance(pst_files, str):
-        return operation(pst_files, dest_dir)
-    successful = 0
-    for index, pst_file in enumerate(pst_files, 1):
-        print(f"\nProcessing {index}/{len(pst_files)}: {Path(pst_file).name}")
-        if operation(pst_file, dest_dir):
-            successful += 1
-    print(f"\nCompleted: {successful}/{len(pst_files)} PST files")
-    return successful == len(pst_files)
-
-
-def clear_pst_files(ctx: dict) -> bool:
-    """Remove temporary PST discovery data from context."""
-    ctx.pop("pst_files", None)
-    return True
-
-
-# ---------------------------------------------------------------------
-# PST INFORMATION
-# ---------------------------------------------------------------------
-
-
-def count_mbox_messages(mbox_file: str) -> int:
-    """Return the number of messages in an mbox file."""
-    try:
-        box = mailbox.mbox(mbox_file)
-        return len(box)
-    except Exception:
-        return 0
+    return select_from_list("Select a PST file", pst_files, allow_all=True, retry_invalid=True)
 
 
 def get_pst_summary(pst_file: str) -> List[Dict[str, Any]]:
@@ -514,17 +499,6 @@ def browse_pst_emails(pst_file: str, page_size: int = 25) -> bool:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-def get_email_folders(email_files: list[str]) -> dict[str, list[str]]:
-    """Group email paths by parent folder and sort each folder naturally."""
-    folders: dict[str, list[str]] = {}
-    for email_file in email_files:
-        folder = Path(email_file).parent.name
-        folders.setdefault(folder, []).append(email_file)
-    for files in folders.values():
-        files.sort(key=_natural_email_sort_key)
-    return folders
-
-
 def select_email_folder(email_files: list[str]) -> list[str] | None:
     """Select a folder and return its email paths, or None if cancelled."""
     folders = get_email_folders(email_files)
@@ -605,22 +579,11 @@ def list_email_search_configs(search_configs: list) -> list | bool:
     if not isinstance(search_configs, list) or not search_configs:
         print("No email search configurations available.")
         return False
-    print("\nSelect Email Search Criteria:")
-    print("-" * 50)
-    for index, config in enumerate(search_configs, 1):
-        print(f"{index}. {Path(config).name}")
-    print(f"{len(search_configs) + 1}. All Search Configurations")
-    while True:
-        selection = input("\nSelect number (Q to cancel): ").strip()
-        if selection.lower() == "q":
-            return False
-        if selection.isdigit():
-            selected = int(selection)
-            if 1 <= selected <= len(search_configs):
-                return [str(expand_path(search_configs[selected - 1]))]
-            if selected == len(search_configs) + 1:
-                return [str(expand_path(config)) for config in search_configs]
-        print("Invalid selection.")
+    selection = select_from_list("Select Email Search Criteria", search_configs, allow_all=True, retry_invalid=True)
+    if selection is None:
+        return False
+    selected = selection if isinstance(selection, list) else [selection]
+    return [str(expand_path(config)) for config in selected]
 
 
 def search_emails(config_file: str) -> list | bool:
@@ -710,25 +673,6 @@ def search_emails(config_file: str) -> list | bool:
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
         print(f"Email search failed: {exc}")
         return False
-
-
-def run_email_searches(config_files: str | list) -> list | bool:
-    """Run one or multiple email searches."""
-    if not config_files:
-        return False
-    if isinstance(config_files, str):
-        return search_emails(config_files)
-    if not isinstance(config_files, list):
-        return False
-    results = []
-    for config_file in config_files:
-        print(f"\nRunning email search: {Path(config_file).name}")
-        search_results = search_emails(config_file)
-        if search_results is False:
-            print(f"[ERROR] Search failed: {Path(config_file).name}")
-            continue
-        results.extend(search_results)
-    return results
 
 
 def load_email_search_results(config_files: list) -> list | bool:
@@ -835,3 +779,42 @@ def display_email_search_results(results: list, config_files: str | list | None 
             input("\nPress Enter to return to results...")
         else:
             print("Invalid selection.")
+
+
+# ---------------------------------------------------------------------
+# BATCH RUNNERS
+# ---------------------------------------------------------------------
+
+
+def run_pst_files(pst_files: str | list[str], dest_dir: str, operation) -> bool:
+    """Run a conversion or extraction operation on selected PST files."""
+    if not pst_files:
+        return False
+    if isinstance(pst_files, str):
+        return operation(pst_files, dest_dir)
+    successful = 0
+    for index, pst_file in enumerate(pst_files, 1):
+        print(f"\nProcessing {index}/{len(pst_files)}: {Path(pst_file).name}")
+        if operation(pst_file, dest_dir):
+            successful += 1
+    print(f"\nCompleted: {successful}/{len(pst_files)} PST files")
+    return successful == len(pst_files)
+
+
+def run_email_searches(config_files: str | list) -> list | bool:
+    """Run one or multiple email searches."""
+    if not config_files:
+        return False
+    if isinstance(config_files, str):
+        return search_emails(config_files)
+    if not isinstance(config_files, list):
+        return False
+    results = []
+    for config_file in config_files:
+        print(f"\nRunning email search: {Path(config_file).name}")
+        search_results = search_emails(config_file)
+        if search_results is False:
+            print(f"[ERROR] Search failed: {Path(config_file).name}")
+            continue
+        results.extend(search_results)
+    return results

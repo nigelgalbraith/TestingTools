@@ -18,9 +18,9 @@
     }
   },
   "DESCRIPTION": {
-    "general": "General configuration for the File Integrity utility.",
-    "general.algorithm": "Hash algorithm used for file hashing, comparison, duplicate detection, and checksum manifests.",
-    "general.target_dir": "Base directory inspected by File Integrity. Directory operations use this path automatically and file selections are resolved relative to this directory.",
-    "general.manifest_dir": "Directory where checksum manifests are stored. Relative paths are resolved from the program working directory."
+    "general": "Required. General configuration for the File Integrity utility.",
+    "general.algorithm": "Required string naming a hashlib-supported algorithm with a fixed-length hexdigest, such as sha256, sha512 or md5. Unsupported algorithms fail hashing operations; variable-length SHAKE algorithms are not supported by this utility.",
+    "general.target_dir": "Required. Base directory inspected by File Integrity. Directory operations use this path automatically and file selections are resolved relative to this directory.",
+    "general.manifest_dir": "Required. Directory where checksum manifests are stored. Relative paths are resolved from the program working directory."
   }
 }

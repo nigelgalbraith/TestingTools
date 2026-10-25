@@ -12,10 +12,11 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List
+from modules.display_utils import select_from_list
 
 
 # ---------------------------------------------------------------------
-# HASH HELPERS
+# HELPERS
 # ---------------------------------------------------------------------
 
 
@@ -68,7 +69,7 @@ def _restore_owner(path: Path) -> None:
 
 
 # ---------------------------------------------------------------------
-# STATUS
+# FILE INTEGRITY OPERATIONS
 # ---------------------------------------------------------------------
 
 
@@ -91,11 +92,6 @@ def get_integrity_status(algorithm: str, target_dir: str, manifest_dir: str) -> 
     return [{"file_integrity": "File integrity", "ready": ready}]
 
 
-# ---------------------------------------------------------------------
-# FILE SELECTION
-# ---------------------------------------------------------------------
-
-
 def select_file(target_dir: str, title: str) -> str | None:
     """Select a file from the configured target directory."""
     root = _resolve_target(target_dir)
@@ -103,16 +99,11 @@ def select_file(target_dir: str, title: str) -> str | None:
     if not files:
         print(f"No files found in: {root}")
         return None
-    print(f"\n{title}:")
-    for index, path in enumerate(files, start=1):
-        print(f"{index}) {path.relative_to(root)}")
-    try:
-        choice = int(input(f"Enter your selection (1-{len(files)}): ").strip())
-    except ValueError:
+    options = [str(path.relative_to(root)) for path in files]
+    selection = select_from_list(title, options)
+    if selection is None:
         return None
-    if not 1 <= choice <= len(files):
-        return None
-    return str(files[choice - 1])
+    return str(files[options.index(selection)])
 
 
 def prompt_expected_hash(algorithm: str) -> str | None:
@@ -131,21 +122,11 @@ def prompt_manifest_path(manifest_dir: str) -> str | None:
     if not manifests:
         print(f"No manifest files found in: {root}")
         return None
-    print("\nSelect a checksum manifest:")
-    for index, manifest in enumerate(manifests, start=1):
-        print(f"{index}) {manifest.name}")
-    try:
-        choice = int(input(f"Enter your selection (1-{len(manifests)}): ").strip())
-    except ValueError:
+    options = [manifest.name for manifest in manifests]
+    selection = select_from_list("Select a checksum manifest", options)
+    if selection is None:
         return None
-    if not 1 <= choice <= len(manifests):
-        return None
-    return str(manifests[choice - 1])
-
-
-# ---------------------------------------------------------------------
-# FILE HASH
-# ---------------------------------------------------------------------
+    return str(manifests[options.index(selection)])
 
 
 def hash_file(file_path: str, algorithm: str) -> List[Dict[str, Any]]:
@@ -167,11 +148,6 @@ def verify_file_hash(file_path: str, expected_hash: str, algorithm: str) -> List
     return [{"File": str(path), "Expected": expected_hash.lower(), "Actual": actual.lower(), "Status": status}]
 
 
-# ---------------------------------------------------------------------
-# DIRECTORY HASH
-# ---------------------------------------------------------------------
-
-
 def hash_directory(target_dir: str, algorithm: str) -> List[Dict[str, Any]]:
     """Hash every file below the configured target directory."""
     root = _resolve_target(target_dir)
@@ -180,11 +156,6 @@ def hash_directory(target_dir: str, algorithm: str) -> List[Dict[str, Any]]:
         digest = _hash_file(path, algorithm)
         rows.append({"File": str(path.relative_to(root)), "Hash": digest or "ERROR"})
     return rows
-
-
-# ---------------------------------------------------------------------
-# FILE COMPARISON
-# ---------------------------------------------------------------------
 
 
 def compare_files(first_file: str, second_file: str, algorithm: str) -> List[Dict[str, Any]]:
@@ -200,11 +171,6 @@ def compare_files(first_file: str, second_file: str, algorithm: str) -> List[Dic
     else:
         status = "DIFFERENT"
     return [{"File 1": str(first), "File 2": str(second), "Status": status}]
-
-
-# ---------------------------------------------------------------------
-# DUPLICATE FILES
-# ---------------------------------------------------------------------
 
 
 def find_duplicate_files(target_dir: str, algorithm: str) -> List[Dict[str, Any]]:
@@ -224,11 +190,6 @@ def find_duplicate_files(target_dir: str, algorithm: str) -> List[Dict[str, Any]
     if not rows:
         return [{"Hash": "-", "Count": 0, "Files": "No duplicate files found"}]
     return rows
-
-
-# ---------------------------------------------------------------------
-# MANIFEST CREATION
-# ---------------------------------------------------------------------
 
 
 def create_manifest(target_dir: str, manifest_dir: str, algorithm: str) -> List[Dict[str, Any]]:
@@ -274,11 +235,6 @@ def restore_integrity_permissions(manifest_dir: str) -> List[Dict[str, Any]]:
     except (OSError, ValueError):
         return [{"Destination": str(path), "Result": "Unable to restore manifest permissions", "Status": "FAIL"}]
     return [{"Destination": str(path), "Result": "Manifest permissions restored", "Status": "PASS"}]
-
-
-# ---------------------------------------------------------------------
-# MANIFEST VERIFICATION
-# ---------------------------------------------------------------------
 
 
 def verify_manifest(manifest_path: str) -> List[Dict[str, Any]]:

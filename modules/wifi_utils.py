@@ -51,8 +51,10 @@ def select_network_from_scan(
 # ---------------------------------------------------------------------
 
 
-def get_wireless_interfaces(timeout: int) -> List[str]:
+def get_wireless_interfaces(timeout: int | float) -> List[str]:
     """Get list of available wireless interfaces."""
+    if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
+        raise ValueError("general.interface_timeout must be a positive number")
     print("\n[INFO] Detecting wireless interfaces...")
     interfaces: List[str] = []
     try:
@@ -94,9 +96,11 @@ def get_wireless_interfaces(timeout: int) -> List[str]:
     return interfaces
 
 
-def check_wifi_status() -> List[Dict[str, Any]]:
+def check_wifi_status(interface_timeout: int | float, status_timeout: int | float) -> List[Dict[str, Any]]:
     """Return status rows for each wireless adapter."""
-    interfaces = get_wireless_interfaces(timeout=5)
+    if type(status_timeout) not in (int, float) or not 0 < status_timeout < float("inf"):
+        raise ValueError("general.status_timeout must be a positive number")
+    interfaces = get_wireless_interfaces(timeout=interface_timeout)
     rows: List[Dict[str, Any]] = []
     for iface in interfaces:
         try:
@@ -104,7 +108,7 @@ def check_wifi_status() -> List[Dict[str, Any]]:
                 ["iw", "dev", iface, "link"],
                 capture_output=True,
                 text=True,
-                timeout=3,
+                timeout=status_timeout,
             )
             connected = "Connected to" in (result.stdout or "")
             rows.append({"device": iface, "state": "connected" if connected else "disconnected"})
@@ -122,11 +126,13 @@ def check_wifi_status() -> List[Dict[str, Any]]:
 
 def scan_networks(
     interface: str,
-    timeout: int,
+    timeout: int | float,
     columns: List[Dict[str, Any]],
     mode: str = "managed"
 ) -> List[Dict[str, Any]]:
     """Scan WiFi networks using JSON-defined extraction patterns."""
+    if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
+        raise ValueError("general.scan_timeout must be a positive number")
     if not interface:
         print("[ERROR] No interface provided for scan.")
         return []
@@ -180,8 +186,10 @@ def scan_networks(
     return networks
 
 
-def show_network_details(interface: str, network: Dict[str, Any], timeout: int = 8) -> bool:
+def show_network_details(interface: str, network: Dict[str, Any], timeout: int | float) -> bool:
     """Print raw iw scan block for the selected network (by BSSID)."""
+    if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
+        raise ValueError("general.scan_timeout must be a positive number")
     bssid = str((network or {}).get("bssid") or "").strip()
     if not interface or not bssid:
         print("[ERROR] Missing interface or BSSID.")

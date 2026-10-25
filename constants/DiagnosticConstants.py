@@ -34,6 +34,10 @@ CONFIG_DOC = "doc/DiagnosticDoc.json"
 # ---------------------------------------------------------------------
 
 GENERAL_KEY = "general"
+CPU_KEY = "cpu"
+CPU_FIELDS_KEY = "fields"
+COMMAND_TIMEOUT_KEY = "command_timeout"
+KERNEL_ERROR_LIMIT_KEY = "kernel_error_limit"
 
 TEMPERATURE_WARNING_KEY = "temperature_warning"
 MEMORY_USAGE_WARNING_KEY = "memory_usage_warning"
@@ -46,6 +50,7 @@ MEMORY_USAGE_WARNING_KEY = "memory_usage_warning"
 VALIDATION_CONFIG: Dict[str, Any] = {
     "required_job_fields": {
         GENERAL_KEY: dict,
+        CPU_KEY: dict,
     },
 }
 
@@ -59,9 +64,15 @@ SECONDARY_VALIDATION: Dict[str, Any] = {
         "required_job_fields": {
             TEMPERATURE_WARNING_KEY: (int, float),
             MEMORY_USAGE_WARNING_KEY: (int, float),
+            COMMAND_TIMEOUT_KEY: (int, float),
+            KERNEL_ERROR_LIMIT_KEY: int,
         },
         "allow_empty": False,
-    }
+    },
+    CPU_KEY: {
+        "required_job_fields": {CPU_FIELDS_KEY: dict},
+        "allow_empty": False,
+    },
 }
 
 
@@ -227,7 +238,7 @@ CPU_INFORMATION_EXEC = [
     {
         "phase": "exec",
         "fn": get_cpu_info,
-        "args": [],
+        "args": [lambda job, meta, ctx: meta[CPU_KEY][CPU_FIELDS_KEY], lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY]],
         "result": "cpu_info",
     },
     {
@@ -315,7 +326,7 @@ HARDWARE_DEVICES_EXEC = [
     {
         "phase": "exec",
         "fn": get_hardware_devices,
-        "args": [],
+        "args": [lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY]],
         "result": "hardware_devices",
     },
     {
@@ -336,7 +347,7 @@ SYSTEM_ERRORS_EXEC = [
     {
         "phase": "exec",
         "fn": get_system_errors,
-        "args": [],
+        "args": [lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY], lambda job, meta, ctx: meta[GENERAL_KEY][KERNEL_ERROR_LIMIT_KEY]],
         "result": "system_errors",
     },
     {
@@ -360,6 +371,8 @@ FULL_DIAGNOSTIC_EXEC = [
         "args": [
             lambda job, meta, ctx: meta[GENERAL_KEY][TEMPERATURE_WARNING_KEY],
             lambda job, meta, ctx: meta[GENERAL_KEY][MEMORY_USAGE_WARNING_KEY],
+            lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY],
+            lambda job, meta, ctx: meta[GENERAL_KEY][KERNEL_ERROR_LIMIT_KEY],
         ],
         "result": "diagnostic_report",
     },

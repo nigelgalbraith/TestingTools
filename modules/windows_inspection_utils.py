@@ -12,10 +12,11 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, List
+from modules.display_utils import select_from_list
 
 
 # ---------------------------------------------------------------------
-# COMMAND HELPERS
+# HELPERS
 # ---------------------------------------------------------------------
 
 
@@ -74,7 +75,7 @@ def _is_windows_installation(path: Path) -> bool:
 
 
 # ---------------------------------------------------------------------
-# STATUS
+# WINDOWS INSPECTION
 # ---------------------------------------------------------------------
 
 
@@ -83,6 +84,7 @@ def get_windows_status(mount_root: str) -> List[Dict[str, Any]]:
     mount_path = Path(mount_root)
     ready = mount_path.exists() and mount_path.is_dir()
     return [{"windows_inspection": "Offline Windows inspection", "ready": ready}]
+
 
 def check_mount_root(mount_root: str) -> List[Dict[str, Any]]:
     """Check whether the configured mount root exists and is usable."""
@@ -107,10 +109,6 @@ def check_mount_root(mount_root: str) -> List[Dict[str, Any]]:
         "Status": "PASS",
         "ready": True,
     }]
-
-# ---------------------------------------------------------------------
-# WINDOWS DETECTION
-# ---------------------------------------------------------------------
 
 
 def detect_windows_installations(mount_root: str) -> List[Dict[str, Any]]:
@@ -138,21 +136,11 @@ def select_windows_installation(installations: List[Dict[str, Any]]) -> str | No
     if not installations:
         print("No Windows installations detected.")
         return None
-    print("\nSelect a Windows installation:")
-    for index, installation in enumerate(installations, start=1):
-        print(f"{index}) {installation.get('Device', '')} - {installation.get('Mount', '')}")
-    try:
-        choice = int(input(f"Enter your selection (1-{len(installations)}): ").strip())
-    except ValueError:
+    options = [f"{installation.get('Device', '')} - {installation.get('Mount', '')}" for installation in installations]
+    selection = select_from_list("Select a Windows installation", options)
+    if selection is None:
         return None
-    if not 1 <= choice <= len(installations):
-        return None
-    return str(installations[choice - 1].get("Mount") or "") or None
-
-
-# ---------------------------------------------------------------------
-# WINDOWS INFORMATION
-# ---------------------------------------------------------------------
+    return str(installations[options.index(selection)].get("Mount") or "") or None
 
 
 def get_windows_info(windows_root: str) -> List[Dict[str, Any]]:
@@ -166,11 +154,6 @@ def get_windows_info(windows_root: str) -> List[Dict[str, Any]]:
         {"Field": "Users path", "Value": str(root / "Users")},
     ]
     return rows
-
-
-# ---------------------------------------------------------------------
-# WINDOWS USERS
-# ---------------------------------------------------------------------
 
 
 def get_windows_users(windows_root: str) -> List[Dict[str, Any]]:
@@ -187,11 +170,6 @@ def get_windows_users(windows_root: str) -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# REGISTRY HIVES
-# ---------------------------------------------------------------------
-
-
 def inspect_registry_hives(windows_root: str) -> List[Dict[str, Any]]:
     """List standard offline Windows registry hives."""
     config_path = Path(windows_root) / "Windows" / "System32" / "config"
@@ -201,11 +179,6 @@ def inspect_registry_hives(windows_root: str) -> List[Dict[str, Any]]:
         path = config_path / hive
         rows.append({"Hive": hive, "Path": str(path), "Status": "FOUND" if path.is_file() else "MISSING"})
     return rows
-
-
-# ---------------------------------------------------------------------
-# STARTUP ENTRIES
-# ---------------------------------------------------------------------
 
 
 def inspect_startup_entries(windows_root: str) -> List[Dict[str, Any]]:
@@ -227,22 +200,12 @@ def inspect_startup_entries(windows_root: str) -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# SERVICES
-# ---------------------------------------------------------------------
-
-
 def inspect_services(windows_root: str) -> List[Dict[str, Any]]:
     """Return service inspection availability for an offline Windows installation."""
     system_hive = Path(windows_root) / "Windows" / "System32" / "config" / "SYSTEM"
     if not system_hive.is_file():
         return [{"Service": "SYSTEM registry hive", "Status": "MISSING"}]
     return [{"Service": "SYSTEM registry hive", "Status": "AVAILABLE"}]
-
-
-# ---------------------------------------------------------------------
-# INSTALLED SOFTWARE
-# ---------------------------------------------------------------------
 
 
 def get_installed_software(windows_root: str) -> List[Dict[str, Any]]:

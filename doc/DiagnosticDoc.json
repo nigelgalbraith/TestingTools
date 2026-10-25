@@ -2,21 +2,45 @@
   "FIXED_FIELDS": [
     "general",
     "general.temperature_warning",
-    "general.memory_usage_warning"
+    "general.memory_usage_warning",
+    "general.command_timeout",
+    "general.kernel_error_limit",
+    "cpu",
+    "cpu.fields"
   ],
   "EDITABLE_FIELDS": [
     "general.temperature_warning.<VALUES>",
-    "general.memory_usage_warning.<VALUES>"
+    "general.memory_usage_warning.<VALUES>",
+    "general.command_timeout.<VALUES>",
+    "general.kernel_error_limit.<VALUES>",
+    "cpu.fields.<VALUES>"
   ],
   "EXAMPLE": {
     "general": {
       "temperature_warning": 80,
-      "memory_usage_warning": 90
+      "memory_usage_warning": 90,
+      "command_timeout": 15,
+      "kernel_error_limit": 50
+    },
+    "cpu": {
+      "fields": {
+        "Model name": "Model",
+        "Architecture": "Architecture",
+        "CPU(s)": "Logical CPUs",
+        "Core(s) per socket": "Cores per Socket",
+        "Socket(s)": "Sockets",
+        "Thread(s) per core": "Threads per Core",
+        "Virtualization": "Virtualization"
+      }
     }
   },
   "DESCRIPTION": {
-    "general": "General threshold configuration for the Diagnostic utility.",
-    "general.temperature_warning": "Temperature in degrees Celsius at which a detected sensor is reported as WARNING.",
-    "general.memory_usage_warning": "Memory usage percentage at which system RAM usage is reported as WARNING."
+    "general": "Required dictionary of warning thresholds, command timeout and kernel message limit.",
+    "general.temperature_warning": "Required. Temperature in degrees Celsius at which a detected sensor is reported as WARNING.",
+    "general.memory_usage_warning": "Required. Memory usage percentage at which system RAM usage is reported as WARNING.",
+    "general.command_timeout": "Required finite positive number of seconds for lscpu, lspci, lsusb and dmesg. File-based checks do not use this timeout.",
+    "general.kernel_error_limit": "Required positive integer limiting the most recent non-empty kernel error messages returned by dmesg; message order is preserved.",
+    "cpu": "Required. CPU display configuration.",
+    "cpu.fields": "Required dictionary of lscpu source names to display labels, both strings. Insertion order controls output order. Missing source fields are omitted; an empty mapping is permitted."
   }
 }

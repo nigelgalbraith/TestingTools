@@ -12,7 +12,7 @@
     }
   },
   "DESCRIPTION": {
-    "general": "General configuration for the Offline Windows Inspection utility.",
-    "general.mount_root": "Directory used to mount detected Windows partitions read-only for offline inspection."
+    "general": "Required. General configuration for the Offline Windows Inspection utility.",
+    "general.mount_root": "Required. Directory used to mount detected Windows partitions read-only for offline inspection."
   }
 }

@@ -21,10 +21,10 @@
     }
   },
   "DESCRIPTION": {
-    "general": "General configuration for the Hard Drive Tools utility.",
-    "general.temperature_warning": "Drive temperature in degrees Celsius at which the utility reports a WARNING.",
-    "general.wear_warning": "Drive wear percentage at which the utility reports a WARNING.",
-    "general.benchmark_size_mb": "Amount of data in megabytes read during the non-destructive sequential read benchmark.",
-    "general.disk_usage_warning": "Filesystem usage percentage at which a filesystem on the selected drive is reported as WARNING."
+    "general": "Required. General configuration for the Hard Drive Tools utility.",
+    "general.temperature_warning": "Required. Drive temperature in degrees Celsius at which the utility reports a WARNING.",
+    "general.wear_warning": "Required. Drive wear percentage at which the utility reports a WARNING.",
+    "general.benchmark_size_mb": "Required. Amount of data in megabytes read during the non-destructive sequential read benchmark.",
+    "general.disk_usage_warning": "Required. Filesystem usage percentage at which a filesystem on the selected drive is reported as WARNING."
   }
 }

@@ -7,7 +7,7 @@
   ],
   "EDITABLE_FIELDS": [
     "Modules.<VALUES>",
-    "ModuleFolder",
+    "ModuleFolder.<VALUES>",
     "CheckFolders.<VALUES>",
     "CheckFiles.<VALUES>"
   ],
@@ -34,9 +34,9 @@
     ]
   },
   "DESCRIPTION": {
-    "Modules": "Python module filenames available in the selection menu. Maintain the module list here; adding a filename requires no constants change.",
-    "ModuleFolder": "Shared directory containing all configured Python modules. Status reports whether each configured module file exists.",
-    "CheckFolders": "Shared additional folders recursively scanned for references to functions in the selected module.",
-    "CheckFiles": "Shared individual Python files scanned for references to functions in the selected module."
+    "Modules": "Required. Python module filenames available in the selection menu. Maintain the module list here; adding a filename requires no constants change.",
+    "ModuleFolder": "Required. Shared directory containing all configured Python modules. Status reports whether each configured module file exists.",
+    "CheckFolders": "Required. Shared additional folders recursively scanned for references to functions in the selected module.",
+    "CheckFiles": "Required. Shared individual Python files scanned for references to functions in the selected module."
   }
 }

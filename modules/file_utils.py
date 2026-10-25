@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 
+# ---------------------------------------------------------------------
+# FILE OPERATIONS
+# ---------------------------------------------------------------------
+
 def expand_path(path):
     """Expand ~ in filesystem paths."""
     return os.path.expanduser(path)

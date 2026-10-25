@@ -1,6 +1,8 @@
 {
   "general": {
-    "scan_timeout": 30
+    "scan_timeout": 30,
+    "interface_timeout": 10,
+    "status_timeout": 3
   },
   
 "network_summary_columns": [

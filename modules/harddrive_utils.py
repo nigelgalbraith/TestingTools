@@ -16,10 +16,11 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List
+from modules.display_utils import select_from_list
 
 
 # ---------------------------------------------------------------------
-# COMMAND HELPERS
+# HELPERS
 # ---------------------------------------------------------------------
 
 
@@ -97,8 +98,13 @@ def _get_mountpoints(block_device: Dict[str, Any]) -> List[str]:
     return [str(item) for item in mountpoints if item]
 
 
+def _is_windows_installation(path: Path) -> bool:
+    """Return True when a filesystem appears to contain Windows."""
+    return (path / "Windows" / "System32").is_dir()
+
+
 # ---------------------------------------------------------------------
-# STATUS
+# DRIVE DIAGNOSTICS
 # ---------------------------------------------------------------------
 
 
@@ -106,11 +112,6 @@ def get_drive_diagnostic_status() -> List[Dict[str, Any]]:
     """Return Hard Drive Tools readiness."""
     ready = shutil.which("smartctl") is not None and shutil.which("lsblk") is not None
     return [{"harddrive": "Hard drive tools", "ready": ready}]
-
-
-# ---------------------------------------------------------------------
-# DRIVE LIST AND SELECTION
-# ---------------------------------------------------------------------
 
 
 def get_drive_list() -> List[Dict[str, Any]]:
@@ -140,21 +141,11 @@ def select_drive(title: str, drives: List[Dict[str, Any]]) -> str | None:
     if not drives:
         print("No physical drives detected.")
         return None
-    print(f"\n{title}:")
-    for index, drive in enumerate(drives, start=1):
-        print(f"{index}) {drive.get('Device', '')} - {drive.get('Model', 'Unknown')} - {drive.get('Size', 'Unknown')} - {drive.get('Type', 'Unknown')}")
-    try:
-        choice = int(input(f"Enter your selection (1-{len(drives)}): ").strip())
-    except ValueError:
+    options = [f"{drive.get('Device', '')} - {drive.get('Model', 'Unknown')} - {drive.get('Size', 'Unknown')} - {drive.get('Type', 'Unknown')}" for drive in drives]
+    selection = select_from_list(title, options)
+    if selection is None:
         return None
-    if not 1 <= choice <= len(drives):
-        return None
-    return str(drives[choice - 1].get("Device") or "") or None
-
-
-# ---------------------------------------------------------------------
-# DISK AND PARTITION OVERVIEW
-# ---------------------------------------------------------------------
+    return str(drives[options.index(selection)].get("Device") or "") or None
 
 
 def get_disk_overview(device: str) -> List[Dict[str, Any]]:
@@ -168,11 +159,6 @@ def get_disk_overview(device: str) -> List[Dict[str, Any]]:
         mount = ", ".join(_get_mountpoints(block_device))
         rows.append({"Device": block_device.get("path") or block_device.get("name") or "", "Type": block_device.get("type") or "", "Size": _format_bytes(size), "Filesystem": block_device.get("fstype") or "", "Mount": mount})
     return rows
-
-
-# ---------------------------------------------------------------------
-# FILESYSTEM USAGE
-# ---------------------------------------------------------------------
 
 
 def get_filesystem_usage(device: str, warning_threshold: int | float) -> List[Dict[str, Any]]:
@@ -193,16 +179,6 @@ def get_filesystem_usage(device: str, warning_threshold: int | float) -> List[Di
     if not rows:
         rows.append({"Filesystem": device, "Size": "", "Used": "", "Available": "", "Usage": "No mounted filesystems", "Status": "INFO"})
     return rows
-
-
-# ---------------------------------------------------------------------
-# WINDOWS INSTALLATION DETECTION
-# ---------------------------------------------------------------------
-
-
-def _is_windows_installation(path: Path) -> bool:
-    """Return True when a filesystem appears to contain Windows."""
-    return (path / "Windows" / "System32").is_dir()
 
 
 def detect_windows_installations(device: str) -> List[Dict[str, Any]]:
@@ -245,11 +221,6 @@ def detect_windows_installations(device: str) -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# ENCRYPTION / BITLOCKER
-# ---------------------------------------------------------------------
-
-
 def get_encryption_status(device: str) -> List[Dict[str, Any]]:
     """Return encryption status for the selected drive and its partitions."""
     rows: List[Dict[str, Any]] = []
@@ -271,11 +242,6 @@ def get_encryption_status(device: str) -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# DRIVE INFORMATION
-# ---------------------------------------------------------------------
-
-
 def get_drive_information(device: str) -> List[Dict[str, Any]]:
     """Return detailed identification information for one drive."""
     data = _get_smart_json(device)
@@ -293,11 +259,6 @@ def get_drive_information(device: str) -> List[Dict[str, Any]]:
     return [{"Device": device, "Model": model, "Serial": serial, "Firmware": firmware, "Capacity": _format_bytes(int(capacity)) if capacity else "Unknown", "Interface": interface_name}]
 
 
-# ---------------------------------------------------------------------
-# SMART HEALTH
-# ---------------------------------------------------------------------
-
-
 def get_smart_health(device: str) -> List[Dict[str, Any]]:
     """Return SMART overall health for one drive."""
     data = _get_smart_json(device)
@@ -313,11 +274,6 @@ def get_smart_health(device: str) -> List[Dict[str, Any]]:
         health = "SMART health unavailable"
         status = "UNKNOWN"
     return [{"Device": device, "Health": health, "Status": status}]
-
-
-# ---------------------------------------------------------------------
-# SMART ATTRIBUTES
-# ---------------------------------------------------------------------
 
 
 def get_smart_attributes(device: str) -> List[Dict[str, Any]]:
@@ -338,11 +294,6 @@ def get_smart_attributes(device: str) -> List[Dict[str, Any]]:
     return rows
 
 
-# ---------------------------------------------------------------------
-# TEMPERATURE AND WEAR
-# ---------------------------------------------------------------------
-
-
 def get_temperature_wear(device: str, temperature_warning: int | float, wear_warning: int | float) -> List[Dict[str, Any]]:
     """Return temperature and wear information for one drive."""
     data = _get_smart_json(device)
@@ -361,11 +312,6 @@ def get_temperature_wear(device: str, temperature_warning: int | float, wear_war
     return [{"Device": device, "Temperature": f"{temperature}°C" if temperature is not None else "Unknown", "Wear": wear, "Status": status}]
 
 
-# ---------------------------------------------------------------------
-# SMART TEST HISTORY
-# ---------------------------------------------------------------------
-
-
 def get_smart_test_history(device: str) -> List[Dict[str, Any]]:
     """Return SMART self-test history for one drive."""
     rows: List[Dict[str, Any]] = []
@@ -382,11 +328,6 @@ def get_smart_test_history(device: str) -> List[Dict[str, Any]]:
         result = status_data.get("string", "Unknown") if isinstance(status_data, dict) else "Unknown"
         rows.append({"Device": device, "Test": test_name, "Result": result, "Lifetime Hours": entry.get("lifetime_hours", "")})
     return rows
-
-
-# ---------------------------------------------------------------------
-# SMART TESTS
-# ---------------------------------------------------------------------
 
 
 def run_short_smart_test(device: str) -> List[Dict[str, Any]]:
@@ -419,11 +360,6 @@ def run_long_smart_test(device: str) -> List[Dict[str, Any]]:
     return [{"Device": device, "Result": message, "Status": status}]
 
 
-# ---------------------------------------------------------------------
-# READ BENCHMARK
-# ---------------------------------------------------------------------
-
-
 def run_read_benchmark(device: str, size_mb: int) -> List[Dict[str, Any]]:
     """Run a non-destructive sequential read benchmark on one drive."""
     start = time.monotonic()
@@ -436,11 +372,6 @@ def run_read_benchmark(device: str, size_mb: int) -> List[Dict[str, Any]]:
         speed = f"{size_mb / elapsed:.1f} MB/s"
         status = "PASS"
     return [{"Device": device, "Read Speed": speed, "Status": status}]
-
-
-# ---------------------------------------------------------------------
-# FULL HARD DRIVE DIAGNOSTIC
-# ---------------------------------------------------------------------
 
 
 def get_full_drive_diagnostic(device: str, temperature_warning: int | float, wear_warning: int | float, disk_usage_warning: int | float) -> List[Dict[str, Any]]:
