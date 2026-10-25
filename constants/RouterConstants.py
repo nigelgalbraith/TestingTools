@@ -33,18 +33,16 @@ CONFIG_DOC = "doc/RouterDoc.json"
 COMMON_LOCATIONS_KEY = "Common Locations"
 ROUTERS_KEY = "Routers"
 MODEL_SPECS_README = "model_specs_readme_path"
-
 SPECS_KEY = "specs"
 PASSWORD_KEY = "password"
+DEVICE_KEY = "device_key"
 TEMPLATE_KEY = "template"
 DECODED_KEY = "template_decoded"
 DECODED_DIR_KEY = "template_decoded_dir"
 EDITED_KEY = "template_edited"
 EDITED_DIR_KEY = "template_edited_dir"
 ENCODED_KEY = "template_encoded"
-
 ORIGINAL_KEY = "original"
-
 MIGRATION_DECODED_KEY = "migration_decoded"
 MIGRATION_DECODED_DIR_KEY = "migration_decoded_dir"
 MIGRATION_EDITED_KEY = "migration_edited"
@@ -52,23 +50,6 @@ MIGRATION_EDITED_DIR_KEY = "migration_edited_dir"
 MIGRATION_CONVERTED_KEY = "migration_converted"
 MIGRATION_CONVERTED_DIR_KEY = "migration_converted_dir"
 MIGRATION_ENCODED_KEY = "migration_encoded"
-
-
-# ---------------------------------------------------------------------
-# MODEL SPECIFICATION KEYS
-# ---------------------------------------------------------------------
-
-MODEL_KEY = "model"
-FIRMWARE_KEY = "firmware"
-HARDWARE_KEY = "hardware"
-ENCRYPTION_KEY = "encryption"
-ENCODING_KEY = "encoding"
-SALTED_KEY = "salted"
-PASSWORD_BASE_KEY = "password_base"
-PASSWORD_HASH_KEY = "password_hash"
-KEY_DERIVATION_KEY = "key_derivation"
-CONFIG_FIELDS_KEY = "config_fields"
-
 
 # ---------------------------------------------------------------------
 # VALIDATION CONFIG
@@ -343,6 +324,8 @@ DECODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: "Enter router password: ",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "decoded_config",
         "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
@@ -444,6 +427,8 @@ ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ENCODED_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: "Enter target router password (Enter to use template password): ",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "encoded_path",
         "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
@@ -464,6 +449,7 @@ MIGRATION_DECODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
             lambda job, meta, ctx: None,
             lambda job, meta, ctx: "Enter SOURCE router password: ",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "decoded_config",
         "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
@@ -534,6 +520,7 @@ MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["destination_specs"],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
             lambda job, meta, ctx: "Enter DESTINATION router password: ",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],
         "result": "migration_encoded_path",
         "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
@@ -600,6 +587,8 @@ MIGRATION_CONVERT_DECODE_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
             lambda job, meta, ctx: ctx["destination_specs"],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][PASSWORD_KEY],
+            lambda job, meta, ctx: "Enter router password: ",
+            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],
         "result": "converted_decoded_config",
         "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),

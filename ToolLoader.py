@@ -105,9 +105,14 @@ def run_pipeline_steps(
         args = [resolve_arg(a, None, meta, ctx) for a in step.get("args", [])]
         try:
             result = fn(*args)
+        except FileNotFoundError as e:
+            message = f"File not found: {e.filename}" if e.filename else str(e)
+            ctx["errors"].append({"step": fn.__name__, "error": message})
+            print(f"[ERROR] {fn.__name__} failed → {message}")
+            continue
         except Exception as e:
-            ctx["errors"].append({"step": getattr(fn, "__name__", "unknown"), "error": str(e)})
-            print(f"[ERROR] {getattr(fn, '__name__', 'unknown')} failed → {e!r}")
+            ctx["errors"].append({"step": fn.__name__, "error": str(e)})
+            print(f"[ERROR] {fn.__name__} failed → {e}")
             continue
         rkey = step.get("result")
         if rkey is not None:
