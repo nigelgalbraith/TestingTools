@@ -8,6 +8,10 @@
     "password_base": "pIVWb7ovezIB0/5n5s4oLg==",
     "password_hash": "md5",
     "key_derivation": "openssl-legacy",
+    "encryption_settings": {
+        "key_hex": null,
+        "iv_hex": null
+    },
     "config_fields": {
         "file": "config/.glbcfg",
         "wifi_2g_ssid": "ARC_WLAN_24G_SSID_0_ESSID",
@@ -47,5 +51,17 @@
         "format": "tar",
         "compression": "gzip"
     },
-    "configuration_format": "key-value"
+    "configuration_format": "key-value",
+    "signature": {
+        "algorithm": null,
+        "modulus_hex": null,
+        "exponent": null,
+        "private_exponent_hex": null
+    },
+    "field_encryption": {
+        "algorithm": null,
+        "key_hex": null,
+        "iv_hex": null,
+        "fields": null
+    }
 }

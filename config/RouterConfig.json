@@ -1,45 +1,61 @@
-
 {
-  "Common Locations": {
-    "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
-  },
-  "Routers": {
-    "Spark SmartModem VRV9517": {
-      "specs": "routers/model_specs/Spark_SmartModem_VRV9517-spec.json",
-      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV9517-password.txt",
-      "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV9517-template.cfg",
-      "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded.tar.gz",
-      "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded",
-      "template_edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited.tar.gz",
-      "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited",
-      "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV9517-encoded.cfg",
-      "original": "~/Documents/TestingToolsData/routers/original/Spark_SmartModem_VRV9517-original.cfg",
-      "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517-decoded.tar.gz",
-      "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517-decoded",
-      "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517-edited.tar.gz",
-      "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517-edited",
-      "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517-converted.tar.gz",
-      "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517-converted",
-      "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Spark_SmartModem_VRV9517-encoded.cfg"
+    "Common Locations": {
+        "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
     },
-    "Vodafone_Ultra_Hub": {
-      "specs": "routers/model_specs/Vodafone_UltraHub_DGA0130VDF-spec.json",
-      "password": "~/Documents/TestingToolsData/routers/templatePasswords/Vodafone_Ultra_Hub-password.txt",
-      "template": "~/Documents/TestingToolsData/routers/templates/Vodafone_Ultra_Hub-template.bin",
-      "device_key": "~/Documents/TestingToolsData/routers/deviceKeys/Vodafone_Ultra_Hub-key.bin",
-      "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Vodafone_Ultra_Hub-decoded.tar.gz",
-      "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Vodafone_Ultra_Hub-decoded",
-      "template_edited": "~/Documents/TestingToolsData/routers/edited/Vodafone_Ultra_Hub-edited.tar.gz",
-      "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Vodafone_Ultra_Hub-edited",
-      "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Vodafone_Ultra_Hub-encoded.bin",
-      "original": "~/Documents/TestingToolsData/routers/original/Vodafone_Ultra_Hub-original.bin",
-      "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_Ultra_Hub-decoded.tar.gz",
-      "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_Ultra_Hub-decoded",
-      "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_Ultra_Hub-edited.tar.gz",
-      "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_Ultra_Hub-edited",
-      "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_Ultra_Hub-converted.tar.gz",
-      "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_Ultra_Hub-converted",
-      "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Vodafone_Ultra_Hub-encoded.bin"
+    "Routers": {
+        "Spark_SmartModem_VRV9517": {
+            "specs": "routers/model_specs/Spark_SmartModem_VRV9517-spec.json",
+            "password": "~/Documents/TestingToolsData/routers/templatePasswords/Spark_SmartModem_VRV9517-password.txt",
+            "template": "~/Documents/TestingToolsData/routers/templates/Spark_SmartModem_VRV9517-template.cfg",
+            "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded.tar.gz",
+            "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Spark_SmartModem_VRV9517-decoded",
+            "template_edited": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited.tar.gz",
+            "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Spark_SmartModem_VRV9517-edited",
+            "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Spark_SmartModem_VRV9517-encoded.cfg",
+            "original": "~/Documents/TestingToolsData/routers/original/Spark_SmartModem_VRV9517-original.cfg",
+            "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517-decoded.tar.gz",
+            "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Spark_SmartModem_VRV9517-decoded",
+            "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517-edited.tar.gz",
+            "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Spark_SmartModem_VRV9517-edited",
+            "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517-converted.tar.gz",
+            "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Spark_SmartModem_VRV9517-converted",
+            "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Spark_SmartModem_VRV9517-encoded.cfg"
+        },
+        "Vodafone_UltraHub_DGA0130VDF": {
+            "specs": "routers/model_specs/Vodafone_UltraHub_DGA0130VDF-spec.json",
+            "password": "~/Documents/TestingToolsData/routers/templatePasswords/Vodafone_Ultra_Hub_DGA0130VDF-password.txt",
+            "template": "~/Documents/TestingToolsData/routers/templates/Vodafone_Ultra_Hub_DGA0130VDF-template.bin",
+            "device_key": "~/Documents/TestingToolsData/routers/deviceKeys/Vodafone_Ultra_Hub_DGA0130VDF-key.bin",
+            "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Vodafone_Ultra_Hub_DGA0130VDF-decoded.tar.gz",
+            "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Vodafone_Ultra_Hub_DGA0130VDF-decoded",
+            "template_edited": "~/Documents/TestingToolsData/routers/edited/Vodafone_Ultra_Hub_DGA0130VDF-edited.tar.gz",
+            "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Vodafone_Ultra_Hub_DGA0130VDF-edited",
+            "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Vodafone_Ultra_Hub_DGA0130VDF-encoded.bin",
+            "original": "~/Documents/TestingToolsData/routers/original/Vodafone_Ultra_Hub_DGA0130VDF-original.bin",
+            "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_Ultra_Hub_DGA0130VDF-decoded.tar.gz",
+            "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_Ultra_Hub_DGA0130VDF-decoded",
+            "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_Ultra_Hub_DGA0130VDF-edited.tar.gz",
+            "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_Ultra_Hub_DGA0130VDF-edited",
+            "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_Ultra_Hub_DGA0130VDF-converted.tar.gz",
+            "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_Ultra_Hub_DGA0130VDF-converted",
+            "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Vodafone_Ultra_Hub_DGA0130VDF-encoded.bin"
+        },
+        "Vodafone_HG659": {
+            "specs": "routers/model_specs/Vodafone_HG659-spec.json",
+            "template": "~/Documents/TestingToolsData/routers/templates/Vodafone_HG659-template.conf",
+            "template_decoded": "~/Documents/TestingToolsData/routers/decoded/Vodafone_HG659-decoded.xml",
+            "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/Vodafone_HG659-decoded",
+            "template_edited": "~/Documents/TestingToolsData/routers/edited/Vodafone_HG659-edited.xml",
+            "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/Vodafone_HG659-edited",
+            "template_encoded": "~/Documents/TestingToolsData/routers/encoded/Vodafone_HG659-encoded.conf",
+            "original": "~/Documents/TestingToolsData/routers/original/Vodafone_HG659-original.conf",
+            "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_HG659-decoded.xml",
+            "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/Vodafone_HG659-decoded",
+            "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_HG659-edited.xml",
+            "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/Vodafone_HG659-edited",
+            "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_HG659-converted.xml",
+            "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/Vodafone_HG659-converted",
+            "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/Vodafone_HG659-encoded.conf"
+        }
     }
-  }
 }

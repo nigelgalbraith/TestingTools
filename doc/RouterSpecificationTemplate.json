@@ -8,6 +8,10 @@
     "password_base": null,
     "password_hash": null,
     "key_derivation": null,
+    "encryption_settings": {
+        "key_hex": null,
+        "iv_hex": null
+    },
     "config_fields": {
         "file": null,
         "wifi_2g_ssid": null,
@@ -47,5 +51,17 @@
         "format": null,
         "compression": null
     },
-    "configuration_format": null
+    "configuration_format": null,
+    "signature": {
+        "algorithm": null,
+        "modulus_hex": null,
+        "exponent": null,
+        "private_exponent_hex": null
+    },
+    "field_encryption": {
+        "algorithm": null,
+        "key_hex": null,
+        "iv_hex": null,
+        "fields": null
+    }
 }

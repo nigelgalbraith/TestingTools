@@ -129,7 +129,7 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
 # DEPENDENCIES
 # ---------------------------------------------------------------------
 
-DEPENDENCIES = ["openssl"]
+DEPENDENCIES = ["openssl", "python3-cryptography"]
 
 
 # ---------------------------------------------------------------------
