@@ -148,28 +148,23 @@ def encode_signed_configuration(xml: bytes, specs: dict) -> bytes:
 def parse_router_wrapper(data: bytes, model_specs: dict) -> dict:
     """Parse the configured backup wrapper using loaded specifications."""
     wrapper_type = model_specs["backup_format"]["type"]
-
     try:
         handler = WRAPPER_PARSE_HANDLERS[wrapper_type]
     except KeyError:
         raise ValueError(f"Unsupported router wrapper type: {wrapper_type}") from None
-
     return handler(data, model_specs)
 
 
 def rebuild_router_wrapper(encoded: bytes, header: bytes, specs: dict) -> bytes:
     """Rebuild the configured backup wrapper using loaded specifications."""
     wrapper_type = specs["backup_format"]["type"]
-
     if wrapper_type == "encrypted-configuration":
         parse_encrypted_configuration(encoded, specs)
         return encoded
-
     try:
         handler = WRAPPER_REBUILD_HANDLERS[wrapper_type]
     except KeyError:
         raise ValueError(f"Unsupported router wrapper type: {wrapper_type}") from None
-
     return handler(encoded, header, specs)
 
 
