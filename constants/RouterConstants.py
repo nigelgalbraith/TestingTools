@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any, Dict
 from modules.display_utils import display_config_doc, select_from_list, display_readme
 from modules.file_utils import get_directory_status
+from modules.router_config_utils import prepare_xml_selectors
+from modules.json_utils import validate_json_schema
 from modules.router_utils import (
     load_router_model_specs,
     decode_router_config,
@@ -20,6 +22,7 @@ from modules.router_utils import (
 # CONFIG PATHS
 # ---------------------------------------------------------------------
 
+ROUTER_SCHEMA_PATH = "schemas/RouterSchema.json"
 CONFIG_PATH = "config/RouterConfig.json"
 TOOL_TYPE = "Router Configuration"
 CONFIG_DOC = "doc/RouterDoc.json"
@@ -129,7 +132,7 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
 # DEPENDENCIES
 # ---------------------------------------------------------------------
 
-DEPENDENCIES = ["openssl", "python3-cryptography"]
+DEPENDENCIES = ["openssl", "python3-cryptography", "python3-jsonschema"]
 
 
 # ---------------------------------------------------------------------
@@ -307,6 +310,19 @@ LOAD_ROUTER_MODEL_SPECS_PRE = [
                 meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY]
         ],
         "result": "model_specs",
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_json_schema,
+        "args": [lambda job, meta, ctx: ctx["model_specs"], ROUTER_SCHEMA_PATH,
+                 lambda job, meta, ctx: f"Router model {ctx['model_specs'].get('model', '<unknown>')}"],
+        "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": prepare_xml_selectors,
+        "args": [lambda job, meta, ctx: ctx["model_specs"]],
         "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
     },
 ]
@@ -569,6 +585,19 @@ LOAD_DESTINATION_MODEL_SPECS_PRE = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
         ],
         "result": "destination_specs",
+        "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_json_schema,
+        "args": [lambda job, meta, ctx: ctx["destination_specs"], ROUTER_SCHEMA_PATH,
+                 lambda job, meta, ctx: f"Router model {ctx['destination_specs'].get('model', '<unknown>')}"],
+        "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": prepare_xml_selectors,
+        "args": [lambda job, meta, ctx: ctx["destination_specs"]],
         "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
     },
 ]

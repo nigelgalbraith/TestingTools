@@ -95,24 +95,30 @@ def run_pipeline_steps(
     phase = (phase or "").strip().lower()
     for step in pipeline:
         fn = step.get("fn")
-        if not callable(fn):
-            raise TypeError("Pipeline step missing callable 'fn'.")
-        step_phase = (step.get("phase") or "exec").strip().lower()
-        if step_phase != phase:
-            continue
-        if not check_when(step.get("when"), None, meta, ctx):
-            continue
-        args = [resolve_arg(a, None, meta, ctx) for a in step.get("args", [])]
+        step_name = getattr(fn, "__name__", "pipeline step")
         try:
+            if not callable(fn):
+                raise TypeError("Pipeline step missing callable 'fn'.")
+            step_phase = (step.get("phase") or "exec").strip().lower()
+            if step_phase != phase:
+                continue
+            if not check_when(step.get("when"), None, meta, ctx):
+                continue
+            args = [resolve_arg(a, None, meta, ctx) for a in step.get("args", [])]
             result = fn(*args)
         except FileNotFoundError as e:
             message = f"File not found: {e.filename}" if e.filename else str(e)
-            ctx["errors"].append({"step": fn.__name__, "error": message})
-            print(f"[ERROR] {fn.__name__} failed → {message}")
+            ctx["errors"].append({"step": step_name, "error": message})
+            print(f"[ERROR] {step_name} failed → {message}")
+            if phase == "pre":
+                break
             continue
         except Exception as e:
-            ctx["errors"].append({"step": fn.__name__, "error": str(e)})
-            print(f"[ERROR] {fn.__name__} failed → {e}")
+            ctx["errors"].append({"step": step_name, "error": str(e)})
+            if not getattr(e, "reported", False):
+                print(f"[ERROR] {step_name} failed → {e}")
+            if phase == "pre":
+                break
             continue
         rkey = step.get("result")
         if rkey is not None:
@@ -123,7 +129,7 @@ def run_pipeline_steps(
     if success_key:
         if success_key in ctx:
             override_success = bool(ctx.get(success_key))
-    success = override_success if override_success is not None else default_success
+    success = default_success and (override_success if override_success is not None else True)
     if phase == "pre":
         print(f"{label} (pre): {'Success' if success else 'Failed'}")
         return success

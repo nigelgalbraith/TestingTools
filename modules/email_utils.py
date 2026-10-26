@@ -586,19 +586,15 @@ def list_email_search_configs(search_configs: list) -> list | bool:
     return [str(expand_path(config)) for config in selected]
 
 
-def search_emails(config_file: str) -> list | bool:
-    """Search EML files using JSON criteria and copy matching messages."""
+def search_emails(config: dict) -> list | bool:
+    """Search EML files using the dictionary already validated in PRE."""
     try:
-        if not config_file:
+        if not config:
             return False
-        with Path(expand_path(config_file)).open("r", encoding="utf-8") as file:
-            config = json.load(file)
         search_location = Path(expand_path(config["search_location"])).resolve()
         results_location = Path(expand_path(config["results_location"])).resolve()
         match_mode = config.get("match", "any").lower()
         criteria = config["criteria"]
-        if match_mode not in ("any", "all"):
-            raise ValueError("Match mode must be 'any' or 'all'")
         if not search_location.is_dir():
             raise ValueError(f"Search directory does not exist: {search_location}")
         if search_location == results_location or search_location in results_location.parents:
@@ -609,11 +605,7 @@ def search_emails(config_file: str) -> list | bool:
         active_criteria = {}
         for field in fields:
             terms = criteria.get(field, [])
-            if not isinstance(terms, list) or any(not isinstance(term, str) for term in terms):
-                raise ValueError(f"Invalid search criteria for {field}")
             active_criteria[field] = [term.casefold() for term in terms if term.strip()]
-        if not any(active_criteria.values()):
-            raise ValueError("No search criteria defined")
         if results_location.exists():
             if not results_location.is_dir():
                 raise ValueError(f"Results path is not a directory: {results_location}")
@@ -675,15 +667,13 @@ def search_emails(config_file: str) -> list | bool:
         return False
 
 
-def load_email_search_results(config_files: list) -> list | bool:
-    """Load saved email results and identify their search configuration."""
-    if not isinstance(config_files, list) or not config_files:
+def load_email_search_results(configs: dict) -> list | bool:
+    """Read saved emails using the configurations already validated in PRE."""
+    if not isinstance(configs, dict) or not configs:
         return False
     results = []
-    for config_file in config_files:
+    for config_file, config in configs.items():
         try:
-            with Path(expand_path(config_file)).open("r", encoding="utf-8") as file:
-                config = json.load(file)
             results_dir = Path(expand_path(config["results_location"]))
             if not results_dir.is_dir():
                 print(f"No saved search results found: {results_dir}")
@@ -708,17 +698,14 @@ def load_email_search_results(config_files: list) -> list | bool:
     return results
 
 
-def display_email_search_results(results: list, config_files: str | list | None = None, page_size: int = 25) -> bool:
+def display_email_search_results(results: list, configs: dict | None = None, page_size: int = 25) -> bool:
     """Display search configuration details and paginated email results."""
     if not isinstance(results, list) or page_size < 1:
         return False
-    configs = [config_files] if isinstance(config_files, str) else (config_files or [])
     print("\nEmail Search Summary")
     print("-" * 70)
-    for config_file in configs:
+    for config_file, config in (configs or {}).items():
         try:
-            with Path(expand_path(config_file)).open("r", encoding="utf-8") as file:
-                config = json.load(file)
             print(f"Configuration : {Path(config_file).name}")
             print(f"Match Mode    : {config.get('match', 'any').upper()}")
             print(f"Search Folder : {config.get('search_location', '')}")
@@ -801,18 +788,14 @@ def run_pst_files(pst_files: str | list[str], dest_dir: str, operation) -> bool:
     return successful == len(pst_files)
 
 
-def run_email_searches(config_files: str | list) -> list | bool:
-    """Run one or multiple email searches."""
-    if not config_files:
-        return False
-    if isinstance(config_files, str):
-        return search_emails(config_files)
-    if not isinstance(config_files, list):
+def run_email_searches(configs: dict) -> list | bool:
+    """Run searches from the PRE mapping of configuration paths to settings."""
+    if not isinstance(configs, dict) or not configs:
         return False
     results = []
-    for config_file in config_files:
+    for config_file, config in configs.items():
         print(f"\nRunning email search: {Path(config_file).name}")
-        search_results = search_emails(config_file)
+        search_results = search_emails(config)
         if search_results is False:
             print(f"[ERROR] Search failed: {Path(config_file).name}")
             continue

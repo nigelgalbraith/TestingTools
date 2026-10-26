@@ -1,8 +1,10 @@
 # EmailConstants.py
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict
 
+from modules.json_utils import load_json, validate_json_schema
 from modules.display_utils import (
     display_config_doc,
     print_dict_table,
@@ -39,6 +41,7 @@ from modules.file_utils import (
 # CONFIG PATHS
 # ---------------------------------------------------------------------
 
+EMAIL_SEARCH_SCHEMA_PATH = "schemas/EmailSearchSchema.json"
 CONFIG_PATH = "config/EmailConfig.json"
 TOOL_TYPE = "Email"
 CONFIG_DOC = "doc/EmailDoc.json"
@@ -122,7 +125,8 @@ STATUS_FN_CONFIG: Dict[str, Any] = {
 # ---------------------------------------------------------------------
 
 DEPENDENCIES = [
-    "pst-utils"
+    "pst-utils",
+    "python3-jsonschema"
 ]
 
 
@@ -325,10 +329,34 @@ SEARCH_EMAILS_PRE = [
     {
         "phase": "pre",
         "fn": list_email_search_configs,
-        "args": [
-            lambda job, meta, ctx: meta[SEARCH_CONFIGS_KEY],
-        ],
+        "args": [lambda job, meta, ctx: meta[SEARCH_CONFIGS_KEY]],
         "result": "selected_search_config",
+    },
+    {
+        "phase": "pre",
+        "fn": load_json,
+        "args": [
+            lambda job, meta, ctx: ctx["selected_search_config"]
+        ],
+        "result": "search_configs",
+    },
+    {
+        "phase": "pre",
+        "fn": validate_json_schema,
+        "args": [
+            lambda job, meta, ctx: ctx["search_configs"],
+            EMAIL_SEARCH_SCHEMA_PATH,
+            "Email search configurations",
+        ],
+        "result": "validated_search_configs",
+    },
+    {
+        "phase": "pre",
+        "fn": dict,
+        "args": [lambda job, meta, ctx: zip(
+            ctx.get("selected_search_config") or [], ctx["validated_search_configs"]
+        )],
+        "result": "search_configs_by_path",
     },
 ]
 
@@ -490,17 +518,17 @@ SEARCH_EMAILS_EXEC = [
         "phase": "exec",
         "fn": run_email_searches,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_search_config"),
+            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_search_config")),
+        "when": lambda job, meta, ctx: bool(ctx.get("search_configs_by_path")),
     },
     {
         "phase": "exec",
         "fn": display_email_search_results,
         "args": [
             lambda job, meta, ctx: ctx.get("search_results", []),
-            lambda job, meta, ctx: ctx.get("selected_search_config"),
+            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_ok",
         "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),
@@ -513,17 +541,17 @@ VIEW_SEARCH_RESULTS_EXEC = [
         "phase": "exec",
         "fn": load_email_search_results,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_search_config"),
+            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_search_config")),
+        "when": lambda job, meta, ctx: bool(ctx.get("search_configs_by_path")),
     },
     {
         "phase": "exec",
         "fn": display_email_search_results,
         "args": [
             lambda job, meta, ctx: ctx.get("search_results", []),
-            lambda job, meta, ctx: ctx.get("selected_search_config"),
+            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "view_ok",
         "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Email search configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "search_location",
+    "results_location",
+    "criteria"
+  ],
+  "properties": {
+    "search_location": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "results_location": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "match": {
+      "type": "string",
+      "pattern": "^([aA][nN][yY]|[aA][lL][lL])$"
+    },
+    "criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "subject": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "from"
+          ],
+          "properties": {
+            "from": {
+              "contains": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "to"
+          ],
+          "properties": {
+            "to": {
+              "contains": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "subject"
+          ],
+          "properties": {
+            "subject": {
+              "contains": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
+        },
+        {
+          "required": [
+            "body"
+          ],
+          "properties": {
+            "body": {
+              "contains": {
+                "type": "string",
+                "pattern": "\\S"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

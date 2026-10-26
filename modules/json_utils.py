@@ -16,10 +16,21 @@ from typing import Any, Dict, Tuple, Union
 # ---------------------------------------------------------------------
 
 
-def load_json(config_path: Union[str, Path]):
-    """Load and return parsed JSON from `config_path`."""
-    with open(config_path) as f:
-        return json.load(f)
+def load_json(config_path: Union[str, Path, list[Union[str, Path]]]):
+    """Load one JSON path or an ordered list of paths without modifying the input."""
+    paths = config_path if isinstance(config_path, list) else [config_path]
+    results = []
+    for path in paths:
+        path = os.path.expanduser(path)
+        try:
+            with open(path) as f:
+                results.append(json.load(f))
+        except json.JSONDecodeError as exc:
+            raise json.JSONDecodeError(f"{path}: {exc.msg}", exc.doc, exc.pos) from exc
+        except UnicodeDecodeError as exc:
+            raise UnicodeDecodeError(exc.encoding, exc.object, exc.start, exc.end,
+                                     f"{path}: {exc.reason}") from exc
+    return results if isinstance(config_path, list) else results[0]
 
 
 def resolve_value(
@@ -98,3 +109,48 @@ def validate_secondary_subkey(
                 if field not in itm or not isinstance(itm[field], types_tuple):
                     results[field] = False
     return results
+
+
+def validate_json_schema(data: dict | list[dict], schema_path: Union[str, Path],
+                         label: str = "Configuration", report_success: bool = True) -> dict | list[dict]:
+    """Validate an external schema and return the original data unchanged.
+
+    Schema paths use load_json's normal relative-path convention.
+    """
+    from jsonschema import exceptions, validators
+
+    try:
+        path = Path(schema_path).expanduser()
+        try:
+            schema = load_json(path)
+            if not isinstance(schema, (dict, bool)):
+                raise ValueError("schema must be an object or boolean")
+            validator_class = validators.validator_for(schema)
+            validator_class.check_schema(schema)
+        except exceptions.SchemaError as exc:
+            raise ValueError(f"invalid schema {schema_path}: {exc.message}") from None
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"invalid schema {schema_path}: {exc}") from None
+        validator = validator_class(schema)
+        configs = data if isinstance(data, list) else [data]
+        for index, item in enumerate(configs):
+            errors = list(validator.iter_errors(item))
+            if errors:
+                messages = []
+                for error in errors:
+                    property_path = (f"$[{index}]" if isinstance(data, list) else "$") + "".join(
+                        f"[{part}]" if isinstance(part, int) else f".{part}"
+                        for part in error.absolute_path
+                    )
+                    messages.append(f"{property_path}: {error.message}")
+                raise ValueError("; ".join(dict.fromkeys(messages)))
+    except (OSError, ValueError, TypeError) as exc:
+        message = f"{label}: {exc}"
+        print(f"[FAILED] {message}")
+        error = ValueError(message)
+        # The pipeline records this exception without printing the same error again.
+        error.reported = True
+        raise error from None
+    if report_success:
+        print(f"[OK] {label} schema validated successfully.")
+    return data

@@ -358,6 +358,7 @@ The Email utility provides Outlook PST browsing, conversion, extraction, and EML
 - `config/EmailConfig.json`
 - `doc/EmailDoc.json`
 - `doc/SearchReadMe.md`
+- `schemas/EmailSearchSchema.json`
 
 Email search criteria are defined in separate JSON configuration files referenced by `search_configs` in `EmailConfig.json`.
 
@@ -543,14 +544,16 @@ Available search configurations are listed under `search_configs` in `EmailConfi
 
 The user can select an individual search configuration or All Search Configurations.
 
+The PRE pipeline loads all selected files through one `load_json()` call, then validates the resulting configurations through one `validate_json_schema()` call using `EMAIL_SEARCH_SCHEMA_PATH = "schemas/EmailSearchSchema.json"`. The same schema applies to every selected configuration, and all must pass before searches begin. PRE associates each filename with its validated dictionary. Search execution, saved-result loading, and summary display consume this mapping without reopening the configuration files during EXEC.
+
 Each search configuration defines:
 
 | Configuration key | Purpose |
 |---|---|
 | `search_location` | Directory containing EML files to search |
 | `results_location` | Directory where matching EML files are saved |
-| `match_mode` | Determines how search criteria are combined |
-| `search_criteria` | Fields and keywords used to identify matching emails |
+| `match` | Determines how search criteria are combined |
+| `criteria` | Fields and keywords used to identify matching emails |
 
 Search criteria support the following email fields:
 
@@ -729,10 +732,11 @@ Adding a router that uses existing processing mechanisms requires a model specif
 ### Files
 
 - `constants/RouterConstants.py` — router utility constants, dependencies, menu actions, and pipeline configuration.
-- `modules/router_utils.py` — main router workflows, generic validation, orchestration, and centralised dispatcher registrations.
+- `modules/router_utils.py` — main router workflows, backup validation, orchestration, and centralised dispatcher registrations.
 - `modules/router_encryption_utils.py` — encryption, decryption, cryptographic hashing, field encryption, RSA signing, and signature verification.
 - `modules/router_format_utils.py` — backup wrappers, encoding formats, compression, archive processing, and reconstruction.
 - `modules/router_config_utils.py` — configuration field extraction, viewing, editing, replacement, and validation.
+- `schemas/RouterSchema.json` — shared router model specification validation rules.
 - `config/RouterConfig.json` — configured router models and associated file paths.
 - `doc/RouterDoc.json` — router configuration documentation.
 - `routers/model_specs/` — router model JSON specifications and the common specification template.
@@ -744,6 +748,7 @@ The Router utility uses:
 
 - `openssl` — OpenSSL-based router backup encryption and decryption.
 - `python3-cryptography` — AES encryption and decryption using Python's cryptography library.
+- `python3-jsonschema` — shared validation against external JSON Schema files.
 
 Dependencies are declared in `constants/RouterConstants.py`.
 
@@ -870,9 +875,11 @@ Router specifications define:
 
 All model-specific parameters are supplied through JSON rather than hardcoded into processing functions.
 
+Router configuration preparation follows **LOAD → CHECK → PLAN → EXECUTE**. `load_router_model_specs()` loads the JSON through shared `load_json()`; the configured PRE pipeline calls shared `validate_json_schema()` with `ROUTER_SCHEMA_PATH = "schemas/RouterSchema.json"`, then prepares derived XML selectors. The external schema checks the specification structure, supported mechanisms, and parameter combinations before processing; invalid or unsupported specification values and selector preparation errors prevent execution. Planning follows preparation where enabled by the action. Processing consumes the prepared model dictionary without reloading or repeating schema validation. Backup integrity and security checks, including signatures, archive safety, and local output verification where applicable, remain part of processing.
+
 #### Router Architecture
 
-`router_utils.py` is responsible for the main router workflows, generic validation, and dispatching.
+`router_utils.py` is responsible for the main router workflows, backup validation, and dispatching.
 
 All processing handler registrations are centralised near the top of `router_utils.py`:
 
@@ -1236,6 +1243,8 @@ Some actions bypass plan preparation or confirmation.
 
 These behaviours are controlled by the action definitions rather than being mandatory for every operation.
 
+PRE stops at the first exception. The loader records the failing step and error, reports missing files clearly, and returns to the menu when PRE fails instead of proceeding to execution. Exceptions from conditions and argument resolution are handled as step failures too. A truthy `success_key` cannot override recorded errors: success requires no recorded errors and, when present, a truthy success result. EXEC records exceptions and continues with later eligible steps; it does not apply PRE's stop-on-exception behaviour.
+
 ### Shared Modules
 
 Reusable functionality is organised under `modules/`.
@@ -1261,6 +1270,10 @@ Important modules include:
 | `system_utils.py` | System-level support functions |
 | `wifi_utils.py` | Wireless network operations |
 | `windows_inspection_utils.py` | Windows installation inspection |
+
+The shared `modules/json_utils.py` provides `load_json()` for one file path or an ordered list of file paths, and `validate_json_schema()` for one configuration dictionary or a list of dictionaries. Validation rules come from external JSON Schema files whose paths are passed explicitly by constants. The validator checks the schema, applies the same schema to each supplied configuration, and returns the original data unchanged on success. Configured PRE steps retain loaded and validated configurations in the execution context for later use without unnecessary reloading or schema validation.
+
+`load_json()` propagates file errors and includes the file path in JSON and text decoding errors. Schema validation prints `[OK] <label> schema validated successfully.` by default. Invalid schemas or configurations print `[FAILED] <label>: ...` and raise `ValueError`; configuration errors identify property paths such as `$.field` or `$[0].field`. Validation stops at the first invalid configuration, reporting its schema errors. The pipeline records an already reported validation error without printing it again.
 
 ### Project Structure
 
