@@ -2,10 +2,10 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
+from modules.json_utils import load_json, validate_json_schema
 from modules.display_utils import display_config_doc, select_from_list, display_readme
 from modules.file_utils import get_directory_status
 from modules.router_utils import (
-    load_router_model_specs,
     decode_router_config,
     save_router_config,
     extract_router_config,
@@ -13,6 +13,7 @@ from modules.router_utils import (
     edit_router_config_files,
     encode_router_config_files,
     convert_router_config_fields,
+    validate_router_settings,
 )
 
 
@@ -303,14 +304,32 @@ SELECT_ROUTER_PRE = [
 LOAD_ROUTER_MODEL_SPECS_PRE = [
     {
         "phase": "pre",
-        "fn": load_router_model_specs,
+        "fn": load_json,
         "args": [
             lambda job, meta, ctx:
                 meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY],
-            ROUTER_SCHEMA_PATH,
         ],
         "result": "model_specs",
         "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_json_schema,
+        "args": [
+            lambda job, meta, ctx: ctx["model_specs"],
+            ROUTER_SCHEMA_PATH,
+            "Router model specifications",
+        ],
+        "result": "model_specs",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_router_settings,
+        "args": [
+            lambda job, meta, ctx: ctx["model_specs"],
+        ],
+        "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
 
@@ -568,13 +587,32 @@ SELECT_DESTINATION_ROUTER_PRE = [
 LOAD_DESTINATION_MODEL_SPECS_PRE = [
     {
         "phase": "pre",
-        "fn": load_router_model_specs,
+        "fn": load_json,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
-            ROUTER_SCHEMA_PATH,
+            lambda job, meta, ctx:
+                meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
         ],
         "result": "destination_specs",
         "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_json_schema,
+        "args": [
+            lambda job, meta, ctx: ctx["destination_specs"],
+            ROUTER_SCHEMA_PATH,
+            "Destination router model specifications",
+        ],
+        "result": "destination_specs",
+        "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
+    },
+    {
+        "phase": "pre",
+        "fn": validate_router_settings,
+        "args": [
+            lambda job, meta, ctx: ctx["destination_specs"],
+        ],
+        "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
     },
 ]
 
