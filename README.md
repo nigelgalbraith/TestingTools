@@ -856,26 +856,28 @@ Compatibility depends on the router's firmware and hardware revision.
 
 ### JSON-Driven Router Processing
 
-Every router model uses the same JSON specification structure.
+Router models use a shared JSON specification schema with two top-level sections:
 
-The specification template defines the common keys and nested structure. Fields that do not apply to a particular router are assigned JSON `null`.
+- `router_specs` — Router identity, backup processing mechanisms, and applicable encoding and editing settings.
+- `config_fields` — Logical configuration field names mapped to actual keys or selectors.
 
-Router specifications define:
+The `router_specs` section contains model, hardware, and firmware information, together with:
 
-- Model, firmware, and hardware information.
-- Backup encryption and key derivation.
-- Encryption keys and IVs.
-- Password requirements and hashing.
-- Digital signature parameters.
-- Field-level encryption settings.
-- Backup wrappers and encoding.
-- Archive format and compression.
-- Configuration format.
-- Editable configuration fields and selectors.
+- `codec` — Shared backup decoding and encoding settings, including encryption, wrappers, checksums, compression, and archive formats.
+- `encode` — Additional encoding parameters, only where required.
+- `edit` — Configuration editing settings, only where supported.
 
-All model-specific parameters are supplied through JSON rather than hardcoded into processing functions.
+Unused settings and optional sections are omitted rather than populated with JSON `null`.
 
-Router configuration preparation follows **LOAD → CHECK → PLAN → EXECUTE**. `load_router_model_specs()` loads the JSON through shared `load_json()`; the configured PRE pipeline calls shared `validate_json_schema()` with `ROUTER_SCHEMA_PATH = "schemas/RouterSchema.json"`, then prepares derived XML selectors. The external schema checks the specification structure, supported mechanisms, and parameter combinations before processing; invalid or unsupported specification values and selector preparation errors prevent execution. Planning follows preparation where enabled by the action. Processing consumes the prepared model dictionary without reloading or repeating schema validation. Backup integrity and security checks, including signatures, archive safety, and local output verification where applicable, remain part of processing.
+The `config_fields` section contains entries with `name` and `path` properties. Additional configuration field mappings can be added without changing Python code.
+
+Router-specific processing parameters are supplied through JSON rather than hardcoded into processing functions.
+
+Router configuration preparation follows **LOAD → CHECK → PLAN → EXECUTE**. Model specifications are loaded and validated against `schemas/RouterSchema.json`, with additional implementation-specific checks performed in Python.
+
+Processing functions are selected through registered handlers according to the mechanisms declared in the model specification.
+
+Backup integrity checks, signature verification, archive safety, and output verification are performed where supported by the selected router model.
 
 #### Router Architecture
 
@@ -905,17 +907,23 @@ The main workflow coordinates the registered functions without containing manufa
 
 To add support for another router:
 
-1. Copy the common router specification template.
-2. Populate the model-specific parameters.
-3. Set unused specification values to `null`.
-4. Add the router and its file paths to `config/RouterConfig.json`.
-5. Reuse existing registered encryption, format, and configuration-processing mechanisms.
-6. If a required mechanism is not supported, implement a generic processing function in the appropriate utility module and register it centrally in `router_utils.py`.
-7. Validate the specification and test the supported workflows.
+1. Start with `doc/RouterSpecificationTemplate.json`.
+2. Populate the router identity and required `router_specs.codec` settings.
+3. Add `router_specs.encode` only when additional encoding parameters are required.
+4. Add `router_specs.edit` only when configuration editing is supported.
+5. Define the required `config_fields` name/path mappings.
+6. Omit unused optional settings and sections.
+7. Add the router and its file paths to `config/RouterConfig.json`.
+8. Configure password or device-key files where required.
+9. Reuse existing registered encryption, format, and configuration-processing mechanisms.
+10. If a required mechanism is unsupported, implement a reusable function in the appropriate utility module and register it centrally in `router_utils.py`.
+11. Validate the specification and test the supported workflows.
 
-Routers using existing processing mechanisms do not require changes to the main router workflow.
+Routers using existing processing mechanisms can be added without changing the main router workflow.
 
-New field names must be added to the common specification schema, template, and every model specification, using `null` where unused.
+Additional `config_fields` mappings do not require changes to the shared schema, template, or other router model specifications.
+
+See `routers/model_specs/ModelSpecsReadMe.md` for further details.
 
 ### Router Backup Extensions
 

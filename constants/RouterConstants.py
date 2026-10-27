@@ -4,16 +4,14 @@ from pathlib import Path
 from typing import Any, Dict
 from modules.display_utils import display_config_doc, select_from_list, display_readme
 from modules.file_utils import get_directory_status
-from modules.router_config_utils import prepare_xml_selectors
-from modules.json_utils import validate_json_schema
 from modules.router_utils import (
     load_router_model_specs,
     decode_router_config,
     save_router_config,
     extract_router_config,
     view_router_config_fields,
-    edit_router_config_fields,
-    encode_router_config,
+    edit_router_config_files,
+    encode_router_config_files,
     convert_router_config_fields,
 )
 
@@ -26,7 +24,6 @@ ROUTER_SCHEMA_PATH = "schemas/RouterSchema.json"
 CONFIG_PATH = "config/RouterConfig.json"
 TOOL_TYPE = "Router Configuration"
 CONFIG_DOC = "doc/RouterDoc.json"
-
 
 
 # ---------------------------------------------------------------------
@@ -54,6 +51,7 @@ MIGRATION_CONVERTED_KEY = "migration_converted"
 MIGRATION_CONVERTED_DIR_KEY = "migration_converted_dir"
 MIGRATION_ENCODED_KEY = "migration_encoded"
 
+
 # ---------------------------------------------------------------------
 # VALIDATION CONFIG
 # ---------------------------------------------------------------------
@@ -64,6 +62,7 @@ VALIDATION_CONFIG: Dict[str, Any] = {
         ROUTERS_KEY: dict,
     },
 }
+
 
 # ---------------------------------------------------------------------
 # SECONDARY VALIDATION
@@ -307,22 +306,10 @@ LOAD_ROUTER_MODEL_SPECS_PRE = [
         "fn": load_router_model_specs,
         "args": [
             lambda job, meta, ctx:
-                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY]
+                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY],
+            ROUTER_SCHEMA_PATH,
         ],
         "result": "model_specs",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
-    },
-    {
-        "phase": "pre",
-        "fn": validate_json_schema,
-        "args": [lambda job, meta, ctx: ctx["model_specs"], ROUTER_SCHEMA_PATH,
-                 lambda job, meta, ctx: f"Router model {ctx['model_specs'].get('model', '<unknown>')}"],
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
-    },
-    {
-        "phase": "pre",
-        "fn": prepare_xml_selectors,
-        "args": [lambda job, meta, ctx: ctx["model_specs"]],
         "when": lambda job, meta, ctx: bool(ctx.get("selected_router")),
     },
 ]
@@ -402,7 +389,7 @@ VIEW_ROUTER_CONFIG_EXEC = [
 EDIT_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
-        "fn": edit_router_config_fields,
+        "fn": edit_router_config_files,
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
@@ -431,11 +418,10 @@ VIEW_EDITED_ROUTER_CONFIG_EXEC = [
 # ENCODE ROUTER CONFIGURATION
 # ---------------------------------------------------------------------
 
-
 ENCODE_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
-        "fn": encode_router_config,
+        "fn": encode_router_config_files,
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
@@ -508,7 +494,7 @@ MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC = [
 MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
-        "fn": edit_router_config_fields,
+        "fn": edit_router_config_files,
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_DIR_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
@@ -527,7 +513,7 @@ MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
 MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
     {
         "phase": "exec",
-        "fn": encode_router_config,
+        "fn": encode_router_config_files,
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
@@ -542,6 +528,7 @@ MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
         "when": lambda job, meta, ctx: isinstance(ctx.get("destination_specs"), dict),
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # VIEW EDITED MIGRATION CONFIGURATION
@@ -559,6 +546,7 @@ MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC = [
         "when": lambda job, meta, ctx: isinstance(ctx.get("model_specs"), dict),
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # SELECT DESTINATION ROUTER
@@ -583,21 +571,9 @@ LOAD_DESTINATION_MODEL_SPECS_PRE = [
         "fn": load_router_model_specs,
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
+            ROUTER_SCHEMA_PATH,
         ],
         "result": "destination_specs",
-        "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
-    },
-    {
-        "phase": "pre",
-        "fn": validate_json_schema,
-        "args": [lambda job, meta, ctx: ctx["destination_specs"], ROUTER_SCHEMA_PATH,
-                 lambda job, meta, ctx: f"Router model {ctx['destination_specs'].get('model', '<unknown>')}"],
-        "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
-    },
-    {
-        "phase": "pre",
-        "fn": prepare_xml_selectors,
-        "args": [lambda job, meta, ctx: ctx["destination_specs"]],
         "when": lambda job, meta, ctx: bool(ctx.get("destination_router")),
     },
 ]
@@ -606,7 +582,6 @@ LOAD_DESTINATION_MODEL_SPECS_PRE = [
 # ---------------------------------------------------------------------
 # DECODE DESTINATION CONFIGURATION FOR CONVERSION
 # ---------------------------------------------------------------------
-
 
 MIGRATION_CONVERT_DECODE_EXEC = [
     {
@@ -677,6 +652,7 @@ MIGRATION_CONVERT_ROUTER_CONFIG_EXEC = [
     },
 ]
 
+
 # ---------------------------------------------------------------------
 # RUN ALL SAME MODEL STEPS SAME MODEL
 # ---------------------------------------------------------------------
@@ -694,6 +670,7 @@ RUN_ALL_ENCODE_ROUTER_CONFIG_EXEC = [
         "when": lambda job, meta, ctx: bool(ctx.get("edited_path")),
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # RUN ALL SAME MODEL STEPS DIFFERENT MODEL
@@ -722,6 +699,7 @@ RUN_ALL_MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
         "when": lambda job, meta, ctx: bool(ctx.get("converted_path")),
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # SHOW MODEL SPECIFICATIONS HELP

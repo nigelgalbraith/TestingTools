@@ -152,6 +152,63 @@ def get_email_folders(email_files: list[str]) -> dict[str, list[str]]:
     return folders
 
 
+def _display_email_table(rows: list[dict[str, str]], page: int, total_pages: int) -> None:
+    """Format and print one page of email summary rows."""
+    headers = ["From", "Date", "Subject", "Attachments"]
+    widths = {}
+    for header in headers:
+        widths[header] = len(header)
+    for row in rows:
+        for header in headers:
+            value = str(row.get(header, ""))
+            max_width = EMAIL_COLUMN_WIDTHS[header]
+            if len(value) > max_width:
+                value = value[:max_width - 3] + "..."
+                row[header] = value
+            widths[header] = max(widths[header], len(value))
+    print(f"\nEMAILS - PAGE {page + 1}/{total_pages}")
+    header_line = "  ".join(header.ljust(widths[header]) for header in headers)
+    separator = "  ".join("-" * widths[header] for header in headers)
+    print(f"  {header_line}")
+    print(f"  {separator}")
+    for row in rows:
+        line = "  ".join(str(row.get(header, "")).ljust(widths[header]) for header in headers)
+        print(f"  {line}")
+
+
+def _match_email_criteria(values: dict[str, str], active_criteria: dict[str, list[str]], match_mode: str) -> tuple[bool, list[str]]:
+    """Match normalized criteria against email values and identify matching fields."""
+    matched = []
+    field_matches = []
+    for field, terms in active_criteria.items():
+        if not terms:
+            continue
+        found = any(term in values[field].casefold() for term in terms)
+        field_matches.append(found)
+        if found:
+            matched.append(field.title())
+    is_match = any(field_matches) if match_mode == "any" else all(field_matches)
+    return is_match, matched
+
+
+def _display_email_details(item: dict) -> None:
+    """Load and display a selected email, then wait for a return to results."""
+    details = get_email_details(item["File"])
+    if not details:
+        print(f"[ERROR] Unable to read email: {item['File']}")
+        input("\nPress Enter to return to results...")
+        return
+    print("\nEmail Details")
+    print("-" * 70)
+    for field in ("From", "To", "Date", "Subject"):
+        print(f"{field:<8}: {details.get(field, '')}")
+    print(f"Matched : {item['Matched']}")
+    print(f"Saved   : {item['File']}")
+    print("-" * 70)
+    print(details.get("Body", ""))
+    input("\nPress Enter to return to results...")
+
+
 # ---------------------------------------------------------------------
 # PRE STEPS
 # ---------------------------------------------------------------------
@@ -451,26 +508,7 @@ def browse_pst_emails(pst_file: str, page_size: int = 25) -> bool:
                     })
                 except Exception:
                     continue
-            headers = ["From", "Date", "Subject", "Attachments"]
-            widths = {}
-            for header in headers:
-                widths[header] = len(header)
-            for row in rows:
-                for header in headers:
-                    value = str(row.get(header, ""))
-                    max_width = EMAIL_COLUMN_WIDTHS[header]
-                    if len(value) > max_width:
-                        value = value[:max_width - 3] + "..."
-                        row[header] = value
-                    widths[header] = max(widths[header], len(value))
-            print(f"\nEMAILS - PAGE {page + 1}/{total_pages}")
-            header_line = "  ".join(header.ljust(widths[header]) for header in headers)
-            separator = "  ".join("-" * widths[header] for header in headers)
-            print(f"  {header_line}")
-            print(f"  {separator}")
-            for row in rows:
-                line = "  ".join(str(row.get(header, "")).ljust(widths[header]) for header in headers)
-                print(f"  {line}")
+            _display_email_table(rows, page, total_pages)
             print(f"\nShowing {start + 1}-{end} of {total} emails")
             if page > 0:
                 print("p) Previous page")
@@ -631,16 +669,7 @@ def search_emails(config: dict) -> list | bool:
                     "subject": str(message.get("Subject", "")),
                     "body": _get_email_body(message),
                 }
-                matched = []
-                field_matches = []
-                for field, terms in active_criteria.items():
-                    if not terms:
-                        continue
-                    found = any(term in values[field].casefold() for term in terms)
-                    field_matches.append(found)
-                    if found:
-                        matched.append(field.title())
-                is_match = any(field_matches) if match_mode == "any" else all(field_matches)
+                is_match, matched = _match_email_criteria(values, active_criteria, match_mode)
                 if not is_match:
                     continue
                 relative_path = email_file.relative_to(search_location)
@@ -750,20 +779,7 @@ def display_email_search_results(results: list, configs: dict | None = None, pag
                 print("Already on the first page.")
         elif selection.isdigit() and 1 <= int(selection) <= len(results):
             item = results[int(selection) - 1]
-            details = get_email_details(item["File"])
-            if not details:
-                print(f"[ERROR] Unable to read email: {item['File']}")
-                input("\nPress Enter to return to results...")
-                continue
-            print("\nEmail Details")
-            print("-" * 70)
-            for field in ("From", "To", "Date", "Subject"):
-                print(f"{field:<8}: {details.get(field, '')}")
-            print(f"Matched : {item['Matched']}")
-            print(f"Saved   : {item['File']}")
-            print("-" * 70)
-            print(details.get("Body", ""))
-            input("\nPress Enter to return to results...")
+            _display_email_details(item)
         else:
             print("Invalid selection.")
 
