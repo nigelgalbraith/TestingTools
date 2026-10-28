@@ -1,6 +1,8 @@
 # NetworkConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.display_utils import (
@@ -179,7 +181,7 @@ INTERFACE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("interfaces", []),
         ],
         "result": "selected_interface",
-        "when": lambda job, meta, ctx: len(ctx.get("interfaces", [])) > 0,
+        "when": lambda job, meta, ctx: result_available(ctx, 'interfaces') and (len(ctx.get('interfaces', [])) > 0),
     },
 ]
 
@@ -201,7 +203,7 @@ CONNECTED_INTERFACE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("interfaces", []),
         ],
         "result": "selected_interface",
-        "when": lambda job, meta, ctx: len(ctx.get("interfaces", [])) > 0,
+        "when": lambda job, meta, ctx: result_available(ctx, 'interfaces') and (len(ctx.get('interfaces', [])) > 0),
     },
 ]
 
@@ -218,6 +220,7 @@ PORT_SCAN_PRE = [
         "fn": lambda ips: (ips or []) + ["Enter manually"],
         "args": [lambda job, meta, ctx: ctx.get("neighbor_ips", [])],
         "result": "neighbor_choices",
+        "when": lambda job, meta, ctx: result_available(ctx, 'neighbor_ips'),
     },
     {
         "phase": "pre",
@@ -227,13 +230,14 @@ PORT_SCAN_PRE = [
             lambda job, meta, ctx: ctx.get("neighbor_choices", []),
         ],
         "result": "selected_target",
+        "when": lambda job, meta, ctx: result_available(ctx, 'neighbor_choices'),
     },
     {
         "phase": "pre",
         "fn": prompt_for_target,
         "args": [None],
         "result": "manual_target",
-        "when": lambda job, meta, ctx: ctx.get("selected_target") == "Enter manually",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_target') and (ctx.get('selected_target') == 'Enter manually'),
     },
     {
         "phase": "pre",
@@ -243,6 +247,7 @@ PORT_SCAN_PRE = [
             lambda job, meta, ctx: ctx.get("manual_target"),
         ],
         "result": "target",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_target', 'manual_target'),
     },
 ]
 
@@ -259,7 +264,7 @@ ANALYZE_NETWORK_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_interface"),
         ],
         "result": "analysis_rows",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_interface")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface') and (bool(ctx.get('selected_interface'))),
     },
     {
         "phase": "exec",
@@ -270,7 +275,7 @@ ANALYZE_NETWORK_EXEC = [
             lambda job, meta, ctx: "Interface Details",
         ],
         "result": "analysis_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("analysis_rows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'analysis_rows') and (bool(ctx.get('analysis_rows'))),
     },
 ]
 
@@ -287,7 +292,7 @@ PORT_SCAN_EXEC = [
             lambda job, meta, ctx: meta[PORT_SCAN_KEY][WORKERS_KEY],
         ],
         "result": "open_ports",
-        "when": lambda job, meta, ctx: bool(ctx.get("target")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'target') and (bool(ctx.get('target'))),
     },
     {
         "phase": "exec",
@@ -298,7 +303,7 @@ PORT_SCAN_EXEC = [
             lambda job, meta, ctx: "Open TCP Ports",
         ],
         "result": "portscan_display_ok",
-        "when": lambda job, meta, ctx: True,
+        "when": lambda job, meta, ctx: result_available(ctx, 'open_ports') and (True),
     },
 ]
 
@@ -315,6 +320,7 @@ ARP_SCAN_EXEC = [
         "fn": lambda rows: bool(rows),
         "args": [lambda job, meta, ctx: ctx.get("neighbors", [])],
         "result": "arpscan_ok",
+        "when": lambda job, meta, ctx: result_available(ctx, 'neighbors'),
     },
     {
         "phase": "exec",
@@ -325,14 +331,14 @@ ARP_SCAN_EXEC = [
             lambda job, meta, ctx: "ARP Neighbors",
         ],
         "result": "arpscan_display_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("neighbors")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'neighbors') and (bool(ctx.get('neighbors'))),
     },
     {
         "phase": "exec",
         "fn": lambda: print("[INFO] No ARP neighbors found."),
         "args": [],
         "result": "arpscan_display_ok",
-        "when": lambda job, meta, ctx: not bool(ctx.get("neighbors")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'neighbors') and (not bool(ctx.get('neighbors'))),
     },
 ]
 
@@ -342,7 +348,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -368,14 +374,12 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *ANALYZE_NETWORK_EXEC,
         ],
         "label": "ANALYZE_COMPLETE",
-        "success_key": "analysis_ok",
     },
     "ARP_SCAN": {
         "pipeline": [
             *ARP_SCAN_EXEC,
         ],
         "label": "ARP_SCAN_COMPLETE",
-        "success_key": "arpscan_ok",
     },
     "PORT_SCAN": {
         "pipeline": [
@@ -383,13 +387,11 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *PORT_SCAN_EXEC,
         ],
         "label": "PORTSCAN_COMPLETE",
-        "success_key": "portscan_display_ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

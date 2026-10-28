@@ -1,6 +1,8 @@
 # FunctionConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.display_utils import (
@@ -174,7 +176,7 @@ ANALYZE_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
         ],
         "result": "module_functions",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_module")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module') and (bool(ctx.get('selected_module'))),
     },
     {
         "phase": "exec",
@@ -186,7 +188,7 @@ ANALYZE_FUNCTIONS_EXEC = [
             KEY_MODULE_FOLDER,
         ],
         "result": "scan_result",
-        "when": lambda job, meta, ctx: "module_functions" in ctx and not ctx.get("errors"),
+        "when": lambda job, meta, ctx: result_available(ctx, 'module_functions') and ('module_functions' in ctx),
     },
     {
         "phase": "exec",
@@ -195,15 +197,8 @@ ANALYZE_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
             lambda job, meta, ctx: ctx.get("scan_result", {}),
         ],
-        "when": lambda job, meta, ctx: bool(ctx.get("scan_result")),
-    },
-    {
-        "phase": "exec",
-        "fn": lambda ctx: "scan_result" in ctx and not ctx.get("errors"),
-        "args": [
-            lambda job, meta, ctx: ctx,
-        ],
-        "result": "ok",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'scan_result') and (bool(ctx.get('scan_result'))),
+        "result": "print_usage_summary_result",
     },
 ]
 
@@ -217,7 +212,7 @@ SHOW_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
         ],
         "result": "fn_docs",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_module")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module') and (bool(ctx.get('selected_module'))),
     },
     {
         "phase": "exec",
@@ -226,15 +221,8 @@ SHOW_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
             lambda job, meta, ctx: ctx.get("fn_docs", {}),
         ],
-        "when": lambda job, meta, ctx: "fn_docs" in ctx,
-    },
-    {
-        "phase": "exec",
-        "fn": lambda ctx: "fn_docs" in ctx and not ctx.get("errors"),
-        "args": [
-            lambda job, meta, ctx: ctx,
-        ],
-        "result": "ok",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'fn_docs') and ('fn_docs' in ctx),
+        "result": "print_functions_summary_result",
     },
 ]
 
@@ -244,7 +232,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -260,7 +248,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *ANALYZE_FUNCTIONS_EXEC,
         ],
         "label": "ANALYZE_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_FUNCTIONS": {
         "pipeline": [
@@ -268,13 +255,11 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SHOW_FUNCTIONS_EXEC,
         ],
         "label": "SHOW_FUNCTIONS_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

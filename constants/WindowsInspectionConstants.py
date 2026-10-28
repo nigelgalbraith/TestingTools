@@ -1,6 +1,8 @@
 # WindowsInspectionConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.display_utils import (
@@ -211,6 +213,7 @@ MOUNT_ROOT_PRE = [
             lambda job, meta, ctx: ctx.get("mount_check", []),
         ],
         "result": "mount_ready",
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_check'),
     },
     {
         "phase": "pre",
@@ -225,6 +228,7 @@ MOUNT_ROOT_PRE = [
             lambda job, meta, ctx: "Mount Root Check",
         ],
         "result": "mount_check_displayed",
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_check'),
     },
 ]
 
@@ -237,7 +241,7 @@ WINDOWS_SELECTION_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][MOUNT_ROOT_KEY],
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: bool(ctx.get("mount_ready")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready') and (bool(ctx.get('mount_ready'))),
     },
     {
         "phase": "pre",
@@ -246,7 +250,7 @@ WINDOWS_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("windows_installations", []),
         ],
         "result": "selected_windows",
-        "when": lambda job, meta, ctx: bool(ctx.get("mount_ready")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready') and (result_available(ctx, 'windows_installations') and bool(ctx.get('mount_ready'))),
     },
 ]
 
@@ -263,7 +267,7 @@ DETECT_WINDOWS_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][MOUNT_ROOT_KEY],
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: bool(ctx.get("mount_ready")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready') and (bool(ctx.get('mount_ready'))),
     },
     {
         "phase": "exec",
@@ -277,8 +281,8 @@ DETECT_WINDOWS_EXEC = [
             ],
             lambda job, meta, ctx: "Detected Windows Installations",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("mount_ready")) and bool(ctx.get("windows_installations")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready') and (result_available(ctx, 'windows_installations') and (bool(ctx.get('mount_ready')) and bool(ctx.get('windows_installations')))),
     },
 ]
 
@@ -291,7 +295,7 @@ WINDOWS_INFO_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "windows_info",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -304,8 +308,8 @@ WINDOWS_INFO_EXEC = [
             ],
             lambda job, meta, ctx: "Windows Information",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("windows_info")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'windows_info') and (bool(ctx.get('windows_info'))),
     },
 ]
 
@@ -318,7 +322,7 @@ WINDOWS_USERS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "windows_users",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -331,8 +335,8 @@ WINDOWS_USERS_EXEC = [
             ],
             lambda job, meta, ctx: "Windows Users",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("windows_users")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'windows_users') and (bool(ctx.get('windows_users'))),
     },
 ]
 
@@ -345,7 +349,7 @@ REGISTRY_HIVES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "registry_hives",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -359,8 +363,8 @@ REGISTRY_HIVES_EXEC = [
             ],
             lambda job, meta, ctx: "Registry Hives",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("registry_hives")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'registry_hives') and (bool(ctx.get('registry_hives'))),
     },
 ]
 
@@ -373,7 +377,7 @@ STARTUP_ENTRIES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "startup_entries",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -386,8 +390,8 @@ STARTUP_ENTRIES_EXEC = [
             ],
             lambda job, meta, ctx: "Startup Entries",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("startup_entries")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'startup_entries') and (bool(ctx.get('startup_entries'))),
     },
 ]
 
@@ -400,7 +404,7 @@ SERVICES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "services",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -413,8 +417,8 @@ SERVICES_EXEC = [
             ],
             lambda job, meta, ctx: "Windows Services",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("services")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'services') and (bool(ctx.get('services'))),
     },
 ]
 
@@ -427,7 +431,7 @@ INSTALLED_SOFTWARE_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "installed_software",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_windows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows') and (bool(ctx.get('selected_windows'))),
     },
     {
         "phase": "exec",
@@ -440,8 +444,8 @@ INSTALLED_SOFTWARE_EXEC = [
             ],
             lambda job, meta, ctx: "Installed Windows Software",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("installed_software")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'installed_software') and (bool(ctx.get('installed_software'))),
     },
 ]
 
@@ -451,7 +455,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -467,7 +471,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *DETECT_WINDOWS_EXEC,
         ],
         "label": "DETECT_WINDOWS_COMPLETE",
-        "success_key": "mount_ready",
     },
     "WINDOWS_INFO": {
         "pipeline": [
@@ -476,7 +479,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *WINDOWS_INFO_EXEC,
         ],
         "label": "WINDOWS_INFO_COMPLETE",
-        "success_key": "selected_windows",
     },
     "WINDOWS_USERS": {
         "pipeline": [
@@ -485,7 +487,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *WINDOWS_USERS_EXEC,
         ],
         "label": "WINDOWS_USERS_COMPLETE",
-        "success_key": "selected_windows",
     },
     "REGISTRY_HIVES": {
         "pipeline": [
@@ -494,7 +495,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *REGISTRY_HIVES_EXEC,
         ],
         "label": "REGISTRY_HIVES_COMPLETE",
-        "success_key": "selected_windows",
     },
     "STARTUP_ENTRIES": {
         "pipeline": [
@@ -503,7 +503,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *STARTUP_ENTRIES_EXEC,
         ],
         "label": "STARTUP_ENTRIES_COMPLETE",
-        "success_key": "selected_windows",
     },
     "SERVICES": {
         "pipeline": [
@@ -512,7 +511,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SERVICES_EXEC,
         ],
         "label": "SERVICES_COMPLETE",
-        "success_key": "selected_windows",
     },
     "INSTALLED_SOFTWARE": {
         "pipeline": [
@@ -521,13 +519,11 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *INSTALLED_SOFTWARE_EXEC,
         ],
         "label": "INSTALLED_SOFTWARE_COMPLETE",
-        "success_key": "selected_windows",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

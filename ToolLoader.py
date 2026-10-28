@@ -23,7 +23,7 @@ from modules.display_utils import (
 from modules.json_utils import load_json, validate_required_fields
 from modules.package_utils import check_package, ensure_dependencies_installed
 from modules.state_machine_utils import (
-    check_when,
+    run_pipeline_steps,
     load_constants_from_module,
     parse_args_early,
     resolve_arg,
@@ -79,62 +79,6 @@ class State(Enum):
     CONFIRM = auto()
     EXECUTE = auto()
     FINALIZE = auto()
-
-
-def run_pipeline_steps(
-    meta: Dict[str, Any],
-    pipeline: List[Dict[str, Any]],
-    *,
-    phase: str,
-    label: str,
-    success_key: str,
-    ctx: Dict[str, Any],
-) -> bool:
-    """Run pipeline steps for a given phase, storing outputs in ctx."""
-    ctx.setdefault("errors", [])
-    phase = (phase or "").strip().lower()
-    for step in pipeline:
-        fn = step.get("fn")
-        step_name = getattr(fn, "__name__", "pipeline step")
-        try:
-            if not callable(fn):
-                raise TypeError("Pipeline step missing callable 'fn'.")
-            step_phase = (step.get("phase") or "exec").strip().lower()
-            if step_phase != phase:
-                continue
-            if not check_when(step.get("when"), None, meta, ctx):
-                continue
-            args = [resolve_arg(a, None, meta, ctx) for a in step.get("args", [])]
-            result = fn(*args)
-        except FileNotFoundError as e:
-            message = f"File not found: {e.filename}" if e.filename else str(e)
-            ctx["errors"].append({"step": step_name, "error": message})
-            print(f"[ERROR] {step_name} failed → {message}")
-            if phase == "pre":
-                break
-            continue
-        except Exception as e:
-            ctx["errors"].append({"step": step_name, "error": str(e)})
-            if not getattr(e, "reported", False):
-                print(f"[ERROR] {step_name} failed → {e}")
-            if phase == "pre":
-                break
-            continue
-        rkey = step.get("result")
-        if rkey is not None:
-            ctx[rkey] = result
-    errors = ctx.get("errors") or []
-    default_success = (len(errors) == 0)
-    override_success = None
-    if success_key:
-        if success_key in ctx:
-            override_success = bool(ctx.get(success_key))
-    success = default_success and (override_success if override_success is not None else True)
-    if phase == "pre":
-        print(f"{label} (pre): {'Success' if success else 'Failed'}")
-        return success
-    print(f"{label}: {'Success' if success else 'Failed'}")
-    return success
 
 
 class StateMachine:
@@ -485,7 +429,7 @@ class StateMachine:
             return
         pipeline = pipe_spec.get("pipeline")
         if not isinstance(pipeline, list):
-            self.finalize_msg = f"Pipeline for '{exec_key}' must be a list of steps (Option B)."
+            self.finalize_msg = f"Pipeline for '{exec_key}' must be a list of steps."
             self.state = State.FINALIZE
             return
         self._pending_pipeline_spec = pipe_spec
@@ -497,13 +441,12 @@ class StateMachine:
         spec = self._pending_pipeline_spec or {}
         pipeline = spec.get("pipeline") or []
         label = spec.get("label", "DONE")
-        success_key = spec.get("success_key", "ok")
         success = run_pipeline_steps(
+            None,
             self.cfg,
             pipeline,
             phase="pre",
             label=label,
-            success_key=success_key,
             ctx=self.runtime_ctx,
         )
         if not success:
@@ -531,7 +474,7 @@ class StateMachine:
             if k in self.cfg:
                 row[k] = self.cfg[k]
         for rk, rv in (self.runtime_ctx or {}).items():
-            if rk in row:
+            if rk == "steps" or rk in row:
                 continue
             row[rk] = rv
             if rk not in columns:
@@ -572,15 +515,14 @@ class StateMachine:
         spec = self._pending_pipeline_spec or {}
         pipeline = spec.get("pipeline") or []
         label = spec.get("label", "DONE")
-        success_key = spec.get("success_key", "ok")
         action_spec = self.actions.get(self.current_action_key or "", {})
         post_state_name = action_spec.get("post_state") or "CONFIG_LOADING"
         run_pipeline_steps(
+            None,
             self.cfg,
             pipeline,
             phase="exec",
             label=label,
-            success_key=success_key,
             ctx=self.runtime_ctx,
         )
         self._pending_pipeline_spec = None

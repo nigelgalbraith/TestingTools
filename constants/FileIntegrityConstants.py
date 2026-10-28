@@ -1,6 +1,8 @@
 # FileIntegrityConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.display_utils import (
@@ -237,7 +239,7 @@ VERIFY_FILE_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "expected_hash",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_file")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file') and (bool(ctx.get('selected_file'))),
     },
     {
         "phase": "pre",
@@ -247,6 +249,7 @@ VERIFY_FILE_PRE = [
             lambda job, meta, ctx: ctx.get("expected_hash"),
         ],
         "result": "verify_ready",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', 'expected_hash'),
     },
 ]
 
@@ -269,7 +272,7 @@ FILE_PAIR_PRE = [
             lambda job, meta, ctx: "Select the second file",
         ],
         "result": "second_file",
-        "when": lambda job, meta, ctx: bool(ctx.get("first_file")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'first_file') and (bool(ctx.get('first_file'))),
     },
     {
         "phase": "pre",
@@ -279,6 +282,7 @@ FILE_PAIR_PRE = [
             lambda job, meta, ctx: ctx.get("second_file"),
         ],
         "result": "file_pair_ready",
+        "when": lambda job, meta, ctx: result_available(ctx, 'first_file', 'second_file'),
     },
 ]
 
@@ -308,7 +312,7 @@ HASH_FILE_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "hash_result",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_file")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file') and (bool(ctx.get('selected_file'))),
     },
     {
         "phase": "exec",
@@ -322,8 +326,8 @@ HASH_FILE_EXEC = [
             ],
             lambda job, meta, ctx: "File Hash",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("hash_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'hash_result') and (bool(ctx.get('hash_result'))),
     },
 ]
 
@@ -338,7 +342,7 @@ VERIFY_FILE_HASH_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "verify_result",
-        "when": lambda job, meta, ctx: bool(ctx.get("verify_ready")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'verify_ready') and (result_available(ctx, 'selected_file', 'expected_hash') and bool(ctx.get('verify_ready'))),
     },
     {
         "phase": "exec",
@@ -353,8 +357,8 @@ VERIFY_FILE_HASH_EXEC = [
             ],
             lambda job, meta, ctx: "File Hash Verification",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("verify_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'verify_result') and (bool(ctx.get('verify_result'))),
     },
 ]
 
@@ -380,8 +384,8 @@ HASH_DIRECTORY_EXEC = [
             ],
             lambda job, meta, ctx: "Directory Hashes",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("directory_hashes")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'directory_hashes') and (bool(ctx.get('directory_hashes'))),
     },
 ]
 
@@ -396,7 +400,7 @@ COMPARE_FILES_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "compare_result",
-        "when": lambda job, meta, ctx: bool(ctx.get("file_pair_ready")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'file_pair_ready') and (result_available(ctx, 'first_file', 'second_file') and bool(ctx.get('file_pair_ready'))),
     },
     {
         "phase": "exec",
@@ -410,8 +414,8 @@ COMPARE_FILES_EXEC = [
             ],
             lambda job, meta, ctx: "File Comparison",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("compare_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'compare_result') and (bool(ctx.get('compare_result'))),
     },
 ]
 
@@ -438,8 +442,8 @@ FIND_DUPLICATES_EXEC = [
             ],
             lambda job, meta, ctx: "Duplicate Files",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("duplicates")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'duplicates') and (bool(ctx.get('duplicates'))),
     },
 ]
 
@@ -468,8 +472,8 @@ CREATE_MANIFEST_EXEC = [
             ],
             lambda job, meta, ctx: "Checksum Manifest",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("manifest_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_result') and (bool(ctx.get('manifest_result'))),
     },
 ]
 
@@ -482,7 +486,7 @@ VERIFY_MANIFEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_manifest"),
         ],
         "result": "manifest_verify",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_manifest")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_manifest') and (bool(ctx.get('selected_manifest'))),
     },
     {
         "phase": "exec",
@@ -495,8 +499,8 @@ VERIFY_MANIFEST_EXEC = [
             ],
             lambda job, meta, ctx: "Manifest Verification",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("manifest_verify")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_verify') and (bool(ctx.get('manifest_verify'))),
     },
 ]
 
@@ -523,7 +527,7 @@ RESTORE_PERMISSIONS_EXEC = [
             lambda job, meta, ctx: "Manifest Permissions",
         ],
         "result": "permissions_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("permissions_result")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result') and (bool(ctx.get('permissions_result'))),
     },
 ]
 
@@ -533,7 +537,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -549,7 +553,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *HASH_FILE_EXEC,
         ],
         "label": "HASH_FILE_COMPLETE",
-        "success_key": "selected_file",
     },
     "VERIFY_FILE_HASH": {
         "pipeline": [
@@ -557,14 +560,12 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *VERIFY_FILE_HASH_EXEC,
         ],
         "label": "VERIFY_FILE_HASH_COMPLETE",
-        "success_key": "verify_ready",
     },
     "HASH_DIRECTORY": {
         "pipeline": [
             *HASH_DIRECTORY_EXEC,
         ],
         "label": "HASH_DIRECTORY_COMPLETE",
-        "success_key": "ok",
     },
     "COMPARE_FILES": {
         "pipeline": [
@@ -572,14 +573,12 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *COMPARE_FILES_EXEC,
         ],
         "label": "COMPARE_FILES_COMPLETE",
-        "success_key": "file_pair_ready",
     },
     "FIND_DUPLICATES": {
         "pipeline": [
             *FIND_DUPLICATES_EXEC,
         ],
         "label": "FIND_DUPLICATES_COMPLETE",
-        "success_key": "ok",
     },
     "CREATE_MANIFEST": {
         "pipeline": [
@@ -587,7 +586,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "CREATE_MANIFEST_COMPLETE",
-        "success_key": "ok",
     },
     "VERIFY_MANIFEST": {
         "pipeline": [
@@ -595,20 +593,17 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *VERIFY_MANIFEST_EXEC,
         ],
         "label": "VERIFY_MANIFEST_COMPLETE",
-        "success_key": "selected_manifest",
     },
     "RESTORE_PERMISSIONS": {
         "pipeline": [
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "RESTORE_PERMISSIONS_COMPLETE",
-        "success_key": "permissions_ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

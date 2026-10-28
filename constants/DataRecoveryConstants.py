@@ -1,6 +1,8 @@
 # DataRecoveryConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.data_recovery_utils import (
@@ -204,7 +206,7 @@ DRIVE_SELECTION_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "selected_drive",
-        "when": lambda job, meta, ctx: bool(ctx.get("drive_list")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
     },
 ]
 
@@ -234,8 +236,8 @@ RESTORE_PERMISSIONS_EXEC = [
             ],
             lambda job, meta, ctx: "Recovery Permissions",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("permissions_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result') and (bool(ctx.get('permissions_result'))),
     },
 ]
 
@@ -260,8 +262,8 @@ LOG_PERMISSIONS_EXEC = [
             ],
             lambda job, meta, ctx: "Log Permissions",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("log_permissions_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'log_permissions_result') and (bool(ctx.get('log_permissions_result'))),
     },
 ]
 
@@ -290,8 +292,8 @@ LIST_DRIVES_EXEC = [
             ],
             lambda job, meta, ctx: "Detected Drives",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("drive_list")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
     },
 ]
 
@@ -307,7 +309,7 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: False,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -323,8 +325,8 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             ],
             lambda job, meta, ctx: "Recovery Image",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("recovery_image")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image') and (bool(ctx.get('recovery_image'))),
     },
 ]
 
@@ -340,7 +342,7 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: True,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -356,8 +358,8 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             ],
             lambda job, meta, ctx: "Resume Recovery Image",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("recovery_image")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image') and (bool(ctx.get('recovery_image'))),
     },
 ]
 
@@ -371,7 +373,7 @@ TESTDISK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][LOG_DESTINATION_KEY],
         ],
         "result": "testdisk_result",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -385,8 +387,8 @@ TESTDISK_EXEC = [
             ],
             lambda job, meta, ctx: "TestDisk",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("testdisk_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'testdisk_result') and (bool(ctx.get('testdisk_result'))),
     },
 ]
 
@@ -400,7 +402,7 @@ PHOTOREC_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "photorec_result",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -415,8 +417,8 @@ PHOTOREC_EXEC = [
             ],
             lambda job, meta, ctx: "PhotoRec",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("photorec_result")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'photorec_result') and (bool(ctx.get('photorec_result'))),
     },
 ]
 
@@ -426,7 +428,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -441,7 +443,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *LIST_DRIVES_EXEC,
         ],
         "label": "LIST_DRIVES_COMPLETE",
-        "success_key": "ok",
     },
     "CREATE_RECOVERY_IMAGE": {
         "pipeline": [
@@ -450,7 +451,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "CREATE_RECOVERY_IMAGE_COMPLETE",
-        "success_key": "ok",
     },
     "RESUME_RECOVERY_IMAGE": {
         "pipeline": [
@@ -459,7 +459,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "RESUME_RECOVERY_IMAGE_COMPLETE",
-        "success_key": "ok",
     },
     "TESTDISK": {
         "pipeline": [
@@ -468,7 +467,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *LOG_PERMISSIONS_EXEC,
         ],
         "label": "TESTDISK_COMPLETE",
-        "success_key": "ok",
     },
     "PHOTOREC": {
         "pipeline": [
@@ -477,20 +475,17 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "PHOTOREC_COMPLETE",
-        "success_key": "ok",
     },
     "RESTORE_PERMISSIONS": {
         "pipeline": [
             *RESTORE_PERMISSIONS_EXEC,
         ],
         "label": "RESTORE_PERMISSIONS_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

@@ -1,6 +1,8 @@
 # DiagnosticConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.diagnostic_utils import (
@@ -228,8 +230,8 @@ SYSTEM_SUMMARY_EXEC = [
             lambda job, meta, ctx: ["Key", "Value"],
             lambda job, meta, ctx: "System Summary",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("system_summary")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'system_summary') and (bool(ctx.get('system_summary'))),
     },
 ]
 
@@ -249,8 +251,8 @@ CPU_INFORMATION_EXEC = [
             lambda job, meta, ctx: ["Key", "Value"],
             lambda job, meta, ctx: "CPU Information",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("cpu_info")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'cpu_info') and (bool(ctx.get('cpu_info'))),
     },
 ]
 
@@ -272,8 +274,8 @@ MEMORY_STATUS_EXEC = [
             lambda job, meta, ctx: ["Metric", "Value", "Status"],
             lambda job, meta, ctx: "Memory Status",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("memory_status")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'memory_status') and (bool(ctx.get('memory_status'))),
     },
 ]
 
@@ -295,8 +297,8 @@ TEMPERATURE_STATUS_EXEC = [
             lambda job, meta, ctx: ["Sensor", "Temperature", "Status"],
             lambda job, meta, ctx: "System Temperatures",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("temperature_status")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'temperature_status') and (bool(ctx.get('temperature_status'))),
     },
 ]
 
@@ -316,8 +318,8 @@ BATTERY_HEALTH_EXEC = [
             lambda job, meta, ctx: ["Key", "Value"],
             lambda job, meta, ctx: "Battery Health",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("battery_health")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'battery_health') and (bool(ctx.get('battery_health'))),
     },
 ]
 
@@ -337,8 +339,8 @@ HARDWARE_DEVICES_EXEC = [
             lambda job, meta, ctx: ["Type", "Device"],
             lambda job, meta, ctx: "Hardware Devices",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("hardware_devices")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'hardware_devices') and (bool(ctx.get('hardware_devices'))),
     },
 ]
 
@@ -358,8 +360,8 @@ SYSTEM_ERRORS_EXEC = [
             lambda job, meta, ctx: ["Source", "Message", "Status"],
             lambda job, meta, ctx: "System Errors",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("system_errors")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'system_errors') and (bool(ctx.get('system_errors'))),
     },
 ]
 
@@ -384,8 +386,8 @@ FULL_DIAGNOSTIC_EXEC = [
             lambda job, meta, ctx: ["Check", "Result", "Status"],
             lambda job, meta, ctx: "Full Diagnostic Report",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("diagnostic_report")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'diagnostic_report') and (bool(ctx.get('diagnostic_report'))),
     },
 ]
 
@@ -395,7 +397,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -410,62 +412,53 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SYSTEM_SUMMARY_EXEC,
         ],
         "label": "SYSTEM_SUMMARY_COMPLETE",
-        "success_key": "ok",
     },
     "CPU_INFORMATION": {
         "pipeline": [
             *CPU_INFORMATION_EXEC,
         ],
         "label": "CPU_INFORMATION_COMPLETE",
-        "success_key": "ok",
     },
     "MEMORY_STATUS": {
         "pipeline": [
             *MEMORY_STATUS_EXEC,
         ],
         "label": "MEMORY_STATUS_COMPLETE",
-        "success_key": "ok",
     },
     "TEMPERATURE_STATUS": {
         "pipeline": [
             *TEMPERATURE_STATUS_EXEC,
         ],
         "label": "TEMPERATURE_STATUS_COMPLETE",
-        "success_key": "ok",
     },
     "BATTERY_HEALTH": {
         "pipeline": [
             *BATTERY_HEALTH_EXEC,
         ],
         "label": "BATTERY_HEALTH_COMPLETE",
-        "success_key": "ok",
     },
     "HARDWARE_DEVICES": {
         "pipeline": [
             *HARDWARE_DEVICES_EXEC,
         ],
         "label": "HARDWARE_DEVICES_COMPLETE",
-        "success_key": "ok",
     },
     "SYSTEM_ERRORS": {
         "pipeline": [
             *SYSTEM_ERRORS_EXEC,
         ],
         "label": "SYSTEM_ERRORS_COMPLETE",
-        "success_key": "ok",
     },
     "FULL_DIAGNOSTIC": {
         "pipeline": [
             *FULL_DIAGNOSTIC_EXEC,
         ],
         "label": "FULL_DIAGNOSTIC_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }

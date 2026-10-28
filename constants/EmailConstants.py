@@ -1,6 +1,8 @@
 # EmailConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from pathlib import Path
 from typing import Any, Dict
 
@@ -276,7 +278,7 @@ PST_SINGLE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("pst_files", []),
         ],
         "result": "selected_pst",
-        "when": lambda job, meta, ctx: bool(ctx.get("pst_files")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'pst_files') and (bool(ctx.get('pst_files'))),
     },
 ]
 
@@ -302,7 +304,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][WORK_DIR],
         ],
         "result": "email_files",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
     {
         "phase": "pre",
@@ -311,7 +313,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: ctx.get("email_files", []),
         ],
         "result": "selected_folder_emails",
-        "when": lambda job, meta, ctx: bool(ctx.get("email_files")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_files') and (bool(ctx.get('email_files'))),
     },
     {
         "phase": "pre",
@@ -321,7 +323,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: ctx.get("selected_folder_emails", []),
         ],
         "result": "selected_email",
-        "when": lambda job, meta, ctx: isinstance(ctx.get("selected_folder_emails"), list) and bool(ctx.get("selected_folder_emails")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_folder_emails') and (isinstance(ctx.get('selected_folder_emails'), list) and bool(ctx.get('selected_folder_emails'))),
     },
 ]
 
@@ -339,6 +341,7 @@ SEARCH_EMAILS_PRE = [
             lambda job, meta, ctx: ctx["selected_search_config"]
         ],
         "result": "search_configs",
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_search_config'),
     },
     {
         "phase": "pre",
@@ -349,6 +352,7 @@ SEARCH_EMAILS_PRE = [
             "Email search configurations",
         ],
         "result": "validated_search_configs",
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs'),
     },
     {
         "phase": "pre",
@@ -357,6 +361,7 @@ SEARCH_EMAILS_PRE = [
             ctx.get("selected_search_config") or [], ctx["validated_search_configs"]
         )],
         "result": "search_configs_by_path",
+        "when": lambda job, meta, ctx: result_available(ctx, 'validated_search_configs', 'selected_search_config'),
     },
 ]
 
@@ -372,7 +377,7 @@ VIEW_PST_SUMMARY_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "summary_rows",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
     {
         "phase": "exec",
@@ -383,7 +388,7 @@ VIEW_PST_SUMMARY_EXEC = [
             lambda job, meta, ctx: "PST Summary",
         ],
         "result": "summary_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("summary_rows")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'summary_rows') and (bool(ctx.get('summary_rows'))),
     },
 ]
 
@@ -396,7 +401,7 @@ LIST_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "list_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -409,7 +414,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_email"),
         ],
         "result": "email_details",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_email")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_email') and (bool(ctx.get('selected_email'))),
     },
     {
         "phase": "exec",
@@ -424,7 +429,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: "Email Details",
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("email_details")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_details') and (bool(ctx.get('email_details'))),
     },
     {
         "phase": "exec",
@@ -433,7 +438,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: ctx.get("email_details", {}).get("Body", ""),
         ],
         "result": "body_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("email_details")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_details') and (bool(ctx.get('email_details'))),
     },
 ]
 
@@ -448,7 +453,7 @@ CONVERT_PST_MBOX_EXEC = [
             lambda job, meta, ctx: convert_pst_to_mbox,
         ],
         "result": "convert_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -463,7 +468,7 @@ CONVERT_PST_EML_EXEC = [
             lambda job, meta, ctx: convert_pst_to_eml,
         ],
         "result": "convert_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -478,7 +483,7 @@ EXTRACT_CONTACTS_EXEC = [
             lambda job, meta, ctx: extract_pst_contacts,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -493,7 +498,7 @@ EXTRACT_CALENDARS_EXEC = [
             lambda job, meta, ctx: extract_pst_calendars,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -508,7 +513,7 @@ EXTRACT_ATTACHMENTS_EXEC = [
             lambda job, meta, ctx: extract_pst_attachments,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_pst")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
     },
 ]
 
@@ -521,7 +526,7 @@ SEARCH_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: bool(ctx.get("search_configs_by_path")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path') and (bool(ctx.get('search_configs_by_path'))),
     },
     {
         "phase": "exec",
@@ -531,7 +536,7 @@ SEARCH_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_ok",
-        "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_results', 'search_configs_by_path') and (isinstance(ctx.get('search_results'), list)),
     },
 ]
 
@@ -544,7 +549,7 @@ VIEW_SEARCH_RESULTS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: bool(ctx.get("search_configs_by_path")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path') and (bool(ctx.get('search_configs_by_path'))),
     },
     {
         "phase": "exec",
@@ -554,7 +559,7 @@ VIEW_SEARCH_RESULTS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: isinstance(ctx.get("search_results"), list),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_results', 'search_configs_by_path') and (isinstance(ctx.get('search_results'), list)),
     },
 ]
 
@@ -566,7 +571,7 @@ SHOW_EMAIL_SEARCH_HELP_EXEC = [
         "args": [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][SEARCH_README],
         ],
-        "result": "ok",
+        "result": 'display_readme_result',
     },
 ]
 
@@ -575,7 +580,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -591,7 +596,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *VIEW_PST_SUMMARY_EXEC,
         ],
         "label": "SUMMARY_COMPLETE",
-        "success_key": "summary_ok",
     },
     "LIST_EMAILS": {
         "pipeline": [
@@ -599,7 +603,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *LIST_EMAILS_EXEC,
         ],
         "label": "LIST_COMPLETE",
-        "success_key": "list_ok",
     },
     "VIEW_EMAIL": {
         "pipeline": [
@@ -608,7 +611,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *VIEW_EMAIL_EXEC,
         ],
         "label": "VIEW_COMPLETE",
-        "success_key": "view_ok",
     },
     "CONVERT_PST_MBOX": {
         "pipeline": [
@@ -616,7 +618,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *CONVERT_PST_MBOX_EXEC,
         ],
         "label": "CONVERT_COMPLETE",
-        "success_key": "convert_ok",
     },
     "CONVERT_PST_EML": {
         "pipeline": [
@@ -624,7 +625,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *CONVERT_PST_EML_EXEC,
         ],
         "label": "CONVERT_COMPLETE",
-        "success_key": "convert_ok",
     },
     "EXTRACT_CONTACTS": {
         "pipeline": [
@@ -632,7 +632,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *EXTRACT_CONTACTS_EXEC,
         ],
         "label": "EXTRACT_COMPLETE",
-        "success_key": "extract_ok",
     },
     "EXTRACT_CALENDARS": {
         "pipeline": [
@@ -640,7 +639,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *EXTRACT_CALENDARS_EXEC,
         ],
         "label": "EXTRACT_COMPLETE",
-        "success_key": "extract_ok",
     },
     "EXTRACT_ATTACHMENTS": {
         "pipeline": [
@@ -648,7 +646,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *EXTRACT_ATTACHMENTS_EXEC,
         ],
         "label": "EXTRACT_COMPLETE",
-        "success_key": "extract_ok",
     },
     "SEARCH_EMAILS": {
         "pipeline": [
@@ -656,7 +653,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SEARCH_EMAILS_EXEC,
         ],
         "label": "SEARCH_COMPLETE",
-        "success_key": "search_ok",
     },
     "VIEW_SEARCH_RESULTS": {
         "pipeline": [
@@ -664,18 +660,15 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *VIEW_SEARCH_RESULTS_EXEC,
         ],
         "label": "VIEW_SEARCH_RESULTS_COMPLETE",
-        "success_key": "view_ok",
     },
     "SHOW_EMAIL_SEARCH_HELP": {
         "pipeline": [*SHOW_EMAIL_SEARCH_HELP_EXEC],
         "label": "SHOW_EMAIL_SEARCH_HELP_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "SHOW_CONFIG_COMPLETE",
-        "success_key": "ok",
     },
 }

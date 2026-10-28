@@ -1,6 +1,8 @@
 # HardDriveConstants.py
 from __future__ import annotations
 
+from modules.state_machine_utils import result_available
+
 from typing import Any, Dict
 
 from modules.display_utils import (
@@ -277,7 +279,7 @@ DRIVE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("drive_list", []),
         ],
         "result": "selected_drive",
-        "when": lambda job, meta, ctx: bool(ctx.get("drive_list")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
     },
 ]
 
@@ -307,8 +309,8 @@ LIST_DRIVES_EXEC = [
             ],
             lambda job, meta, ctx: "Detected Drives",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("drive_list")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
     },
 ]
 
@@ -321,7 +323,7 @@ DISK_OVERVIEW_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "disk_overview",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -337,8 +339,8 @@ DISK_OVERVIEW_EXEC = [
             ],
             lambda job, meta, ctx: "Disk and Partition Overview",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("disk_overview")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'disk_overview') and (bool(ctx.get('disk_overview'))),
     },
 ]
 
@@ -352,7 +354,7 @@ FILESYSTEM_USAGE_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
         ],
         "result": "filesystem_usage",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -369,8 +371,8 @@ FILESYSTEM_USAGE_EXEC = [
             ],
             lambda job, meta, ctx: "Filesystem Usage",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("filesystem_usage")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'filesystem_usage') and (bool(ctx.get('filesystem_usage'))),
     },
 ]
 
@@ -383,7 +385,7 @@ WINDOWS_INSTALLATIONS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -398,8 +400,8 @@ WINDOWS_INSTALLATIONS_EXEC = [
             ],
             lambda job, meta, ctx: "Windows Installations",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("windows_installations")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'windows_installations') and (bool(ctx.get('windows_installations'))),
     },
 ]
 
@@ -412,7 +414,7 @@ ENCRYPTION_STATUS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "encryption_status",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -427,8 +429,8 @@ ENCRYPTION_STATUS_EXEC = [
             ],
             lambda job, meta, ctx: "Encryption / BitLocker Status",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("encryption_status")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'encryption_status') and (bool(ctx.get('encryption_status'))),
     },
 ]
 
@@ -441,7 +443,7 @@ DRIVE_INFORMATION_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "drive_information",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -458,8 +460,8 @@ DRIVE_INFORMATION_EXEC = [
             ],
             lambda job, meta, ctx: "Drive Information",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("drive_information")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_information') and (bool(ctx.get('drive_information'))),
     },
 ]
 
@@ -472,7 +474,7 @@ SMART_HEALTH_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_health",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -486,8 +488,8 @@ SMART_HEALTH_EXEC = [
             ],
             lambda job, meta, ctx: "SMART Health",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("smart_health")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'smart_health') and (bool(ctx.get('smart_health'))),
     },
 ]
 
@@ -500,7 +502,7 @@ SMART_ATTRIBUTES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_attributes",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -516,8 +518,8 @@ SMART_ATTRIBUTES_EXEC = [
             ],
             lambda job, meta, ctx: "SMART Attributes",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("smart_attributes")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'smart_attributes') and (bool(ctx.get('smart_attributes'))),
     },
 ]
 
@@ -532,7 +534,7 @@ TEMPERATURE_WEAR_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][WEAR_WARNING_KEY],
         ],
         "result": "temperature_wear",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -547,8 +549,8 @@ TEMPERATURE_WEAR_EXEC = [
             ],
             lambda job, meta, ctx: "Temperature and Wear",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("temperature_wear")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'temperature_wear') and (bool(ctx.get('temperature_wear'))),
     },
 ]
 
@@ -561,7 +563,7 @@ SMART_TEST_HISTORY_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_test_history",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -576,8 +578,8 @@ SMART_TEST_HISTORY_EXEC = [
             ],
             lambda job, meta, ctx: "SMART Self-test History",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("smart_test_history")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'smart_test_history') and (bool(ctx.get('smart_test_history'))),
     },
 ]
 
@@ -590,7 +592,7 @@ SMART_SHORT_TEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_short_test",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -604,8 +606,8 @@ SMART_SHORT_TEST_EXEC = [
             ],
             lambda job, meta, ctx: "Short SMART Test",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("smart_short_test")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'smart_short_test') and (bool(ctx.get('smart_short_test'))),
     },
 ]
 
@@ -618,7 +620,7 @@ SMART_LONG_TEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_long_test",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -632,8 +634,8 @@ SMART_LONG_TEST_EXEC = [
             ],
             lambda job, meta, ctx: "Long SMART Test",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("smart_long_test")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'smart_long_test') and (bool(ctx.get('smart_long_test'))),
     },
 ]
 
@@ -647,7 +649,7 @@ READ_BENCHMARK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][BENCHMARK_SIZE_MB_KEY],
         ],
         "result": "read_benchmark",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -661,8 +663,8 @@ READ_BENCHMARK_EXEC = [
             ],
             lambda job, meta, ctx: "Read Benchmark",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("read_benchmark")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'read_benchmark') and (bool(ctx.get('read_benchmark'))),
     },
 ]
 
@@ -678,7 +680,7 @@ FULL_DRIVE_DIAGNOSTIC_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
         ],
         "result": "full_drive_diagnostic",
-        "when": lambda job, meta, ctx: bool(ctx.get("selected_drive")),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
     },
     {
         "phase": "exec",
@@ -693,8 +695,8 @@ FULL_DRIVE_DIAGNOSTIC_EXEC = [
             ],
             lambda job, meta, ctx: "Full Hard Drive Diagnostic",
         ],
-        "result": "ok",
-        "when": lambda job, meta, ctx: bool(ctx.get("full_drive_diagnostic")),
+        "result": 'print_dict_table_result',
+        "when": lambda job, meta, ctx: result_available(ctx, 'full_drive_diagnostic') and (bool(ctx.get('full_drive_diagnostic'))),
     },
 ]
 
@@ -704,7 +706,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": "ok",
+        "result": 'display_config_doc_result',
     },
 ]
 
@@ -719,7 +721,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *LIST_DRIVES_EXEC,
         ],
         "label": "LIST_DRIVES_COMPLETE",
-        "success_key": "ok",
     },
     "DISK_OVERVIEW": {
         "pipeline": [
@@ -727,7 +728,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *DISK_OVERVIEW_EXEC,
         ],
         "label": "DISK_OVERVIEW_COMPLETE",
-        "success_key": "ok",
     },
     "FILESYSTEM_USAGE": {
         "pipeline": [
@@ -735,7 +735,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *FILESYSTEM_USAGE_EXEC,
         ],
         "label": "FILESYSTEM_USAGE_COMPLETE",
-        "success_key": "ok",
     },
     "WINDOWS_INSTALLATIONS": {
         "pipeline": [
@@ -743,7 +742,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *WINDOWS_INSTALLATIONS_EXEC,
         ],
         "label": "WINDOWS_INSTALLATIONS_COMPLETE",
-        "success_key": "ok",
     },
     "ENCRYPTION_STATUS": {
         "pipeline": [
@@ -751,7 +749,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *ENCRYPTION_STATUS_EXEC,
         ],
         "label": "ENCRYPTION_STATUS_COMPLETE",
-        "success_key": "ok",
     },
     "DRIVE_INFORMATION": {
         "pipeline": [
@@ -759,7 +756,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *DRIVE_INFORMATION_EXEC,
         ],
         "label": "DRIVE_INFORMATION_COMPLETE",
-        "success_key": "ok",
     },
     "SMART_HEALTH": {
         "pipeline": [
@@ -767,7 +763,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SMART_HEALTH_EXEC,
         ],
         "label": "SMART_HEALTH_COMPLETE",
-        "success_key": "ok",
     },
     "SMART_ATTRIBUTES": {
         "pipeline": [
@@ -775,7 +770,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SMART_ATTRIBUTES_EXEC,
         ],
         "label": "SMART_ATTRIBUTES_COMPLETE",
-        "success_key": "ok",
     },
     "TEMPERATURE_WEAR": {
         "pipeline": [
@@ -783,7 +777,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *TEMPERATURE_WEAR_EXEC,
         ],
         "label": "TEMPERATURE_WEAR_COMPLETE",
-        "success_key": "ok",
     },
     "SMART_TEST_HISTORY": {
         "pipeline": [
@@ -791,7 +784,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SMART_TEST_HISTORY_EXEC,
         ],
         "label": "SMART_TEST_HISTORY_COMPLETE",
-        "success_key": "ok",
     },
     "SMART_SHORT_TEST": {
         "pipeline": [
@@ -799,7 +791,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SMART_SHORT_TEST_EXEC,
         ],
         "label": "SMART_SHORT_TEST_COMPLETE",
-        "success_key": "ok",
     },
     "SMART_LONG_TEST": {
         "pipeline": [
@@ -807,7 +798,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *SMART_LONG_TEST_EXEC,
         ],
         "label": "SMART_LONG_TEST_COMPLETE",
-        "success_key": "ok",
     },
     "READ_BENCHMARK": {
         "pipeline": [
@@ -815,7 +805,6 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *READ_BENCHMARK_EXEC,
         ],
         "label": "READ_BENCHMARK_COMPLETE",
-        "success_key": "ok",
     },
     "FULL_DRIVE_DIAGNOSTIC": {
         "pipeline": [
@@ -823,13 +812,11 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
             *FULL_DRIVE_DIAGNOSTIC_EXEC,
         ],
         "label": "FULL_DRIVE_DIAGNOSTIC_COMPLETE",
-        "success_key": "ok",
     },
     "SHOW_CONFIG_DOC": {
         "pipeline": [
             *SHOW_CONFIG_DOC_EXEC,
         ],
         "label": "DONE",
-        "success_key": "ok",
     },
 }
