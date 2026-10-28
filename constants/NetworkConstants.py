@@ -170,7 +170,7 @@ INTERFACE_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": get_interfaces,
-        "args": [lambda job, meta, ctx: None],
+        "args": [None],
         "result": "interfaces",
     },
     {
@@ -191,7 +191,7 @@ CONNECTED_INTERFACE_SELECTION_PRE = [
         "phase": "pre",
         "fn": get_connected_interfaces,
         "args": [
-            lambda job, meta, ctx: None,
+            None,
         ],
         "result": "interfaces",
     },
@@ -271,7 +271,7 @@ ANALYZE_NETWORK_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("analysis_rows", []),
-            lambda job, meta, ctx: ["Key", "Value"],
+            ["Key", "Value"],
             lambda job, meta, ctx: "Interface Details",
         ],
         "result": "analysis_ok",
@@ -299,7 +299,7 @@ PORT_SCAN_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("open_ports", []),
-            lambda job, meta, ctx: ["Port", "Service", "Note"],
+            ["Port", "Service", "Note"],
             lambda job, meta, ctx: "Open TCP Ports",
         ],
         "result": "portscan_display_ok",
@@ -327,7 +327,7 @@ ARP_SCAN_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("neighbors", []),
-            lambda job, meta, ctx: ["IP", "MAC", "Interface"],
+            ["IP", "MAC", "Interface"],
             lambda job, meta, ctx: "ARP Neighbors",
         ],
         "result": "arpscan_display_ok",

@@ -479,6 +479,29 @@ def get_email_details(email_file: str) -> Dict[str, Any]:
         return {}
 
 
+def display_email_details(email_details):
+    if not email_details:
+        return False
+    rows = [
+        (str(key), str(value))
+        for key, value in email_details.items()
+        if key != "Body"
+    ]
+    if not rows:
+        return True
+    field_width = max(len("Field"), *(len(key) for key, _ in rows))
+    value_width = max(len("Value"), *(len(value) for _, value in rows))
+    separator = f"+-{'-' * field_width}-+-{'-' * value_width}-+"
+    print("Email Details")
+    print(separator)
+    print(f"| {'Field':<{field_width}} | {'Value':<{value_width}} |")
+    print(separator)
+    for key, value in rows:
+        print(f"| {key:<{field_width}} | {value:<{value_width}} |")
+    print(separator)
+    return True
+
+
 def browse_pst_emails(pst_file: str, page_size: int = 25) -> bool:
     """Browse PST email summaries using a paginated built-in table."""
     temp_dir = _extract_eml_temp(pst_file)

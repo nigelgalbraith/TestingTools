@@ -17,6 +17,7 @@ from modules.wifi_utils import (
     scan_networks,
     select_network_from_scan,
     show_network_details,
+    display_available_networks, 
 )
 
 
@@ -255,14 +256,10 @@ SCAN_NETWORKS_EXEC = [
     },
     {
         "phase": "exec",
-        "fn": print_dict_table,
+        "fn": display_available_networks,
         "args": [
             lambda job, meta, ctx: ctx.get("networks", []),
-            lambda job, meta, ctx: [
-                col.get(NETWORK_SUMMARY_KEY_KEY)
-                for col in meta.get(NETWORK_SUMMARY_COLUMNS_KEY, [])
-            ],
-            lambda job, meta, ctx: "Available Networks",
+            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
         ],
         "result": "display_ok",
         "when": lambda job, meta, ctx: result_available(ctx, 'networks') and (bool(ctx.get('networks'))),

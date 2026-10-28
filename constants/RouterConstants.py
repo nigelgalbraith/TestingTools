@@ -479,7 +479,7 @@ MIGRATION_DECODE_ROUTER_CONFIG_EXEC = [
         "args": [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ORIGINAL_KEY],
             lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: None,
+            None,
             lambda job, meta, ctx: "Enter SOURCE router password: ",
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],

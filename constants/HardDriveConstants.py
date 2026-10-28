@@ -300,7 +300,7 @@ LIST_DRIVES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("drive_list", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Model",
                 "Size",
@@ -330,7 +330,7 @@ DISK_OVERVIEW_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("disk_overview", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Type",
                 "Size",
@@ -361,7 +361,7 @@ FILESYSTEM_USAGE_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("filesystem_usage", []),
-            lambda job, meta, ctx: [
+            [
                 "Filesystem",
                 "Size",
                 "Used",
@@ -392,7 +392,7 @@ WINDOWS_INSTALLATIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("windows_installations", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Filesystem",
                 "Windows",
@@ -421,7 +421,7 @@ ENCRYPTION_STATUS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("encryption_status", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Filesystem",
                 "Encryption",
@@ -450,7 +450,7 @@ DRIVE_INFORMATION_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("drive_information", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Model",
                 "Serial",
@@ -481,7 +481,7 @@ SMART_HEALTH_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("smart_health", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Health",
                 "Status",
@@ -509,7 +509,7 @@ SMART_ATTRIBUTES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("smart_attributes", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Attribute",
                 "Value",
@@ -541,7 +541,7 @@ TEMPERATURE_WEAR_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("temperature_wear", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Temperature",
                 "Wear",
@@ -570,7 +570,7 @@ SMART_TEST_HISTORY_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("smart_test_history", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Test",
                 "Result",
@@ -599,7 +599,7 @@ SMART_SHORT_TEST_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("smart_short_test", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Result",
                 "Status",
@@ -627,7 +627,7 @@ SMART_LONG_TEST_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("smart_long_test", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Result",
                 "Status",
@@ -656,7 +656,7 @@ READ_BENCHMARK_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("read_benchmark", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Read Speed",
                 "Status",
@@ -687,7 +687,7 @@ FULL_DRIVE_DIAGNOSTIC_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("full_drive_diagnostic", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Check",
                 "Result",

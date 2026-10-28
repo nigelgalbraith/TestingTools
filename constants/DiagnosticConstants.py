@@ -227,7 +227,7 @@ SYSTEM_SUMMARY_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("system_summary", []),
-            lambda job, meta, ctx: ["Key", "Value"],
+            ["Key", "Value"],
             lambda job, meta, ctx: "System Summary",
         ],
         "result": 'print_dict_table_result',
@@ -248,7 +248,7 @@ CPU_INFORMATION_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("cpu_info", []),
-            lambda job, meta, ctx: ["Key", "Value"],
+            ["Key", "Value"],
             lambda job, meta, ctx: "CPU Information",
         ],
         "result": 'print_dict_table_result',
@@ -271,7 +271,7 @@ MEMORY_STATUS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("memory_status", []),
-            lambda job, meta, ctx: ["Metric", "Value", "Status"],
+            ["Metric", "Value", "Status"],
             lambda job, meta, ctx: "Memory Status",
         ],
         "result": 'print_dict_table_result',
@@ -294,7 +294,7 @@ TEMPERATURE_STATUS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("temperature_status", []),
-            lambda job, meta, ctx: ["Sensor", "Temperature", "Status"],
+            ["Sensor", "Temperature", "Status"],
             lambda job, meta, ctx: "System Temperatures",
         ],
         "result": 'print_dict_table_result',
@@ -315,7 +315,7 @@ BATTERY_HEALTH_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("battery_health", []),
-            lambda job, meta, ctx: ["Key", "Value"],
+            ["Key", "Value"],
             lambda job, meta, ctx: "Battery Health",
         ],
         "result": 'print_dict_table_result',
@@ -336,7 +336,7 @@ HARDWARE_DEVICES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("hardware_devices", []),
-            lambda job, meta, ctx: ["Type", "Device"],
+            ["Type", "Device"],
             lambda job, meta, ctx: "Hardware Devices",
         ],
         "result": 'print_dict_table_result',
@@ -357,7 +357,7 @@ SYSTEM_ERRORS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("system_errors", []),
-            lambda job, meta, ctx: ["Source", "Message", "Status"],
+            ["Source", "Message", "Status"],
             lambda job, meta, ctx: "System Errors",
         ],
         "result": 'print_dict_table_result',
@@ -383,7 +383,7 @@ FULL_DIAGNOSTIC_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("diagnostic_report", []),
-            lambda job, meta, ctx: ["Check", "Result", "Status"],
+            ["Check", "Result", "Status"],
             lambda job, meta, ctx: "Full Diagnostic Report",
         ],
         "result": 'print_dict_table_result',

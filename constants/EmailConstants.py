@@ -32,6 +32,7 @@ from modules.email_utils import (
     load_email_search_results,
     select_pst_files,
     run_pst_files,
+    display_email_details,
 )
 from modules.file_utils import (
     get_directory_status,
@@ -384,7 +385,7 @@ VIEW_PST_SUMMARY_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("summary_rows", []),
-            lambda job, meta, ctx: ["Item", "Count"],
+            ["Item", "Count"],
             lambda job, meta, ctx: "PST Summary",
         ],
         "result": "summary_ok",
@@ -418,15 +419,9 @@ VIEW_EMAIL_EXEC = [
     },
     {
         "phase": "exec",
-        "fn": print_dict_table,
+        "fn": display_email_details,
         "args": [
-            lambda job, meta, ctx: [
-                {"Field": key, "Value": value}
-                for key, value in ctx.get("email_details", {}).items()
-                if key != "Body"
-            ],
-            lambda job, meta, ctx: ["Field", "Value"],
-            lambda job, meta, ctx: "Email Details",
+            lambda job, meta, ctx: ctx.get("email_details"),
         ],
         "result": "view_ok",
         "when": lambda job, meta, ctx: result_available(ctx, 'email_details') and (bool(ctx.get('email_details'))),

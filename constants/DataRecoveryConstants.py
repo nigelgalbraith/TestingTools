@@ -229,7 +229,7 @@ RESTORE_PERMISSIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("permissions_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Destination",
                 "Result",
                 "Status",
@@ -255,7 +255,7 @@ LOG_PERMISSIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("log_permissions_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Destination",
                 "Result",
                 "Status",
@@ -283,7 +283,7 @@ LIST_DRIVES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("drive_list", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Model",
                 "Size",
@@ -306,7 +306,7 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
             lambda job, meta, ctx: meta[GENERAL_KEY][DDRESCUE_RETRIES_KEY],
-            lambda job, meta, ctx: False,
+            False,
         ],
         "result": "recovery_image",
         "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
@@ -316,7 +316,7 @@ CREATE_RECOVERY_IMAGE_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("recovery_image", []),
-            lambda job, meta, ctx: [
+            [
                 "Source",
                 "Image",
                 "Map",
@@ -339,7 +339,7 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
             lambda job, meta, ctx: meta[GENERAL_KEY][DDRESCUE_RETRIES_KEY],
-            lambda job, meta, ctx: True,
+            True,
         ],
         "result": "recovery_image",
         "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
@@ -349,7 +349,7 @@ RESUME_RECOVERY_IMAGE_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("recovery_image", []),
-            lambda job, meta, ctx: [
+            [
                 "Source",
                 "Image",
                 "Map",
@@ -380,7 +380,7 @@ TESTDISK_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("testdisk_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Result",
                 "Status",
@@ -409,7 +409,7 @@ PHOTOREC_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("photorec_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Destination",
                 "Result",

@@ -220,7 +220,7 @@ MOUNT_ROOT_PRE = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("mount_check", []),
-            lambda job, meta, ctx: [
+            [
                 "Mount root",
                 "Result",
                 "Status",
@@ -274,7 +274,7 @@ DETECT_WINDOWS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("windows_installations", []),
-            lambda job, meta, ctx: [
+            [
                 "Device",
                 "Mount",
                 "Windows",
@@ -302,7 +302,7 @@ WINDOWS_INFO_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("windows_info", []),
-            lambda job, meta, ctx: [
+            [
                 "Field",
                 "Value",
             ],
@@ -329,7 +329,7 @@ WINDOWS_USERS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("windows_users", []),
-            lambda job, meta, ctx: [
+            [
                 "User",
                 "Profile",
             ],
@@ -356,7 +356,7 @@ REGISTRY_HIVES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("registry_hives", []),
-            lambda job, meta, ctx: [
+            [
                 "Hive",
                 "Path",
                 "Status",
@@ -384,7 +384,7 @@ STARTUP_ENTRIES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("startup_entries", []),
-            lambda job, meta, ctx: [
+            [
                 "Location",
                 "Entry",
             ],
@@ -411,7 +411,7 @@ SERVICES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("services", []),
-            lambda job, meta, ctx: [
+            [
                 "Service",
                 "Status",
             ],
@@ -438,7 +438,7 @@ INSTALLED_SOFTWARE_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("installed_software", []),
-            lambda job, meta, ctx: [
+            [
                 "Name",
                 "Version",
             ],

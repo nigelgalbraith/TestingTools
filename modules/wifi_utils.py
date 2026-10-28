@@ -119,6 +119,22 @@ def check_wifi_status(interface_timeout: int | float, status_timeout: int | floa
     return rows
 
 
+def display_available_networks(networks, columns):
+    if not networks:
+        return False
+    headers = [col.get("key") for col in columns]
+    rows = [[str(network.get(header, "")) for header in headers] for network in networks]
+    widths = [max(len(str(header)), *(len(row[i]) for row in rows)) for i, header in enumerate(headers)]
+    separator = "+-" + "-+-".join("-" * width for width in widths) + "-+"
+    print("Available Networks")
+    print(separator)
+    print("| " + " | ".join(str(header).ljust(width) for header, width in zip(headers, widths)) + " |")
+    print(separator)
+    for row in rows:
+        print("| " + " | ".join(str(value).ljust(width) for value, width in zip(row, widths)) + " |")
+    print(separator)
+    return True
+
 # ---------------------------------------------------------------------
 # SCANNING
 # ---------------------------------------------------------------------

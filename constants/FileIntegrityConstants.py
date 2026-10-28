@@ -319,7 +319,7 @@ HASH_FILE_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("hash_result", []),
-            lambda job, meta, ctx: [
+            [
                 "File",
                 "Algorithm",
                 "Hash",
@@ -349,7 +349,7 @@ VERIFY_FILE_HASH_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("verify_result", []),
-            lambda job, meta, ctx: [
+            [
                 "File",
                 "Expected",
                 "Actual",
@@ -378,7 +378,7 @@ HASH_DIRECTORY_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("directory_hashes", []),
-            lambda job, meta, ctx: [
+            [
                 "File",
                 "Hash",
             ],
@@ -407,7 +407,7 @@ COMPARE_FILES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("compare_result", []),
-            lambda job, meta, ctx: [
+            [
                 "File 1",
                 "File 2",
                 "Status",
@@ -435,7 +435,7 @@ FIND_DUPLICATES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("duplicates", []),
-            lambda job, meta, ctx: [
+            [
                 "Hash",
                 "Count",
                 "Files",
@@ -464,7 +464,7 @@ CREATE_MANIFEST_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("manifest_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Directory",
                 "Manifest",
                 "Files",
@@ -493,7 +493,7 @@ VERIFY_MANIFEST_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("manifest_verify", []),
-            lambda job, meta, ctx: [
+            [
                 "File",
                 "Status",
             ],
@@ -519,7 +519,7 @@ RESTORE_PERMISSIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("permissions_result", []),
-            lambda job, meta, ctx: [
+            [
                 "Destination",
                 "Result",
                 "Status",
