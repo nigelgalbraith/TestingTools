@@ -205,6 +205,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -239,7 +240,7 @@ VERIFY_FILE_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "expected_hash",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file') and (bool(ctx.get('selected_file'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -272,7 +273,7 @@ FILE_PAIR_PRE = [
             lambda job, meta, ctx: "Select the second file",
         ],
         "result": "second_file",
-        "when": lambda job, meta, ctx: result_available(ctx, 'first_file') and (bool(ctx.get('first_file'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'first_file', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -312,7 +313,7 @@ HASH_FILE_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "hash_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file') and (bool(ctx.get('selected_file'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -327,7 +328,7 @@ HASH_FILE_EXEC = [
             lambda job, meta, ctx: "File Hash",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'hash_result') and (bool(ctx.get('hash_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'hash_result', require_nonempty=True),
     },
 ]
 
@@ -342,7 +343,8 @@ VERIFY_FILE_HASH_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "verify_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'verify_ready') and (result_available(ctx, 'selected_file', 'expected_hash') and bool(ctx.get('verify_ready'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'verify_ready', require_nonempty=True) 
+            and result_available(ctx, 'selected_file', 'expected_hash'),
     },
     {
         "phase": "exec",
@@ -358,7 +360,7 @@ VERIFY_FILE_HASH_EXEC = [
             lambda job, meta, ctx: "File Hash Verification",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'verify_result') and (bool(ctx.get('verify_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'verify_result', require_nonempty=True),
     },
 ]
 
@@ -385,7 +387,7 @@ HASH_DIRECTORY_EXEC = [
             lambda job, meta, ctx: "Directory Hashes",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'directory_hashes') and (bool(ctx.get('directory_hashes'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'directory_hashes', require_nonempty=True),
     },
 ]
 
@@ -400,7 +402,7 @@ COMPARE_FILES_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "compare_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'file_pair_ready') and (result_available(ctx, 'first_file', 'second_file') and bool(ctx.get('file_pair_ready'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'file_pair_ready', require_nonempty=True) and result_available(ctx, 'first_file', 'second_file'),
     },
     {
         "phase": "exec",
@@ -415,7 +417,7 @@ COMPARE_FILES_EXEC = [
             lambda job, meta, ctx: "File Comparison",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'compare_result') and (bool(ctx.get('compare_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'compare_result', require_nonempty=True),
     },
 ]
 
@@ -443,7 +445,7 @@ FIND_DUPLICATES_EXEC = [
             lambda job, meta, ctx: "Duplicate Files",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'duplicates') and (bool(ctx.get('duplicates'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'duplicates', require_nonempty=True),
     },
 ]
 
@@ -473,7 +475,7 @@ CREATE_MANIFEST_EXEC = [
             lambda job, meta, ctx: "Checksum Manifest",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_result') and (bool(ctx.get('manifest_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_result', require_nonempty=True),
     },
 ]
 
@@ -486,7 +488,7 @@ VERIFY_MANIFEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_manifest"),
         ],
         "result": "manifest_verify",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_manifest') and (bool(ctx.get('selected_manifest'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_manifest', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -500,7 +502,7 @@ VERIFY_MANIFEST_EXEC = [
             lambda job, meta, ctx: "Manifest Verification",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_verify') and (bool(ctx.get('manifest_verify'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_verify', require_nonempty=True),
     },
 ]
 
@@ -527,7 +529,7 @@ RESTORE_PERMISSIONS_EXEC = [
             lambda job, meta, ctx: "Manifest Permissions",
         ],
         "result": "permissions_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result') and (bool(ctx.get('permissions_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result', require_nonempty=True),
     },
 ]
 
@@ -540,6 +542,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "result": 'display_config_doc_result',
     },
 ]
+
 
 
 # ---------------------------------------------------------------------

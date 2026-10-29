@@ -167,6 +167,7 @@ MODULE_SELECTION_PRE = [
 # EXEC PHASE STEPS
 # ---------------------------------------------------------------------
 
+
 ANALYZE_FUNCTIONS_EXEC = [
     {
         "phase": "exec",
@@ -176,7 +177,7 @@ ANALYZE_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
         ],
         "result": "module_functions",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module') and (bool(ctx.get('selected_module'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -188,7 +189,7 @@ ANALYZE_FUNCTIONS_EXEC = [
             KEY_MODULE_FOLDER,
         ],
         "result": "scan_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'module_functions') and ('module_functions' in ctx),
+        "when": lambda job, meta, ctx: result_available(ctx, 'module_functions'),
     },
     {
         "phase": "exec",
@@ -197,7 +198,8 @@ ANALYZE_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
             lambda job, meta, ctx: ctx.get("scan_result", {}),
         ],
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'scan_result') and (bool(ctx.get('scan_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module')
+            and result_available(ctx, 'scan_result', require_nonempty=True),
         "result": "print_usage_summary_result",
     },
 ]
@@ -212,7 +214,7 @@ SHOW_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
         ],
         "result": "fn_docs",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module') and (bool(ctx.get('selected_module'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -221,7 +223,7 @@ SHOW_FUNCTIONS_EXEC = [
             lambda job, meta, ctx: ctx["selected_module"],
             lambda job, meta, ctx: ctx.get("fn_docs", {}),
         ],
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'fn_docs') and ('fn_docs' in ctx),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'fn_docs'),
         "result": "print_functions_summary_result",
     },
 ]
@@ -235,6 +237,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "result": 'display_config_doc_result',
     },
 ]
+
 
 
 # ---------------------------------------------------------------------

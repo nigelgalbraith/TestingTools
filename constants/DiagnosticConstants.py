@@ -231,7 +231,7 @@ SYSTEM_SUMMARY_EXEC = [
             lambda job, meta, ctx: "System Summary",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'system_summary') and (bool(ctx.get('system_summary'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'system_summary', require_nonempty=True),
     },
 ]
 
@@ -252,7 +252,7 @@ CPU_INFORMATION_EXEC = [
             lambda job, meta, ctx: "CPU Information",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'cpu_info') and (bool(ctx.get('cpu_info'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'cpu_info', require_nonempty=True),
     },
 ]
 
@@ -275,7 +275,7 @@ MEMORY_STATUS_EXEC = [
             lambda job, meta, ctx: "Memory Status",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'memory_status') and (bool(ctx.get('memory_status'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'memory_status', require_nonempty=True),
     },
 ]
 
@@ -298,7 +298,7 @@ TEMPERATURE_STATUS_EXEC = [
             lambda job, meta, ctx: "System Temperatures",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'temperature_status') and (bool(ctx.get('temperature_status'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'temperature_status', require_nonempty=True),
     },
 ]
 
@@ -319,7 +319,7 @@ BATTERY_HEALTH_EXEC = [
             lambda job, meta, ctx: "Battery Health",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'battery_health') and (bool(ctx.get('battery_health'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'battery_health', require_nonempty=True),
     },
 ]
 
@@ -340,7 +340,7 @@ HARDWARE_DEVICES_EXEC = [
             lambda job, meta, ctx: "Hardware Devices",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'hardware_devices') and (bool(ctx.get('hardware_devices'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'hardware_devices', require_nonempty=True),
     },
 ]
 
@@ -361,7 +361,7 @@ SYSTEM_ERRORS_EXEC = [
             lambda job, meta, ctx: "System Errors",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'system_errors') and (bool(ctx.get('system_errors'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'system_errors', require_nonempty=True),
     },
 ]
 
@@ -387,7 +387,7 @@ FULL_DIAGNOSTIC_EXEC = [
             lambda job, meta, ctx: "Full Diagnostic Report",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'diagnostic_report') and (bool(ctx.get('diagnostic_report'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'diagnostic_report', require_nonempty=True),
     },
 ]
 

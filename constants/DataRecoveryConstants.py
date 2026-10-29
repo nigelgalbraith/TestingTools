@@ -206,8 +206,7 @@ DRIVE_SELECTION_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "selected_drive",
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
-    },
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),    },
 ]
 
 
@@ -237,7 +236,7 @@ RESTORE_PERMISSIONS_EXEC = [
             lambda job, meta, ctx: "Recovery Permissions",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result') and (bool(ctx.get('permissions_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result', require_nonempty=True),
     },
 ]
 
@@ -263,7 +262,7 @@ LOG_PERMISSIONS_EXEC = [
             lambda job, meta, ctx: "Log Permissions",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'log_permissions_result') and (bool(ctx.get('log_permissions_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'log_permissions_result', require_nonempty=True),
     },
 ]
 
@@ -293,7 +292,7 @@ LIST_DRIVES_EXEC = [
             lambda job, meta, ctx: "Detected Drives",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list') and (bool(ctx.get('drive_list'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),
     },
 ]
 
@@ -309,7 +308,7 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             False,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -326,7 +325,7 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: "Recovery Image",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image') and (bool(ctx.get('recovery_image'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image', require_nonempty=True),
     },
 ]
 
@@ -342,7 +341,7 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             True,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -359,7 +358,7 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             lambda job, meta, ctx: "Resume Recovery Image",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image') and (bool(ctx.get('recovery_image'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image', require_nonempty=True),
     },
 ]
 
@@ -373,7 +372,7 @@ TESTDISK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][LOG_DESTINATION_KEY],
         ],
         "result": "testdisk_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -388,7 +387,7 @@ TESTDISK_EXEC = [
             lambda job, meta, ctx: "TestDisk",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'testdisk_result') and (bool(ctx.get('testdisk_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'testdisk_result', require_nonempty=True),
     },
 ]
 
@@ -402,7 +401,7 @@ PHOTOREC_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "photorec_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive') and (bool(ctx.get('selected_drive'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -418,7 +417,7 @@ PHOTOREC_EXEC = [
             lambda job, meta, ctx: "PhotoRec",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'photorec_result') and (bool(ctx.get('photorec_result'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'photorec_result', require_nonempty=True),
     },
 ]
 

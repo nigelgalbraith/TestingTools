@@ -279,8 +279,7 @@ PST_SINGLE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("pst_files", []),
         ],
         "result": "selected_pst",
-        "when": lambda job, meta, ctx: result_available(ctx, 'pst_files') and (bool(ctx.get('pst_files'))),
-    },
+        "when": lambda job, meta, ctx: result_available(ctx, 'pst_files', require_nonempty=True),    },
 ]
 
 
@@ -305,7 +304,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: meta[LOCATIONS_KEY][WORK_DIR],
         ],
         "result": "email_files",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),    
     },
     {
         "phase": "pre",
@@ -314,7 +313,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: ctx.get("email_files", []),
         ],
         "result": "selected_folder_emails",
-        "when": lambda job, meta, ctx: result_available(ctx, 'email_files') and (bool(ctx.get('email_files'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_files', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -324,7 +323,7 @@ VIEW_EMAIL_PRE = [
             lambda job, meta, ctx: ctx.get("selected_folder_emails", []),
         ],
         "result": "selected_email",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_folder_emails') and (isinstance(ctx.get('selected_folder_emails'), list) and bool(ctx.get('selected_folder_emails'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_folder_emails', require_nonempty=True, require_type=list),    
     },
 ]
 
@@ -370,6 +369,7 @@ SEARCH_EMAILS_PRE = [
 # EXEC PHASE BLOCKS
 # ---------------------------------------------------------------------
 
+
 VIEW_PST_SUMMARY_EXEC = [
     {
         "phase": "exec",
@@ -378,7 +378,7 @@ VIEW_PST_SUMMARY_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "summary_rows",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -389,9 +389,11 @@ VIEW_PST_SUMMARY_EXEC = [
             lambda job, meta, ctx: "PST Summary",
         ],
         "result": "summary_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'summary_rows') and (bool(ctx.get('summary_rows'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'summary_rows', require_nonempty=True),
     },
 ]
+
+
 
 
 LIST_EMAILS_EXEC = [
@@ -402,7 +404,7 @@ LIST_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_pst"),
         ],
         "result": "list_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -415,7 +417,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_email"),
         ],
         "result": "email_details",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_email') and (bool(ctx.get('selected_email'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_email', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -424,7 +426,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: ctx.get("email_details"),
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'email_details') and (bool(ctx.get('email_details'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_details', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -433,7 +435,7 @@ VIEW_EMAIL_EXEC = [
             lambda job, meta, ctx: ctx.get("email_details", {}).get("Body", ""),
         ],
         "result": "body_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'email_details') and (bool(ctx.get('email_details'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'email_details', require_nonempty=True),
     },
 ]
 
@@ -448,7 +450,7 @@ CONVERT_PST_MBOX_EXEC = [
             lambda job, meta, ctx: convert_pst_to_mbox,
         ],
         "result": "convert_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -463,7 +465,7 @@ CONVERT_PST_EML_EXEC = [
             lambda job, meta, ctx: convert_pst_to_eml,
         ],
         "result": "convert_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -478,7 +480,7 @@ EXTRACT_CONTACTS_EXEC = [
             lambda job, meta, ctx: extract_pst_contacts,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -493,7 +495,7 @@ EXTRACT_CALENDARS_EXEC = [
             lambda job, meta, ctx: extract_pst_calendars,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -508,7 +510,7 @@ EXTRACT_ATTACHMENTS_EXEC = [
             lambda job, meta, ctx: extract_pst_attachments,
         ],
         "result": "extract_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst') and (bool(ctx.get('selected_pst'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_pst', require_nonempty=True),
     },
 ]
 
@@ -521,7 +523,7 @@ SEARCH_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path') and (bool(ctx.get('search_configs_by_path'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -531,7 +533,10 @@ SEARCH_EMAILS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'search_results', 'search_configs_by_path') and (isinstance(ctx.get('search_results'), list)),
+        "when": (
+            lambda job, meta, ctx: result_available(ctx, 'search_results', require_type=list)
+                and result_available(ctx, 'search_configs_by_path')
+        ),
     },
 ]
 
@@ -544,7 +549,7 @@ VIEW_SEARCH_RESULTS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "search_results",
-        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path') and (bool(ctx.get('search_configs_by_path'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'search_configs_by_path', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -554,7 +559,10 @@ VIEW_SEARCH_RESULTS_EXEC = [
             lambda job, meta, ctx: ctx.get("search_configs_by_path"),
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'search_results', 'search_configs_by_path') and (isinstance(ctx.get('search_results'), list)),
+        "when": (
+            lambda job, meta, ctx: result_available(ctx, 'search_results', require_type=list)
+                and result_available(ctx, 'search_configs_by_path')
+        ),
     },
 ]
 
@@ -578,6 +586,7 @@ SHOW_CONFIG_DOC_EXEC = [
         "result": 'display_config_doc_result',
     },
 ]
+
 
 
 # ---------------------------------------------------------------------

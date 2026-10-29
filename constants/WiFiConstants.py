@@ -1,7 +1,9 @@
 # WiFiConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
+from modules.state_machine_utils import (
+    result_available,
+)
 
 from typing import Any, Dict
 
@@ -163,7 +165,6 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
     },
 }
 
-
 # ---------------------------------------------------------------------
 # REUSABLE STEP BLOCKS
 # ---------------------------------------------------------------------
@@ -185,7 +186,7 @@ INTERFACE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("interfaces", []),
         ],
         "result": "selected_interface",
-        "when": lambda job, meta, ctx: result_available(ctx, 'interfaces') and (len(ctx.get('interfaces', [])) > 0),
+        "when": lambda job, meta, ctx: result_available(ctx, 'interfaces', require_nonempty=True, require_type=list),
     },
 ]
 
@@ -201,7 +202,7 @@ NETWORK_SELECTION_PRE = [
             lambda job, meta, ctx: "managed",
         ],
         "result": "networks",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface') and (bool(ctx.get('selected_interface'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -211,7 +212,7 @@ NETWORK_SELECTION_PRE = [
             lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
         ],
         "result": "network_choices",
-        "when": lambda job, meta, ctx: result_available(ctx, 'networks') and (bool(ctx.get('networks'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'networks', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -221,7 +222,7 @@ NETWORK_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("network_choices", []),
         ],
         "result": "selected_network_choice",
-        "when": lambda job, meta, ctx: result_available(ctx, 'network_choices') and (bool(ctx.get('network_choices'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'network_choices', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -232,7 +233,10 @@ NETWORK_SELECTION_PRE = [
             lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
         ],
         "result": "selected_network",
-        "when": lambda job, meta, ctx: result_available(ctx, 'networks', 'selected_network_choice') and (bool(ctx.get('selected_network_choice'))),
+        "when": lambda job, meta, ctx: (
+            result_available(ctx, 'networks')
+            and result_available(ctx, 'selected_network_choice', require_nonempty=True)
+        ),
     },
 ]
 
@@ -252,7 +256,7 @@ SCAN_NETWORKS_EXEC = [
             lambda job, meta, ctx: "managed",
         ],
         "result": "networks",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface') and (bool(ctx.get('selected_interface'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface', require_nonempty=True),
     },
     {
         "phase": "exec",
@@ -262,7 +266,7 @@ SCAN_NETWORKS_EXEC = [
             lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
         ],
         "result": "display_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'networks') and (bool(ctx.get('networks'))),
+        "when": lambda job, meta, ctx: result_available(ctx, 'networks', require_nonempty=True),
     },
 ]
 
@@ -277,9 +281,13 @@ ANALYZE_NETWORK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][SCAN_TIMEOUT_KEY],
         ],
         "result": "analysis_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_interface', 'selected_network') and (bool(ctx.get('selected_network'))),
+        "when": lambda job, meta, ctx: (
+            result_available(ctx, 'selected_interface')
+            and result_available(ctx, 'selected_network', require_nonempty=True)
+        ),
     },
 ]
+
 
 
 SHOW_CONFIG_DOC_EXEC = [
