@@ -896,7 +896,7 @@ def encode_router_config_files(
         return str(output)
     except (OSError, ValueError, KeyError, TypeError, UnicodeError, tarfile.TarError, EOFError, subprocess.SubprocessError) as exc:
         print(f"Failed to encode router configuration: {exc}")
-        return False
+        raise
 
 
 # ---------------------------------------------------------------------
