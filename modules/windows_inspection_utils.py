@@ -113,6 +113,8 @@ def check_mount_root(mount_root: str) -> List[Dict[str, Any]]:
 
 def detect_windows_installations(mount_root: str) -> List[Dict[str, Any]]:
     """Detect Windows installations on NTFS partitions."""
+    if not mount_root or not Path(mount_root).is_dir():
+        return []
     rows: List[Dict[str, Any]] = []
     devices = _flatten_devices(_get_block_devices())
     for device in devices:
@@ -133,6 +135,8 @@ def detect_windows_installations(mount_root: str) -> List[Dict[str, Any]]:
 
 def select_windows_installation(installations: List[Dict[str, Any]]) -> str | None:
     """Prompt for a detected Windows installation."""
+    if installations is None:
+        return None
     if not installations:
         print("No Windows installations detected.")
         return None
@@ -145,6 +149,8 @@ def select_windows_installation(installations: List[Dict[str, Any]]) -> str | No
 
 def get_windows_info(windows_root: str) -> List[Dict[str, Any]]:
     """Return basic information about an offline Windows installation."""
+    if not windows_root:
+        return []
     root = Path(windows_root)
     system32 = root / "Windows" / "System32"
     rows = [
@@ -158,6 +164,8 @@ def get_windows_info(windows_root: str) -> List[Dict[str, Any]]:
 
 def get_windows_users(windows_root: str) -> List[Dict[str, Any]]:
     """Return user profile directories from an offline Windows installation."""
+    if not windows_root:
+        return []
     users_path = Path(windows_root) / "Users"
     if not users_path.is_dir():
         return []
@@ -172,6 +180,8 @@ def get_windows_users(windows_root: str) -> List[Dict[str, Any]]:
 
 def inspect_registry_hives(windows_root: str) -> List[Dict[str, Any]]:
     """List standard offline Windows registry hives."""
+    if not windows_root:
+        return []
     config_path = Path(windows_root) / "Windows" / "System32" / "config"
     hives = ["SYSTEM", "SOFTWARE", "SAM", "SECURITY", "DEFAULT"]
     rows: List[Dict[str, Any]] = []
@@ -183,6 +193,8 @@ def inspect_registry_hives(windows_root: str) -> List[Dict[str, Any]]:
 
 def inspect_startup_entries(windows_root: str) -> List[Dict[str, Any]]:
     """List startup-folder entries from an offline Windows installation."""
+    if not windows_root:
+        return []
     root = Path(windows_root)
     rows: List[Dict[str, Any]] = []
     common = root / "ProgramData" / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
@@ -202,6 +214,8 @@ def inspect_startup_entries(windows_root: str) -> List[Dict[str, Any]]:
 
 def inspect_services(windows_root: str) -> List[Dict[str, Any]]:
     """Return service inspection availability for an offline Windows installation."""
+    if not windows_root:
+        return []
     system_hive = Path(windows_root) / "Windows" / "System32" / "config" / "SYSTEM"
     if not system_hive.is_file():
         return [{"Service": "SYSTEM registry hive", "Status": "MISSING"}]
@@ -210,6 +224,8 @@ def inspect_services(windows_root: str) -> List[Dict[str, Any]]:
 
 def get_installed_software(windows_root: str) -> List[Dict[str, Any]]:
     """Return installed-software registry availability."""
+    if not windows_root:
+        return []
     software_hive = Path(windows_root) / "Windows" / "System32" / "config" / "SOFTWARE"
     if not software_hive.is_file():
         return [{"Name": "SOFTWARE registry hive", "Version": "MISSING"}]

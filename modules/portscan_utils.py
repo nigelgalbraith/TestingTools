@@ -36,6 +36,20 @@ def _tcp_connect_open(host: str, port: int, timeout: float) -> bool:
         return False
 
 
+def build_target_choices(ips: List[str] | None) -> List[str]:
+    """Build target choices only when neighbor discovery succeeded."""
+    if ips is None:
+        return []
+    return ips + ["Enter manually"]
+
+
+def prompt_for_selected_target(selected_target: str | None) -> Optional[str]:
+    """Prompt only when manual target entry is selected."""
+    if selected_target != "Enter manually":
+        return None
+    return prompt_for_target()
+
+
 # ---------------------------------------------------------------------
 # NETWORK OPERATIONS
 # ---------------------------------------------------------------------
@@ -83,6 +97,15 @@ def get_arp_neighbor_rows() -> List[Dict[str, Any]]:
     return rows
 
 
+def display_no_arp_neighbors(rows: List[Dict[str, Any]] | None) -> bool:
+    """Display a message when no ARP neighbors were found."""
+    if rows is None or rows:
+        return False
+    print("[INFO] No ARP neighbors found.")
+    return True
+
+
+
 def prompt_for_target(default: Optional[str] = None) -> Optional[str]:
     """Prompt user for a target IP/hostname."""
     suffix = f" [{default}]" if default else ""
@@ -98,6 +121,8 @@ def scan_tcp_ports(
     workers: int,
 ) -> List[Dict[str, Any]]:
     """TCP connect scan for a list of ports; returns list of dicts for table display."""
+    if not host:
+        return []
     if not isinstance(port_info, dict):
         raise ValueError("port_scan.port_info must be a dictionary")
     for key, info in port_info.items():

@@ -94,6 +94,8 @@ def get_integrity_status(algorithm: str, target_dir: str, manifest_dir: str) -> 
 
 def select_file(target_dir: str, title: str) -> str | None:
     """Select a file from the configured target directory."""
+    if not target_dir:
+        return None
     root = _resolve_target(target_dir)
     files = _directory_files(root)
     if not files:
@@ -108,6 +110,8 @@ def select_file(target_dir: str, title: str) -> str | None:
 
 def prompt_expected_hash(algorithm: str) -> str | None:
     """Prompt for an expected file hash."""
+    if not algorithm:
+        return None
     value = input(f"Enter expected {algorithm.upper()} hash: ").strip().lower()
     return value or None
 
@@ -131,6 +135,8 @@ def prompt_manifest_path(manifest_dir: str) -> str | None:
 
 def hash_file(file_path: str, algorithm: str) -> List[Dict[str, Any]]:
     """Hash one file."""
+    if not file_path:
+        return []
     path = Path(file_path)
     digest = _hash_file(path, algorithm)
     if digest is None:
@@ -140,6 +146,8 @@ def hash_file(file_path: str, algorithm: str) -> List[Dict[str, Any]]:
 
 def verify_file_hash(file_path: str, expected_hash: str, algorithm: str) -> List[Dict[str, Any]]:
     """Verify one file against an expected hash."""
+    if not file_path or not expected_hash:
+        return []
     path = Path(file_path)
     actual = _hash_file(path, algorithm)
     if actual is None:
@@ -160,6 +168,8 @@ def hash_directory(target_dir: str, algorithm: str) -> List[Dict[str, Any]]:
 
 def compare_files(first_file: str, second_file: str, algorithm: str) -> List[Dict[str, Any]]:
     """Compare two files by hash."""
+    if not first_file or not second_file:
+        return []
     first = Path(first_file)
     second = Path(second_file)
     first_hash = _hash_file(first, algorithm)
@@ -239,6 +249,8 @@ def restore_integrity_permissions(manifest_dir: str) -> List[Dict[str, Any]]:
 
 def verify_manifest(manifest_path: str) -> List[Dict[str, Any]]:
     """Verify files against a saved checksum manifest."""
+    if not manifest_path:
+        return []
     path = Path(manifest_path)
     try:
         manifest = json.loads(path.read_text(encoding="utf-8"))

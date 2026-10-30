@@ -1,7 +1,6 @@
 # FileIntegrityConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
 
 from typing import Any, Dict
 
@@ -237,10 +236,9 @@ VERIFY_FILE_PRE = [
         "phase": "pre",
         "fn": prompt_expected_hash,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY] if ctx.get("selected_file") else None,
         ],
         "result": "expected_hash",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -250,7 +248,6 @@ VERIFY_FILE_PRE = [
             lambda job, meta, ctx: ctx.get("expected_hash"),
         ],
         "result": "verify_ready",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', 'expected_hash'),
     },
 ]
 
@@ -269,11 +266,10 @@ FILE_PAIR_PRE = [
         "phase": "pre",
         "fn": select_file,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
+            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY] if ctx.get("first_file") else None,
             lambda job, meta, ctx: "Select the second file",
         ],
         "result": "second_file",
-        "when": lambda job, meta, ctx: result_available(ctx, 'first_file', require_nonempty=True),
     },
     {
         "phase": "pre",
@@ -283,7 +279,6 @@ FILE_PAIR_PRE = [
             lambda job, meta, ctx: ctx.get("second_file"),
         ],
         "result": "file_pair_ready",
-        "when": lambda job, meta, ctx: result_available(ctx, 'first_file', 'second_file'),
     },
 ]
 
@@ -313,13 +308,12 @@ HASH_FILE_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "hash_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_file', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("hash_result", []),
+            lambda job, meta, ctx: ctx.get("hash_result") or None,
             [
                 "File",
                 "Algorithm",
@@ -328,7 +322,6 @@ HASH_FILE_EXEC = [
             lambda job, meta, ctx: "File Hash",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'hash_result', require_nonempty=True),
     },
 ]
 
@@ -343,14 +336,12 @@ VERIFY_FILE_HASH_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "verify_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'verify_ready', require_nonempty=True) 
-            and result_available(ctx, 'selected_file', 'expected_hash'),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("verify_result", []),
+            lambda job, meta, ctx: ctx.get("verify_result") or None,
             [
                 "File",
                 "Expected",
@@ -360,7 +351,6 @@ VERIFY_FILE_HASH_EXEC = [
             lambda job, meta, ctx: "File Hash Verification",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'verify_result', require_nonempty=True),
     },
 ]
 
@@ -379,7 +369,7 @@ HASH_DIRECTORY_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("directory_hashes", []),
+            lambda job, meta, ctx: ctx.get("directory_hashes") or None,
             [
                 "File",
                 "Hash",
@@ -387,7 +377,6 @@ HASH_DIRECTORY_EXEC = [
             lambda job, meta, ctx: "Directory Hashes",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'directory_hashes', require_nonempty=True),
     },
 ]
 
@@ -402,13 +391,12 @@ COMPARE_FILES_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
         ],
         "result": "compare_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'file_pair_ready', require_nonempty=True) and result_available(ctx, 'first_file', 'second_file'),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("compare_result", []),
+            lambda job, meta, ctx: ctx.get("compare_result") or None,
             [
                 "File 1",
                 "File 2",
@@ -417,7 +405,6 @@ COMPARE_FILES_EXEC = [
             lambda job, meta, ctx: "File Comparison",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'compare_result', require_nonempty=True),
     },
 ]
 
@@ -436,7 +423,7 @@ FIND_DUPLICATES_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("duplicates", []),
+            lambda job, meta, ctx: ctx.get("duplicates") or None,
             [
                 "Hash",
                 "Count",
@@ -445,7 +432,6 @@ FIND_DUPLICATES_EXEC = [
             lambda job, meta, ctx: "Duplicate Files",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'duplicates', require_nonempty=True),
     },
 ]
 
@@ -465,7 +451,7 @@ CREATE_MANIFEST_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("manifest_result", []),
+            lambda job, meta, ctx: ctx.get("manifest_result") or None,
             [
                 "Directory",
                 "Manifest",
@@ -475,7 +461,6 @@ CREATE_MANIFEST_EXEC = [
             lambda job, meta, ctx: "Checksum Manifest",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_result', require_nonempty=True),
     },
 ]
 
@@ -488,13 +473,12 @@ VERIFY_MANIFEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_manifest"),
         ],
         "result": "manifest_verify",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_manifest', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("manifest_verify", []),
+            lambda job, meta, ctx: ctx.get("manifest_verify") or None,
             [
                 "File",
                 "Status",
@@ -502,7 +486,6 @@ VERIFY_MANIFEST_EXEC = [
             lambda job, meta, ctx: "Manifest Verification",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'manifest_verify', require_nonempty=True),
     },
 ]
 
@@ -520,7 +503,7 @@ RESTORE_PERMISSIONS_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("permissions_result", []),
+            lambda job, meta, ctx: ctx.get("permissions_result") or None,
             [
                 "Destination",
                 "Result",
@@ -529,7 +512,6 @@ RESTORE_PERMISSIONS_EXEC = [
             lambda job, meta, ctx: "Manifest Permissions",
         ],
         "result": "permissions_ok",
-        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result', require_nonempty=True),
     },
 ]
 

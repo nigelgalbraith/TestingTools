@@ -147,11 +147,10 @@ def scan_networks(
     mode: str = "managed"
 ) -> List[Dict[str, Any]]:
     """Scan WiFi networks using JSON-defined extraction patterns."""
+    if not interface:
+        return []
     if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
         raise ValueError("general.scan_timeout must be a positive number")
-    if not interface:
-        print("[ERROR] No interface provided for scan.")
-        return []
     run_cmd(["ip", "link", "set", interface, "up"])
     print(f"\n[INFO] Scanning on {interface} (timeout={timeout}s)...")
     result = subprocess.run(
@@ -204,6 +203,8 @@ def scan_networks(
 
 def show_network_details(interface: str, network: Dict[str, Any], timeout: int | float) -> bool:
     """Print raw iw scan block for the selected network (by BSSID)."""
+    if not network:
+        return False
     if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
         raise ValueError("general.scan_timeout must be a positive number")
     bssid = str((network or {}).get("bssid") or "").strip()

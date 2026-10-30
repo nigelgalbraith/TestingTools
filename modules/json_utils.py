@@ -117,6 +117,8 @@ def validate_json_schema(data: dict | list[dict], schema_path: Union[str, Path],
 
     Schema paths use load_json's normal relative-path convention.
     """
+    if isinstance(data, list) and not data:
+        return data
     from jsonschema import exceptions, validators
 
     try:

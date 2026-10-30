@@ -121,6 +121,8 @@ def wrap_in_box(val: Any, title: str | None = None, indent: int = 2, pad: int = 
 
 def print_dict_table(items, field_names, label):
     """Print a table for a list of dicts using multi-line cells where needed."""
+    if items is None:
+        return True
     if not items:
         print(f"\n{label.upper()}: (None)")
         return True
@@ -264,7 +266,7 @@ def select_from_list(
 ) -> str | list[str] | None:
     """Render a numbered menu and return the selected option (or None on invalid input)."""
     # Email callers opt into retrying invalid input; Q still cancels.
-    if not options:
+    if not isinstance(options, list) or not options:
         return None
     print(f"\n{title}:")
     for i, opt in enumerate(options, start=1):

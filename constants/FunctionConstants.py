@@ -1,7 +1,6 @@
 # FunctionConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
 
 from typing import Any, Dict
 
@@ -174,32 +173,28 @@ ANALYZE_FUNCTIONS_EXEC = [
         "fn": load_module_functions,
         "args": [
             KEY_MODULE_FOLDER,
-            lambda job, meta, ctx: ctx["selected_module"],
+            lambda job, meta, ctx: ctx.get("selected_module"),
         ],
         "result": "module_functions",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": scan_function_usage,
         "args": [
-            lambda job, meta, ctx: ctx.get("module_functions", {}),
+            lambda job, meta, ctx: ctx.get("module_functions") if ctx.get("selected_module") else None,
             KEY_CHECK_FOLDERS,
             KEY_CHECK_FILES,
             KEY_MODULE_FOLDER,
         ],
         "result": "scan_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'module_functions'),
     },
     {
         "phase": "exec",
         "fn": print_usage_summary,
         "args": [
-            lambda job, meta, ctx: ctx["selected_module"],
+            lambda job, meta, ctx: ctx.get("selected_module"),
             lambda job, meta, ctx: ctx.get("scan_result", {}),
         ],
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module')
-            and result_available(ctx, 'scan_result', require_nonempty=True),
         "result": "print_usage_summary_result",
     },
 ]
@@ -211,19 +206,17 @@ SHOW_FUNCTIONS_EXEC = [
         "fn": load_module_function_docs,
         "args": [
             KEY_MODULE_FOLDER,
-            lambda job, meta, ctx: ctx["selected_module"],
+            lambda job, meta, ctx: ctx.get("selected_module"),
         ],
         "result": "fn_docs",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_functions_summary,
         "args": [
-            lambda job, meta, ctx: ctx["selected_module"],
-            lambda job, meta, ctx: ctx.get("fn_docs", {}),
+            lambda job, meta, ctx: ctx.get("selected_module"),
+            lambda job, meta, ctx: ctx.get("fn_docs"),
         ],
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_module', 'fn_docs'),
         "result": "print_functions_summary_result",
     },
 ]

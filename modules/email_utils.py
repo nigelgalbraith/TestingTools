@@ -237,6 +237,8 @@ def select_pst_files(pst_dir: str) -> str | list[str] | None:
 
 def get_pst_summary(pst_file: str) -> List[Dict[str, Any]]:
     """Return summary rows for a PST file."""
+    if not pst_file:
+        return []
     temp_dir = _extract_eml_temp(pst_file)
     if not temp_dir:
         return []
@@ -261,6 +263,99 @@ def get_pst_summary(pst_file: str) -> List[Dict[str, Any]]:
         ]
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+
+def get_extracted_email_files(eml_dir: str) -> list[str]:
+    """Find extracted EML files recursively."""
+    directory = Path(expand_path(eml_dir))
+    if not directory.is_dir():
+        print(f"[ERROR] EML directory not found: {directory}")
+        return []
+    files = sorted(
+        (str(path) for path in directory.rglob("*") if path.is_file() and path.suffix.lower() == ".eml"),
+        key=_natural_email_sort_key,
+    )
+    if not files:
+        print(f"[INFO] No extracted EML files found in: {directory}")
+    return files
+
+
+def get_extracted_mbox_files(mbox_dir: str) -> list[str]:
+    """Find existing MBOX mailbox files recursively."""
+    directory = Path(expand_path(mbox_dir))
+    if not directory.is_dir():
+        print(f"[ERROR] MBOX directory not found: {directory}")
+        return []
+    files = []
+    for path in directory.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() in (".mbox", ".mbx"):
+            files.append(str(path))
+        elif not path.suffix and path.parent != directory:
+            files.append(str(path))
+    files.sort()
+    if not files:
+        print(f"[INFO] No MBOX files found in: {directory}")
+    return files
+
+
+
+
+def get_mbox_messages(mbox_file: str) -> list[str]:
+    """Return subject and sender labels for MBOX messages."""
+    if not mbox_file:
+        return []
+    try:
+        box = mailbox.mbox(mbox_file, create=False)
+        try:
+            messages = []
+            for key in box.keys():
+                msg = box.get_message(key)
+                if msg is None:
+                    messages.append("(Unreadable email)")
+                    continue
+                subject = str(msg.get("Subject", "")).replace("\n", " ").replace("\r", " ").strip() or "(No subject)"
+                sender = str(msg.get("From", "")).replace("\n", " ").replace("\r", " ").strip() or "(Unknown sender)"
+                messages.append(f"{subject} | {sender}")
+            if not messages:
+                print("[INFO] No messages found in MBOX.")
+            return messages
+        finally:
+            box.close()
+    except Exception as exc:
+        print(f"[ERROR] Unable to read MBOX: {exc}")
+        return []
+    
+
+def get_mbox_email_details(mbox_file: str, selected_message: str) -> dict[str, Any]:
+    """Return headers and body for the selected MBOX message."""
+    if not mbox_file or not selected_message:
+        return {}
+    try:
+        messages = get_mbox_messages(mbox_file)
+        index = messages.index(selected_message)
+        box = mailbox.mbox(mbox_file, create=False)
+        try:
+            keys = list(box.keys())
+            if index < 0 or index >= len(keys):
+                return {}
+            msg = box.get_message(keys[index])
+            if msg is None:
+                return {}
+            return {
+                "From": str(msg.get("From", "")),
+                "To": str(msg.get("To", "")),
+                "Date": str(msg.get("Date", "")),
+                "Subject": str(msg.get("Subject", "")),
+                "Body": _get_email_body(msg),
+            }
+        finally:
+            box.close()
+    except (ValueError, OSError, TypeError) as exc:
+        print(f"[ERROR] Unable to read MBOX email: {exc}")
+        return {}
 
 
 # ---------------------------------------------------------------------
@@ -447,23 +542,10 @@ def extract_pst_attachments(pst_file: str, dest_dir: str) -> bool:
 # ---------------------------------------------------------------------
 
 
-def get_pst_email_files(pst_file: str, work_dir: str) -> List[str]:
-    """Extract a PST and return contained EML files."""
-    try:
-        output_path = Path(expand_path(work_dir))
-        if output_path.exists():
-            shutil.rmtree(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
-        r = _run_readpst(["-e", "-o", str(output_path), pst_file])
-        if r.returncode != 0:
-            return []
-        return sorted((str(path) for path in output_path.rglob("*.eml")), key=_natural_email_sort_key)
-    except Exception:
-        return []
-
-
 def get_email_details(email_file: str) -> Dict[str, Any]:
     """Return details for an email file."""
+    if not email_file:
+        return {}
     try:
         msg = _parse_email_file(email_file)
         if msg is None:
@@ -499,69 +581,14 @@ def display_email_details(email_details):
     for key, value in rows:
         print(f"| {key:<{field_width}} | {value:<{value_width}} |")
     print(separator)
+    print(email_details.get("Body", ""))
     return True
-
-
-def browse_pst_emails(pst_file: str, page_size: int = 25) -> bool:
-    """Browse PST email summaries using a paginated built-in table."""
-    temp_dir = _extract_eml_temp(pst_file)
-    if not temp_dir:
-        return False
-    try:
-        email_files = sorted(temp_dir.rglob("*.eml"), key=_natural_email_sort_key)
-        if not email_files:
-            return False
-        page = 0
-        total = len(email_files)
-        total_pages = (total + page_size - 1) // page_size
-        while True:
-            start = page * page_size
-            end = min(start + page_size, total)
-            rows = []
-            for email_file in email_files[start:end]:
-                try:
-                    msg = _parse_email_file(email_file)
-                    if msg is None:
-                        continue
-                    rows.append({
-                        "From": str(msg.get("From", "")),
-                        "Date": str(msg.get("Date", "")),
-                        "Subject": str(msg.get("Subject", "")),
-                        "Attachments": str(sum(1 for part in msg.iter_attachments())),
-                    })
-                except Exception:
-                    continue
-            _display_email_table(rows, page, total_pages)
-            print(f"\nShowing {start + 1}-{end} of {total} emails")
-            if page > 0:
-                print("p) Previous page")
-            if page < total_pages - 1:
-                print("n) Next page")
-            print("g) Go to page")
-            print("q) Quit")
-            choice = input("Choice: ").strip().lower()
-            if choice == "q":
-                return True
-            if choice == "n" and page < total_pages - 1:
-                page += 1
-                continue
-            if choice == "p" and page > 0:
-                page -= 1
-                continue
-            if choice == "g":
-                target = input(f"Go to page [1-{total_pages}]: ").strip()
-                try:
-                    target_page = int(target)
-                except ValueError:
-                    continue
-                if 1 <= target_page <= total_pages:
-                    page = target_page - 1
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def select_email_folder(email_files: list[str]) -> list[str] | None:
     """Select a folder and return its email paths, or None if cancelled."""
+    if not email_files:
+        return None
     folders = get_email_folders(email_files)
     if not folders:
         return None
@@ -584,7 +611,7 @@ def select_email_folder(email_files: list[str]) -> list[str] | None:
 
 def select_email(title: str, email_files: list[str], page_size: int = 25) -> str | None:
     """Select an email from a paginated list."""
-    if not email_files:
+    if not isinstance(email_files, list) or not email_files:
         return None
     page = 0
     total = len(email_files)
@@ -628,6 +655,8 @@ def select_email(title: str, email_files: list[str], page_size: int = 25) -> str
             continue
         if start + 1 <= selected <= end:
             return email_files[selected - 1]
+
+
 
 
 # ---------------------------------------------------------------------

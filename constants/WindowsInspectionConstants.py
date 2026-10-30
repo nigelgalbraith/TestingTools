@@ -1,7 +1,6 @@
 # WindowsInspectionConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
 
 from typing import Any, Dict
 
@@ -212,13 +211,12 @@ MOUNT_ROOT_PRE = [
             lambda job, meta, ctx: ctx.get("mount_check", []),
         ],
         "result": "mount_ready",
-        "when": lambda job, meta, ctx: result_available(ctx, 'mount_check'),
     },
     {
         "phase": "pre",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("mount_check", []),
+            lambda job, meta, ctx: ctx.get("mount_check"),
             [
                 "Mount root",
                 "Result",
@@ -227,7 +225,6 @@ MOUNT_ROOT_PRE = [
             lambda job, meta, ctx: "Mount Root Check",
         ],
         "result": "mount_check_displayed",
-        "when": lambda job, meta, ctx: result_available(ctx, 'mount_check'),
     },
 ]
 
@@ -240,19 +237,14 @@ WINDOWS_SELECTION_PRE = [
             lambda job, meta, ctx: meta[GENERAL_KEY][MOUNT_ROOT_KEY],
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready', require_nonempty=True),
     },
     {
         "phase": "pre",
         "fn": select_windows_installation,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_installations", []),
+            lambda job, meta, ctx: ctx.get("windows_installations") if ctx.get("mount_ready") else None,
         ],
         "result": "selected_windows",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'mount_ready', require_nonempty=True)
-            and result_available(ctx, 'windows_installations')
-        ),
     },
 ]
 
@@ -269,13 +261,12 @@ DETECT_WINDOWS_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][MOUNT_ROOT_KEY],
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: result_available(ctx, 'mount_ready', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_installations", []),
+            lambda job, meta, ctx: (ctx.get("windows_installations") or None) if ctx.get("mount_ready") else None,
             [
                 "Device",
                 "Mount",
@@ -284,10 +275,6 @@ DETECT_WINDOWS_EXEC = [
             lambda job, meta, ctx: "Detected Windows Installations",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'mount_ready', require_nonempty=True)
-            and result_available(ctx, 'windows_installations', require_nonempty=True)
-        ),
     },
 ]
 
@@ -300,13 +287,12 @@ WINDOWS_INFO_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "windows_info",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_info", []),
+            lambda job, meta, ctx: ctx.get("windows_info") or None,
             [
                 "Field",
                 "Value",
@@ -314,7 +300,6 @@ WINDOWS_INFO_EXEC = [
             lambda job, meta, ctx: "Windows Information",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'windows_info', require_nonempty=True),
     },
 ]
 
@@ -327,13 +312,12 @@ WINDOWS_USERS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "windows_users",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_users", []),
+            lambda job, meta, ctx: ctx.get("windows_users") or None,
             [
                 "User",
                 "Profile",
@@ -341,7 +325,6 @@ WINDOWS_USERS_EXEC = [
             lambda job, meta, ctx: "Windows Users",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'windows_users', require_nonempty=True),
     },
 ]
 
@@ -354,13 +337,12 @@ REGISTRY_HIVES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "registry_hives",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("registry_hives", []),
+            lambda job, meta, ctx: ctx.get("registry_hives") or None,
             [
                 "Hive",
                 "Path",
@@ -369,7 +351,6 @@ REGISTRY_HIVES_EXEC = [
             lambda job, meta, ctx: "Registry Hives",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'registry_hives', require_nonempty=True),
     },
 ]
 
@@ -382,13 +363,12 @@ STARTUP_ENTRIES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "startup_entries",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("startup_entries", []),
+            lambda job, meta, ctx: ctx.get("startup_entries") or None,
             [
                 "Location",
                 "Entry",
@@ -396,7 +376,6 @@ STARTUP_ENTRIES_EXEC = [
             lambda job, meta, ctx: "Startup Entries",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'startup_entries', require_nonempty=True),
     },
 ]
 
@@ -409,13 +388,12 @@ SERVICES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "services",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("services", []),
+            lambda job, meta, ctx: ctx.get("services") or None,
             [
                 "Service",
                 "Status",
@@ -423,7 +401,6 @@ SERVICES_EXEC = [
             lambda job, meta, ctx: "Windows Services",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'services', require_nonempty=True),
     },
 ]
 
@@ -436,13 +413,12 @@ INSTALLED_SOFTWARE_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_windows"),
         ],
         "result": "installed_software",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_windows', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("installed_software", []),
+            lambda job, meta, ctx: ctx.get("installed_software") or None,
             [
                 "Name",
                 "Version",
@@ -450,7 +426,6 @@ INSTALLED_SOFTWARE_EXEC = [
             lambda job, meta, ctx: "Installed Windows Software",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'installed_software', require_nonempty=True),
     },
 ]
 

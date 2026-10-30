@@ -139,7 +139,6 @@ def get_drive_list() -> List[Dict[str, Any]]:
 def select_drive(title: str, drives: List[Dict[str, Any]]) -> str | None:
     """Prompt for a physical drive and return its device path."""
     if not drives:
-        print("No physical drives detected.")
         return None
     options = [f"{drive.get('Device', '')} - {drive.get('Model', 'Unknown')} - {drive.get('Size', 'Unknown')} - {drive.get('Type', 'Unknown')}" for drive in drives]
     selection = select_from_list(title, options)
@@ -150,6 +149,8 @@ def select_drive(title: str, drives: List[Dict[str, Any]]) -> str | None:
 
 def get_disk_overview(device: str) -> List[Dict[str, Any]]:
     """Return the selected drive and its partitions."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     for block_device in _get_drive_tree(device):
         try:
@@ -163,6 +164,8 @@ def get_disk_overview(device: str) -> List[Dict[str, Any]]:
 
 def get_filesystem_usage(device: str, warning_threshold: int | float) -> List[Dict[str, Any]]:
     """Return mounted filesystem usage for the selected drive."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     for block_device in _get_drive_tree(device):
         filesystem = str(block_device.get("fstype") or "")
@@ -183,6 +186,8 @@ def get_filesystem_usage(device: str, warning_threshold: int | float) -> List[Di
 
 def detect_windows_installations(device: str) -> List[Dict[str, Any]]:
     """Detect Windows installations on the selected drive."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     for block_device in _get_drive_tree(device):
         if block_device.get("type") != "part":
@@ -223,6 +228,8 @@ def detect_windows_installations(device: str) -> List[Dict[str, Any]]:
 
 def get_encryption_status(device: str) -> List[Dict[str, Any]]:
     """Return encryption status for the selected drive and its partitions."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     for block_device in _get_drive_tree(device):
         filesystem = str(block_device.get("fstype") or "").lower()
@@ -244,6 +251,8 @@ def get_encryption_status(device: str) -> List[Dict[str, Any]]:
 
 def get_drive_information(device: str) -> List[Dict[str, Any]]:
     """Return detailed identification information for one drive."""
+    if not device:
+        return []
     data = _get_smart_json(device)
     model = data.get("model_name") or data.get("model_family") or "Unknown"
     serial = data.get("serial_number") or "Unknown"
@@ -261,6 +270,8 @@ def get_drive_information(device: str) -> List[Dict[str, Any]]:
 
 def get_smart_health(device: str) -> List[Dict[str, Any]]:
     """Return SMART overall health for one drive."""
+    if not device:
+        return []
     data = _get_smart_json(device)
     smart_status = data.get("smart_status", {})
     passed = smart_status.get("passed") if isinstance(smart_status, dict) else None
@@ -278,6 +289,8 @@ def get_smart_health(device: str) -> List[Dict[str, Any]]:
 
 def get_smart_attributes(device: str) -> List[Dict[str, Any]]:
     """Return SMART attributes for one ATA/SATA drive."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     data = _get_smart_json(device)
     table = data.get("ata_smart_attributes", {})
@@ -296,6 +309,8 @@ def get_smart_attributes(device: str) -> List[Dict[str, Any]]:
 
 def get_temperature_wear(device: str, temperature_warning: int | float, wear_warning: int | float) -> List[Dict[str, Any]]:
     """Return temperature and wear information for one drive."""
+    if not device:
+        return []
     data = _get_smart_json(device)
     temperature_data = data.get("temperature", {})
     temperature = temperature_data.get("current") if isinstance(temperature_data, dict) else None
@@ -314,6 +329,8 @@ def get_temperature_wear(device: str, temperature_warning: int | float, wear_war
 
 def get_smart_test_history(device: str) -> List[Dict[str, Any]]:
     """Return SMART self-test history for one drive."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     data = _get_smart_json(device)
     log = data.get("ata_smart_self_test_log", {})
@@ -332,6 +349,8 @@ def get_smart_test_history(device: str) -> List[Dict[str, Any]]:
 
 def run_short_smart_test(device: str) -> List[Dict[str, Any]]:
     """Start a short SMART self-test on one drive."""
+    if not device:
+        return []
     result = _run_command(["smartctl", "-t", "short", device])
     if result is None:
         message = "Unable to start SMART test"
@@ -347,6 +366,8 @@ def run_short_smart_test(device: str) -> List[Dict[str, Any]]:
 
 def run_long_smart_test(device: str) -> List[Dict[str, Any]]:
     """Start a long SMART self-test on one drive."""
+    if not device:
+        return []
     result = _run_command(["smartctl", "-t", "long", device])
     if result is None:
         message = "Unable to start SMART test"
@@ -362,6 +383,8 @@ def run_long_smart_test(device: str) -> List[Dict[str, Any]]:
 
 def run_read_benchmark(device: str, size_mb: int) -> List[Dict[str, Any]]:
     """Run a non-destructive sequential read benchmark on one drive."""
+    if not device:
+        return []
     start = time.monotonic()
     result = _run_command(["dd", f"if={device}", "of=/dev/null", "bs=1M", f"count={size_mb}", "iflag=direct", "status=none"], timeout=120)
     elapsed = time.monotonic() - start
@@ -376,6 +399,8 @@ def run_read_benchmark(device: str, size_mb: int) -> List[Dict[str, Any]]:
 
 def get_full_drive_diagnostic(device: str, temperature_warning: int | float, wear_warning: int | float, disk_usage_warning: int | float) -> List[Dict[str, Any]]:
     """Return a diagnostic summary for one selected drive."""
+    if not device:
+        return []
     rows: List[Dict[str, Any]] = []
     health = get_smart_health(device)[0]
     wear = get_temperature_wear(device, temperature_warning, wear_warning)[0]

@@ -77,6 +77,8 @@ def load_module_functions(module_folder: str, job: str) -> Dict:
     Example:
         fns = load_module_functions("./modules", "display_utils.py")
     """
+    if not job:
+        return {}
     import ast
     module_path = Path(os.path.expandvars(os.path.expanduser(module_folder))) / job
     tree = ast.parse(module_path.read_text(encoding="utf-8", errors="replace"))
@@ -94,6 +96,8 @@ def load_module_function_docs(module_folder: str, job: str) -> Dict[str, str]:
     Example:
         docs = load_module_function_docs("./modules", "display_utils.py")
     """
+    if not job:
+        return {}
     import ast
     module_path = Path(os.path.expandvars(os.path.expanduser(module_folder))) / job
     tree = ast.parse(module_path.read_text(encoding="utf-8", errors="replace"))
@@ -127,6 +131,8 @@ def scan_function_usage(
     Internal sources include:
     - Python files under ModuleFolder
     """
+    if module_functions is None:
+        return {}
     import ast
     external_sources, internal_sources = collect_usage_sources(
         check_folders,
@@ -174,6 +180,8 @@ def print_usage_summary(job: str, scan_result: dict) -> None:
       - INTERNAL-only usage
       - UNUSED
     """
+    if not job or not scan_result:
+        return
     usage = scan_result["usage"]
     sources = scan_result.get("sources", [])
     print(f"\nFunction usage summary for job: {job}")
@@ -212,6 +220,8 @@ def print_usage_summary(job: str, scan_result: dict) -> None:
 
 def print_functions_summary(job: str, fn_docs: Dict[str, str]) -> None:
     """Print module functions with aligned multi-line docstrings."""
+    if not job or fn_docs is None:
+        return
     title = f"Functions for module: {job}"
     print(f"\n{title}")
     print("-" * len(title))

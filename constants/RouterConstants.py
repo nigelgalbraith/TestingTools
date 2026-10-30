@@ -3,11 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict
-
-from modules.state_machine_utils import (
-    result_available, 
-    meta_available
-)
 from modules.json_utils import (
     load_json, 
     validate_json_schema
@@ -292,6 +287,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+
 # ---------------------------------------------------------------------
 # SELECT ROUTER PRE
 # ---------------------------------------------------------------------
@@ -302,12 +298,9 @@ SELECT_ROUTER_PRE = [
         "fn": select_from_list,
         "args": [
             lambda job, meta, ctx: "Select router",
-            lambda job, meta, ctx: list(meta[ROUTERS_KEY]),
+            lambda job, meta, ctx: list(meta.get(ROUTERS_KEY) or {}),
         ],
         "result": "selected_router",
-        "when": lambda job, meta, ctx: meta_available(
-            meta, ROUTERS_KEY, require_nonempty=True
-        ),
     },
 ]
 
@@ -322,35 +315,26 @@ LOAD_ROUTER_MODEL_SPECS_PRE = [
         "fn": load_json,
         "args": [
             lambda job, meta, ctx:
-                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY],
+                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY] if ctx.get("selected_router") else [],
         ],
         "result": "model_specs",
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'selected_router', require_nonempty=True
-        ),
     },
     {
         "phase": "pre",
         "fn": validate_json_schema,
         "args": [
-            lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: ctx.get("model_specs") if isinstance(ctx.get("model_specs"), dict) else [],
             ROUTER_SCHEMA_PATH,
             "Router model specifications",
         ],
         "result": "model_specs",
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'model_specs', require_type=dict
-        ),
     },
     {
         "phase": "pre",
         "fn": validate_router_settings,
         "args": [
-            lambda job, meta, ctx: ctx["model_specs"],
+            lambda job, meta, ctx: ctx.get("model_specs"),
         ],
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'model_specs', require_type=dict
-        ),
         "result": "validate_router_settings_result",
     },
 ]
@@ -372,10 +356,7 @@ DECODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "decoded_config",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -394,11 +375,7 @@ SAVE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "save_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'decoded_config', require_type=bytes)
-            and result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "decoded_config",
     },
 ]
 
@@ -412,11 +389,7 @@ EXTRACT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "extracted_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'save_ok', require_type=bool, require_value=True)
-            and result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "save_ok",
     },
 ]
 
@@ -434,10 +407,7 @@ VIEW_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "view_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -451,10 +421,7 @@ EDIT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "edited_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -467,10 +434,7 @@ VIEW_EDITED_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "view_edited_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -494,10 +458,7 @@ ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "encoded_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -518,10 +479,7 @@ MIGRATION_DECODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
         ],
         "result": "decoded_config",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -535,10 +493,7 @@ MIGRATION_SAVE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "save_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'decoded_config', require_type=bytes)
-            and result_available(ctx, 'model_specs', 'selected_router')
-        ),
+        "when": "decoded_config",
     },
 ]
 
@@ -552,11 +507,7 @@ MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "extracted_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'save_ok', require_type=bool, require_value=True)
-            and result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "save_ok",
     },
 ]
 
@@ -575,10 +526,7 @@ MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "edited_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -602,10 +550,7 @@ MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],
         "result": "migration_encoded_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'destination_specs', require_type=dict)
-            and result_available(ctx, 'destination_router')
-        ),
+        "when": "destination_specs",
     },
 ]
 
@@ -623,10 +568,7 @@ MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["model_specs"],
         ],
         "result": "view_migration_edited_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', require_type=dict)
-            and result_available(ctx, 'selected_router')
-        ),
+        "when": "model_specs",
     },
 ]
 
@@ -641,12 +583,9 @@ SELECT_DESTINATION_ROUTER_PRE = [
         "fn": select_from_list,
         "args": [
             lambda job, meta, ctx: "Select destination router",
-            lambda job, meta, ctx: list(meta[ROUTERS_KEY]),
+            lambda job, meta, ctx: list(meta.get(ROUTERS_KEY) or {}),
         ],
         "result": "destination_router",
-        "when": lambda job, meta, ctx: meta_available(
-            meta, ROUTERS_KEY, require_nonempty=True
-        ),
     },
 ]
 
@@ -656,35 +595,26 @@ LOAD_DESTINATION_MODEL_SPECS_PRE = [
         "fn": load_json,
         "args": [
             lambda job, meta, ctx:
-                meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY],
+                meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY] if ctx.get("destination_router") else [],
         ],
         "result": "destination_specs",
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'destination_router', require_nonempty=True
-        ),
     },
     {
         "phase": "pre",
         "fn": validate_json_schema,
         "args": [
-            lambda job, meta, ctx: ctx["destination_specs"],
+            lambda job, meta, ctx: ctx.get("destination_specs") if isinstance(ctx.get("destination_specs"), dict) else [],
             ROUTER_SCHEMA_PATH,
             "Destination router model specifications",
         ],
         "result": "destination_specs",
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'destination_specs', require_type=dict
-        ),
     },
     {
         "phase": "pre",
         "fn": validate_router_settings,
         "args": [
-            lambda job, meta, ctx: ctx["destination_specs"],
+            lambda job, meta, ctx: ctx.get("destination_specs"),
         ],
-        "when": lambda job, meta, ctx: result_available(
-            ctx, 'destination_specs', require_type=dict
-        ),
         "result": "validate_router_settings_result",
     },
 ]
@@ -706,10 +636,7 @@ MIGRATION_CONVERT_DECODE_EXEC = [
             lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
         ],
         "result": "converted_decoded_config",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'destination_specs', require_type=dict)
-            and result_available(ctx, 'destination_router')
-        ),
+        "when": "destination_specs",
     },
 ]
 
@@ -723,10 +650,7 @@ MIGRATION_CONVERT_SAVE_EXEC = [
             lambda job, meta, ctx: ctx["destination_specs"],
         ],
         "result": "converted_save_ok",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'converted_decoded_config', require_type=bytes)
-            and result_available(ctx, 'destination_specs', 'destination_router')
-        ),
+        "when": "converted_decoded_config",
     },
 ]
 
@@ -740,11 +664,7 @@ MIGRATION_CONVERT_EXTRACT_EXEC = [
             lambda job, meta, ctx: ctx["destination_specs"],
         ],
         "result": "converted_extracted_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'converted_save_ok', require_type=bool, require_value=True)
-            and result_available(ctx, 'destination_specs', require_type=dict)
-            and result_available(ctx, 'destination_router')
-        ),
+        "when": "converted_save_ok",
     },
 ]
 
@@ -764,12 +684,10 @@ MIGRATION_CONVERT_ROUTER_CONFIG_EXEC = [
             lambda job, meta, ctx: ctx["destination_specs"],
         ],
         "result": "converted_path",
-        "when": lambda job, meta, ctx: (
-            result_available(ctx, 'model_specs', 'destination_specs', require_type=dict)
-            and result_available(ctx, 'selected_router', 'destination_router')
-        ),
+        "when": "destination_specs",
     },
 ]
+
 
 
 # ---------------------------------------------------------------------

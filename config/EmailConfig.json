@@ -7,7 +7,6 @@
     "contacts_dir": "~/Documents/TestingToolsData/email/contacts",
     "calendars_dir": "~/Documents/TestingToolsData/email/calendars",
     "attachments_dir": "~/Documents/TestingToolsData/email/attachments",
-    "work_dir": "/tmp/toolloader_email_view",
     "search_readme_path": "email/SearchReadMe.md"
   },
   "search_configs": [

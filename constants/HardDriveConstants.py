@@ -1,7 +1,6 @@
 # HardDriveConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
 
 from typing import Any, Dict
 
@@ -280,7 +279,6 @@ DRIVE_SELECTION_PRE = [
             lambda job, meta, ctx: ctx.get("drive_list", []),
         ],
         "result": "selected_drive",
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),
     },
 ]
 
@@ -300,7 +298,7 @@ LIST_DRIVES_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("drive_list", []),
+            lambda job, meta, ctx: ctx.get("drive_list") or None,
             [
                 "Device",
                 "Model",
@@ -311,7 +309,6 @@ LIST_DRIVES_EXEC = [
             lambda job, meta, ctx: "Detected Drives",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),
     },
 ]
 
@@ -324,13 +321,12 @@ DISK_OVERVIEW_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "disk_overview",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("disk_overview", []),
+            lambda job, meta, ctx: ctx.get("disk_overview") or None,
             [
                 "Device",
                 "Type",
@@ -341,7 +337,6 @@ DISK_OVERVIEW_EXEC = [
             lambda job, meta, ctx: "Disk and Partition Overview",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'disk_overview', require_nonempty=True),
     },
 ]
 
@@ -355,13 +350,12 @@ FILESYSTEM_USAGE_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
         ],
         "result": "filesystem_usage",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("filesystem_usage", []),
+            lambda job, meta, ctx: ctx.get("filesystem_usage") or None,
             [
                 "Filesystem",
                 "Size",
@@ -373,7 +367,6 @@ FILESYSTEM_USAGE_EXEC = [
             lambda job, meta, ctx: "Filesystem Usage",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'filesystem_usage', require_nonempty=True),
     },
 ]
 
@@ -386,13 +379,12 @@ WINDOWS_INSTALLATIONS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "windows_installations",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_installations", []),
+            lambda job, meta, ctx: ctx.get("windows_installations") or None,
             [
                 "Device",
                 "Filesystem",
@@ -402,7 +394,6 @@ WINDOWS_INSTALLATIONS_EXEC = [
             lambda job, meta, ctx: "Windows Installations",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'windows_installations', require_nonempty=True),
     },
 ]
 
@@ -415,13 +406,12 @@ ENCRYPTION_STATUS_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "encryption_status",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("encryption_status", []),
+            lambda job, meta, ctx: ctx.get("encryption_status") or None,
             [
                 "Device",
                 "Filesystem",
@@ -431,7 +421,6 @@ ENCRYPTION_STATUS_EXEC = [
             lambda job, meta, ctx: "Encryption / BitLocker Status",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'encryption_status', require_nonempty=True),
     },
 ]
 
@@ -444,13 +433,12 @@ DRIVE_INFORMATION_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "drive_information",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("drive_information", []),
+            lambda job, meta, ctx: ctx.get("drive_information") or None,
             [
                 "Device",
                 "Model",
@@ -462,7 +450,6 @@ DRIVE_INFORMATION_EXEC = [
             lambda job, meta, ctx: "Drive Information",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_information', require_nonempty=True),
     },
 ]
 
@@ -475,13 +462,12 @@ SMART_HEALTH_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_health",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_health", []),
+            lambda job, meta, ctx: ctx.get("smart_health") or None,
             [
                 "Device",
                 "Health",
@@ -490,7 +476,6 @@ SMART_HEALTH_EXEC = [
             lambda job, meta, ctx: "SMART Health",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'smart_health', require_nonempty=True),
     },
 ]
 
@@ -503,13 +488,12 @@ SMART_ATTRIBUTES_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_attributes",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_attributes", []),
+            lambda job, meta, ctx: ctx.get("smart_attributes") or None,
             [
                 "Device",
                 "Attribute",
@@ -520,7 +504,6 @@ SMART_ATTRIBUTES_EXEC = [
             lambda job, meta, ctx: "SMART Attributes",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'smart_attributes', require_nonempty=True),
     },
 ]
 
@@ -535,13 +518,12 @@ TEMPERATURE_WEAR_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][WEAR_WARNING_KEY],
         ],
         "result": "temperature_wear",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("temperature_wear", []),
+            lambda job, meta, ctx: ctx.get("temperature_wear") or None,
             [
                 "Device",
                 "Temperature",
@@ -551,7 +533,6 @@ TEMPERATURE_WEAR_EXEC = [
             lambda job, meta, ctx: "Temperature and Wear",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'temperature_wear', require_nonempty=True),
     },
 ]
 
@@ -564,13 +545,12 @@ SMART_TEST_HISTORY_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_test_history",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_test_history", []),
+            lambda job, meta, ctx: ctx.get("smart_test_history") or None,
             [
                 "Device",
                 "Test",
@@ -580,7 +560,6 @@ SMART_TEST_HISTORY_EXEC = [
             lambda job, meta, ctx: "SMART Self-test History",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'smart_test_history', require_nonempty=True),
     },
 ]
 
@@ -593,13 +572,12 @@ SMART_SHORT_TEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_short_test",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_short_test", []),
+            lambda job, meta, ctx: ctx.get("smart_short_test") or None,
             [
                 "Device",
                 "Result",
@@ -608,7 +586,6 @@ SMART_SHORT_TEST_EXEC = [
             lambda job, meta, ctx: "Short SMART Test",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'smart_short_test', require_nonempty=True),
     },
 ]
 
@@ -621,13 +598,12 @@ SMART_LONG_TEST_EXEC = [
             lambda job, meta, ctx: ctx.get("selected_drive"),
         ],
         "result": "smart_long_test",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_long_test", []),
+            lambda job, meta, ctx: ctx.get("smart_long_test") or None,
             [
                 "Device",
                 "Result",
@@ -636,7 +612,6 @@ SMART_LONG_TEST_EXEC = [
             lambda job, meta, ctx: "Long SMART Test",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'smart_long_test', require_nonempty=True),
     },
 ]
 
@@ -650,13 +625,12 @@ READ_BENCHMARK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][BENCHMARK_SIZE_MB_KEY],
         ],
         "result": "read_benchmark",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("read_benchmark", []),
+            lambda job, meta, ctx: ctx.get("read_benchmark") or None,
             [
                 "Device",
                 "Read Speed",
@@ -665,7 +639,6 @@ READ_BENCHMARK_EXEC = [
             lambda job, meta, ctx: "Read Benchmark",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'read_benchmark', require_nonempty=True),
     },
 ]
 
@@ -681,13 +654,12 @@ FULL_DRIVE_DIAGNOSTIC_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
         ],
         "result": "full_drive_diagnostic",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("full_drive_diagnostic", []),
+            lambda job, meta, ctx: ctx.get("full_drive_diagnostic") or None,
             [
                 "Device",
                 "Check",
@@ -697,7 +669,6 @@ FULL_DRIVE_DIAGNOSTIC_EXEC = [
             lambda job, meta, ctx: "Full Hard Drive Diagnostic",
         ],
         "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'full_drive_diagnostic', require_nonempty=True),
     },
 ]
 

@@ -1,8 +1,6 @@
 # DataRecoveryConstants.py
 from __future__ import annotations
 
-from modules.state_machine_utils import result_available
-
 from typing import Any, Dict
 
 from modules.data_recovery_utils import (
@@ -186,6 +184,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -201,14 +200,13 @@ DRIVE_SELECTION_PRE = [
         "phase": "pre",
         "fn": select_drive,
         "args": [
-            lambda job, meta, ctx: "Select the recovery source drive",
+            "Select the recovery source drive",
             lambda job, meta, ctx: ctx.get("drive_list", []),
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "selected_drive",
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),    },
+    },
 ]
-
 
 # ---------------------------------------------------------------------
 # SHARED EXEC PHASE BLOCKS
@@ -228,15 +226,10 @@ RESTORE_PERMISSIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("permissions_result", []),
-            [
-                "Destination",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Recovery Permissions",
+            ["Destination", "Result", "Status"],
+            "Recovery Permissions",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'permissions_result', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
 
@@ -254,17 +247,13 @@ LOG_PERMISSIONS_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("log_permissions_result", []),
-            [
-                "Destination",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Log Permissions",
+            ["Destination", "Result", "Status"],
+            "Log Permissions",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'log_permissions_result', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
+
 
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
@@ -282,20 +271,12 @@ LIST_DRIVES_EXEC = [
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("drive_list", []),
-            [
-                "Device",
-                "Model",
-                "Size",
-                "Type",
-                "Interface",
-            ],
-            lambda job, meta, ctx: "Detected Drives",
+            ["Device", "Model", "Size", "Type", "Interface"],
+            "Detected Drives",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'drive_list', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
-
 
 CREATE_RECOVERY_IMAGE_EXEC = [
     {
@@ -308,27 +289,18 @@ CREATE_RECOVERY_IMAGE_EXEC = [
             False,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("recovery_image", []),
-            [
-                "Source",
-                "Image",
-                "Map",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Recovery Image",
+            ["Source", "Image", "Map", "Result", "Status"],
+            "Recovery Image",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
-
 
 RESUME_RECOVERY_IMAGE_EXEC = [
     {
@@ -341,27 +313,18 @@ RESUME_RECOVERY_IMAGE_EXEC = [
             True,
         ],
         "result": "recovery_image",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("recovery_image", []),
-            [
-                "Source",
-                "Image",
-                "Map",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Resume Recovery Image",
+            ["Source", "Image", "Map", "Result", "Status"],
+            "Resume Recovery Image",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'recovery_image', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
-
 
 TESTDISK_EXEC = [
     {
@@ -372,22 +335,16 @@ TESTDISK_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][LOG_DESTINATION_KEY],
         ],
         "result": "testdisk_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("testdisk_result", []),
-            [
-                "Device",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "TestDisk",
+            ["Device", "Result", "Status"],
+            "TestDisk",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'testdisk_result', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
 
@@ -401,26 +358,18 @@ PHOTOREC_EXEC = [
             lambda job, meta, ctx: meta[GENERAL_KEY][DESTINATION_KEY],
         ],
         "result": "photorec_result",
-        "when": lambda job, meta, ctx: result_available(ctx, 'selected_drive', require_nonempty=True),
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
             lambda job, meta, ctx: ctx.get("photorec_result", []),
-            [
-                "Device",
-                "Destination",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "PhotoRec",
+            ["Device", "Destination", "Result", "Status"],
+            "PhotoRec",
         ],
-        "result": 'print_dict_table_result',
-        "when": lambda job, meta, ctx: result_available(ctx, 'photorec_result', require_nonempty=True),
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {

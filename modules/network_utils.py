@@ -113,7 +113,6 @@ def get_interface_status() -> List[Dict[str, Any]]:
 def analyze_interface(interface: str) -> List[Dict[str, Any]]:
     """Return nmcli device show output as rows for print_dict_table."""
     if not interface:
-        print("[ERROR] No interface provided.")
         return []
     try:
         r = subprocess.run(

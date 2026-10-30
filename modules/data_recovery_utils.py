@@ -111,11 +111,11 @@ def _recovery_paths(device: str, destination: Path) -> tuple[Path, Path]:
 
 
 def _same_source_destination(device: str, destination: Path) -> bool:
-    """Return True when source and destination use the same physical drive."""
+    """Return True when source and destination match or cannot be verified."""
     source_drive = _get_physical_drive(device)
     destination_drive = _get_destination_drive(destination)
     if source_drive is None or destination_drive is None:
-        return False
+        return True
     return source_drive == destination_drive
 
 
@@ -196,13 +196,15 @@ def restore_recovery_permissions(destination: str) -> List[Dict[str, Any]]:
     return [{"Destination": str(destination_path), "Result": "Recovery permissions restored", "Status": "PASS"}]
 
 
-def run_ddrescue_image(device: str, destination: str, retries: int, resume: bool) -> List[Dict[str, Any]]:
+def run_ddrescue_image(device: str | None, destination: str, retries: int, resume: bool) -> List[Dict[str, Any]]:
     """Create or resume a ddrescue image of one source drive."""
+    if not device or not device.startswith("/dev/") or not Path(device).is_block_device():
+        return [{"Source": device, "Image": "", "Map": "", "Result": "No valid source drive selected", "Status": "FAIL"}]
     destination_path = _get_recovery_destination(destination)
     if destination_path is None:
         return [{"Source": device, "Image": "", "Map": "", "Result": "Unable to create recovery destination", "Status": "FAIL"}]
     if _same_source_destination(device, destination_path):
-        return [{"Source": device, "Image": "", "Map": "", "Result": "Source and recovery destination are on the same physical drive", "Status": "FAIL"}]
+        return [{"Source": device, "Image": "", "Map": "", "Result": "Source and destination are the same drive or cannot be verified", "Status": "FAIL"}]
     image_path, map_path = _recovery_paths(device, destination_path)
     if resume and not map_path.exists():
         return [{"Source": device, "Image": str(image_path), "Map": str(map_path), "Result": "Map file does not exist", "Status": "FAIL"}]
@@ -220,8 +222,10 @@ def run_ddrescue_image(device: str, destination: str, retries: int, resume: bool
     return [{"Source": device, "Image": str(image_path), "Map": str(map_path), "Result": "Recovery image completed", "Status": "PASS"}]
 
 
-def run_testdisk(device: str, log_destination: str) -> List[Dict[str, Any]]:
+def run_testdisk(device: str | None, log_destination: str) -> List[Dict[str, Any]]:
     """Launch TestDisk interactively for one source drive."""
+    if not device or not device.startswith("/dev/") or not Path(device).is_block_device():
+        return [{"Device": device, "Result": "No valid source drive selected", "Status": "FAIL"}]
     log_path = (Path.cwd() / expand_path(log_destination)).resolve()
     try:
         log_path.mkdir(parents=True, exist_ok=True)
@@ -238,13 +242,15 @@ def run_testdisk(device: str, log_destination: str) -> List[Dict[str, Any]]:
     return [{"Device": device, "Result": "TestDisk session completed", "Status": "PASS"}]
 
 
-def run_photorec(device: str, destination: str) -> List[Dict[str, Any]]:
+def run_photorec(device: str | None, destination: str) -> List[Dict[str, Any]]:
     """Launch PhotoRec interactively for one source drive."""
+    if not device or not device.startswith("/dev/") or not Path(device).is_block_device():
+        return [{"Device": device, "Destination": destination, "Result": "No valid source drive selected", "Status": "FAIL"}]
     destination_path = _get_recovery_destination(destination)
     if destination_path is None:
         return [{"Device": device, "Destination": destination, "Result": "Unable to create recovery destination", "Status": "FAIL"}]
     if _same_source_destination(device, destination_path):
-        return [{"Device": device, "Destination": str(destination_path), "Result": "Source and recovery destination are on the same physical drive", "Status": "FAIL"}]
+        return [{"Device": device, "Destination": str(destination_path), "Result": "Source and destination are the same drive or cannot be verified", "Status": "FAIL"}]
     print(f"\nSource drive: {device}")
     print(f"Recovered files: {destination_path}")
     print("PhotoRec is interactive. Select the required partition and file types in its menu.\n")

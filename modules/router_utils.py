@@ -296,6 +296,8 @@ def _validate_router_fields(router: dict, config_fields: list, codec: dict, edit
 
 def validate_router_settings(specs: dict) -> None:
     """Check required method settings, compatible formats and logical field mappings."""
+    if not isinstance(specs, dict):
+        raise ValueError("Router model specifications are missing or invalid")
     router = specs["router_specs"]
     codec = router["codec"]
     edit = router.get("edit") or {}
