@@ -210,6 +210,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 
+
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -225,78 +226,77 @@ SYSTEM_SUMMARY_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("system_summary", []),
+            "system_summary",
             ["Key", "Value"],
-            lambda job, meta, ctx: "System Summary",
+            "System Summary",
         ],
-        "result": 'print_dict_table_result',
+        "when": "system_summary",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 CPU_INFORMATION_EXEC = [
     {
         "phase": "exec",
         "fn": get_cpu_info,
-        "args": [lambda job, meta, ctx: meta[CPU_KEY][CPU_FIELDS_KEY], lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY]],
+        "args": [
+            "meta.cpu.fields",
+            "meta.general.command_timeout",
+        ],
         "result": "cpu_info",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("cpu_info", []),
+            "cpu_info",
             ["Key", "Value"],
-            lambda job, meta, ctx: "CPU Information",
+            "CPU Information",
         ],
-        "result": 'print_dict_table_result',
+        "when": "cpu_info",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 MEMORY_STATUS_EXEC = [
     {
         "phase": "exec",
         "fn": get_memory_status,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][MEMORY_USAGE_WARNING_KEY],
-        ],
+        "args": ["meta.general.memory_usage_warning"],
         "result": "memory_status",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("memory_status", []),
+            "memory_status",
             ["Metric", "Value", "Status"],
-            lambda job, meta, ctx: "Memory Status",
+            "Memory Status",
         ],
-        "result": 'print_dict_table_result',
+        "when": "memory_status",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 TEMPERATURE_STATUS_EXEC = [
     {
         "phase": "exec",
         "fn": get_temperature_status,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TEMPERATURE_WARNING_KEY],
-        ],
+        "args": ["meta.general.temperature_warning"],
         "result": "temperature_status",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("temperature_status", []),
+            "temperature_status",
             ["Sensor", "Temperature", "Status"],
-            lambda job, meta, ctx: "System Temperatures",
+            "System Temperatures",
         ],
-        "result": 'print_dict_table_result',
+        "when": "temperature_status",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 BATTERY_HEALTH_EXEC = [
     {
@@ -309,64 +309,67 @@ BATTERY_HEALTH_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("battery_health", []),
+            "battery_health",
             ["Key", "Value"],
-            lambda job, meta, ctx: "Battery Health",
+            "Battery Health",
         ],
-        "result": 'print_dict_table_result',
+        "when": "battery_health",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 HARDWARE_DEVICES_EXEC = [
     {
         "phase": "exec",
         "fn": get_hardware_devices,
-        "args": [lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY]],
+        "args": ["meta.general.command_timeout"],
         "result": "hardware_devices",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("hardware_devices", []),
+            "hardware_devices",
             ["Type", "Device"],
-            lambda job, meta, ctx: "Hardware Devices",
+            "Hardware Devices",
         ],
-        "result": 'print_dict_table_result',
+        "when": "hardware_devices",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SYSTEM_ERRORS_EXEC = [
     {
         "phase": "exec",
         "fn": get_system_errors,
-        "args": [lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY], lambda job, meta, ctx: meta[GENERAL_KEY][KERNEL_ERROR_LIMIT_KEY]],
+        "args": [
+            "meta.general.command_timeout",
+            "meta.general.kernel_error_limit",
+        ],
         "result": "system_errors",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("system_errors", []),
+            "system_errors",
             ["Source", "Message", "Status"],
-            lambda job, meta, ctx: "System Errors",
+            "System Errors",
         ],
-        "result": 'print_dict_table_result',
+        "when": "system_errors",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 FULL_DIAGNOSTIC_EXEC = [
     {
         "phase": "exec",
         "fn": get_full_diagnostic_report,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TEMPERATURE_WARNING_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][MEMORY_USAGE_WARNING_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][COMMAND_TIMEOUT_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][KERNEL_ERROR_LIMIT_KEY],
+            "meta.general.temperature_warning",
+            "meta.general.memory_usage_warning",
+            "meta.general.command_timeout",
+            "meta.general.kernel_error_limit",
         ],
         "result": "diagnostic_report",
     },
@@ -374,24 +377,23 @@ FULL_DIAGNOSTIC_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("diagnostic_report", []),
+            "diagnostic_report",
             ["Check", "Result", "Status"],
-            lambda job, meta, ctx: "Full Diagnostic Report",
+            "Full Diagnostic Report",
         ],
-        "result": 'print_dict_table_result',
+        "when": "diagnostic_report",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES

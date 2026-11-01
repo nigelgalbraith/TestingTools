@@ -145,6 +145,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+
 # ---------------------------------------------------------------------
 # REUSABLE STEP BLOCKS
 # ---------------------------------------------------------------------
@@ -161,11 +162,9 @@ MODULE_SELECTION_PRE = [
     },
 ]
 
-
 # ---------------------------------------------------------------------
 # EXEC PHASE STEPS
 # ---------------------------------------------------------------------
-
 
 ANALYZE_FUNCTIONS_EXEC = [
     {
@@ -173,32 +172,34 @@ ANALYZE_FUNCTIONS_EXEC = [
         "fn": load_module_functions,
         "args": [
             KEY_MODULE_FOLDER,
-            lambda job, meta, ctx: ctx.get("selected_module"),
+            "selected_module",
         ],
+        "when": "selected_module",
         "result": "module_functions",
     },
     {
         "phase": "exec",
         "fn": scan_function_usage,
         "args": [
-            lambda job, meta, ctx: ctx.get("module_functions") if ctx.get("selected_module") else None,
+            "module_functions",
             KEY_CHECK_FOLDERS,
             KEY_CHECK_FILES,
             KEY_MODULE_FOLDER,
         ],
+        "when": "module_functions",
         "result": "scan_result",
     },
     {
         "phase": "exec",
         "fn": print_usage_summary,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_module"),
-            lambda job, meta, ctx: ctx.get("scan_result", {}),
+            "selected_module",
+            "scan_result",
         ],
+        "when": "scan_result",
         "result": "print_usage_summary_result",
     },
 ]
-
 
 SHOW_FUNCTIONS_EXEC = [
     {
@@ -206,32 +207,31 @@ SHOW_FUNCTIONS_EXEC = [
         "fn": load_module_function_docs,
         "args": [
             KEY_MODULE_FOLDER,
-            lambda job, meta, ctx: ctx.get("selected_module"),
+            "selected_module",
         ],
+        "when": "selected_module",
         "result": "fn_docs",
     },
     {
         "phase": "exec",
         "fn": print_functions_summary,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_module"),
-            lambda job, meta, ctx: ctx.get("fn_docs"),
+            "selected_module",
+            "fn_docs",
         ],
+        "when": "fn_docs",
         "result": "print_functions_summary_result",
     },
 ]
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
-
 
 # ---------------------------------------------------------------------
 # PIPELINES

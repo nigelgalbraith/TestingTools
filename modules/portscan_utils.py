@@ -44,10 +44,11 @@ def build_target_choices(ips: List[str] | None) -> List[str]:
 
 
 def prompt_for_selected_target(selected_target: str | None) -> Optional[str]:
-    """Prompt only when manual target entry is selected."""
+    """Return the selected target, prompting only for manual entry."""
     if selected_target != "Enter manually":
-        return None
+        return selected_target
     return prompt_for_target()
+
 
 
 # ---------------------------------------------------------------------

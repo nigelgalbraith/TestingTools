@@ -164,10 +164,10 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 
+
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
-
 
 INTERFACE_SELECTION_PRE = [
     {
@@ -180,35 +180,32 @@ INTERFACE_SELECTION_PRE = [
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a network interface",
-            lambda job, meta, ctx: ctx.get("interfaces", []),
+            "Select a network interface",
+            "interfaces",
         ],
+        "when": "interfaces",
         "result": "selected_interface",
     },
 ]
-
 
 CONNECTED_INTERFACE_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": get_connected_interfaces,
-        "args": [
-            None,
-        ],
+        "args": [None],
         "result": "interfaces",
     },
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a connected network interface",
-            lambda job, meta, ctx: ctx.get("interfaces", []),
+            "Select a connected network interface",
+            "interfaces",
         ],
+        "when": "interfaces",
         "result": "selected_interface",
     },
 ]
-
-
 
 PORT_SCAN_PRE = [
     {
@@ -220,40 +217,27 @@ PORT_SCAN_PRE = [
     {
         "phase": "pre",
         "fn": build_target_choices,
-        "args": [
-            lambda job, meta, ctx: ctx.get("neighbor_ips"),
-        ],
+        "args": ["neighbor_ips"],
         "result": "neighbor_choices",
     },
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a target",
-            lambda job, meta, ctx: ctx.get("neighbor_choices", []),
+            "Select a target",
+            "neighbor_choices",
         ],
+        "when": "neighbor_choices",
         "result": "selected_target",
     },
     {
         "phase": "pre",
         "fn": prompt_for_selected_target,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_target"),
-        ],
-        "result": "manual_target",
-    },
-    {
-        "phase": "pre",
-        "fn": lambda selected, manual: manual if selected == "Enter manually" else selected,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_target"),
-            lambda job, meta, ctx: ctx.get("manual_target"),
-        ],
+        "args": ["selected_target"],
+        "when": "selected_target",
         "result": "target",
     },
 ]
-
-
 
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
@@ -263,19 +247,19 @@ ANALYZE_NETWORK_EXEC = [
     {
         "phase": "exec",
         "fn": analyze_interface,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_interface"),
-        ],
+        "args": ["selected_interface"],
+        "when": "selected_interface",
         "result": "analysis_rows",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("analysis_rows") or None,
+            "analysis_rows",
             ["Key", "Value"],
-            lambda job, meta, ctx: "Interface Details",
+            "Interface Details",
         ],
+        "when": "analysis_rows",
         "result": "analysis_ok",
     },
 ]
@@ -286,22 +270,24 @@ PORT_SCAN_EXEC = [
         "phase": "exec",
         "fn": scan_tcp_ports,
         "args": [
-            lambda job, meta, ctx: ctx.get("target"),
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY][PORTS_KEY] if ctx.get("target") else None,
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY][PORT_INFO_KEY] if ctx.get("target") else None,
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY][TIMEOUT_KEY] if ctx.get("target") else None,
-            lambda job, meta, ctx: meta[PORT_SCAN_KEY][WORKERS_KEY] if ctx.get("target") else None,
+            "target",
+            "meta.port_scan.ports",
+            "meta.port_scan.port_info",
+            "meta.port_scan.timeout",
+            "meta.port_scan.workers",
         ],
+        "when": "target",
         "result": "open_ports",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("open_ports") if ctx.get("target") else None,
+            "open_ports",
             ["Port", "Service", "Note"],
-            lambda job, meta, ctx: "Open TCP Ports",
+            "Open TCP Ports",
         ],
+        "when": "target",
         "result": "portscan_display_ok",
     },
 ]
@@ -316,42 +302,31 @@ ARP_SCAN_EXEC = [
     },
     {
         "phase": "exec",
-        "fn": lambda rows: bool(rows),
-        "args": [lambda job, meta, ctx: ctx.get("neighbors", [])],
-        "result": "arpscan_ok",
-    },
-    {
-        "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("neighbors") or None,
+            "neighbors",
             ["IP", "MAC", "Interface"],
-            lambda job, meta, ctx: "ARP Neighbors",
+            "ARP Neighbors",
         ],
+        "when": "neighbors",
         "result": "arpscan_display_ok",
     },
     {
         "phase": "exec",
         "fn": display_no_arp_neighbors,
-        "args": [
-            lambda job, meta, ctx: ctx.get("neighbors"),
-        ],
-        "result": "arpscan_display_ok",
+        "args": ["neighbors"],
+        "result": "no_arp_neighbors_result",
     },
 ]
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
-
-
 
 # ---------------------------------------------------------------------
 # STEP GROUPS
@@ -361,7 +336,6 @@ PORT_SCAN_STEPS_PRE = (
     CONNECTED_INTERFACE_SELECTION_PRE +
     PORT_SCAN_PRE
 )
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES

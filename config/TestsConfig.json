@@ -1,0 +1,16 @@
+
+{
+  "ConstantsModules": [
+    "DataRecoveryConstants",
+    "DiagnosticConstants",
+    "EmailConstants",
+    "FileIntegrityConstants",
+    "FunctionConstants",
+    "HardDriveConstants",
+    "NetworkConstants",
+    "RouterConstants",
+    "WiFiConstants",
+    "WindowsInspectionConstants",
+    "TestsConstants"
+  ]
+}

@@ -122,18 +122,17 @@ INACTIVE_LABEL = "NO CONFIGS"
 # STATUS CHECK CONFIG
 # ---------------------------------------------------------------------
 
+
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_directory_status,
     "args": [
-        lambda job, meta, ctx: str(
-            Path(
-                next(iter(meta[ROUTERS_KEY].values()))[TEMPLATE_KEY]
-            ).expanduser().parent
-        )
+        ROUTERS_KEY,
+        TEMPLATE_KEY,
     ],
     "id_field": "location",
     "active_rule": {"field": "state", "equals": "data_present"},
 }
+
 
 
 # ---------------------------------------------------------------------
@@ -288,6 +287,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 
+
 # ---------------------------------------------------------------------
 # SELECT ROUTER PRE
 # ---------------------------------------------------------------------
@@ -295,15 +295,18 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 SELECT_ROUTER_PRE = [
     {
         "phase": "pre",
+        "fn": list,
+        "args": ["meta.Routers"],
+        "result": "router_choices",
+    },
+    {
+        "phase": "pre",
         "fn": select_from_list,
-        "args": [
-            lambda job, meta, ctx: "Select router",
-            lambda job, meta, ctx: list(meta.get(ROUTERS_KEY) or {}),
-        ],
+        "args": ["Select router", "router_choices"],
+        "when": "router_choices",
         "result": "selected_router",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # LOAD ROUTER MODEL SPECS
@@ -313,32 +316,29 @@ LOAD_ROUTER_MODEL_SPECS_PRE = [
     {
         "phase": "pre",
         "fn": load_json,
-        "args": [
-            lambda job, meta, ctx:
-                meta[ROUTERS_KEY][ctx["selected_router"]][SPECS_KEY] if ctx.get("selected_router") else [],
-        ],
+        "args": ["meta.Routers.$selected_router.specs"],
+        "when": "selected_router",
         "result": "model_specs",
     },
     {
         "phase": "pre",
         "fn": validate_json_schema,
         "args": [
-            lambda job, meta, ctx: ctx.get("model_specs") if isinstance(ctx.get("model_specs"), dict) else [],
+            "model_specs",
             ROUTER_SCHEMA_PATH,
             "Router model specifications",
         ],
+        "when": "model_specs",
         "result": "model_specs",
     },
     {
         "phase": "pre",
         "fn": validate_router_settings,
-        "args": [
-            lambda job, meta, ctx: ctx.get("model_specs"),
-        ],
+        "args": ["model_specs"],
+        "when": "model_specs",
         "result": "validate_router_settings_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # DECODE ROUTER CONFIGURATION
@@ -349,17 +349,16 @@ DECODE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": decode_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(PASSWORD_KEY),
-            lambda job, meta, ctx: "Enter router password: ",
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
+            "meta.Routers.$selected_router.template",
+            "model_specs",
+            "meta.Routers.$selected_router.password",
+            "Enter router password: ",
+            "meta.Routers.$selected_router.device_key",
         ],
-        "result": "decoded_config",
         "when": "model_specs",
+        "result": "decoded_config",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # SAVE AND EXTRACT DECODED CONFIGURATION
@@ -370,12 +369,12 @@ SAVE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": save_router_config,
         "args": [
-            lambda job, meta, ctx: ctx.get("decoded_config"),
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "decoded_config",
+            "meta.Routers.$selected_router.template_decoded",
+            "model_specs",
         ],
-        "result": "save_ok",
         "when": "decoded_config",
+        "result": "save_ok",
     },
 ]
 
@@ -384,15 +383,14 @@ EXTRACT_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": extract_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.template_decoded",
+            "meta.Routers.$selected_router.template_decoded_dir",
+            "model_specs",
         ],
-        "result": "extracted_path",
         "when": "save_ok",
+        "result": "extracted_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # VIEW / EDIT ROUTER CONFIGURATION
@@ -403,11 +401,11 @@ VIEW_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": view_router_config_fields,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.template_decoded_dir",
+            "model_specs",
         ],
-        "result": "view_ok",
         "when": "model_specs",
+        "result": "view_ok",
     },
 ]
 
@@ -416,12 +414,12 @@ EDIT_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": edit_router_config_files,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][DECODED_DIR_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.template_decoded_dir",
+            "meta.Routers.$selected_router.template_edited_dir",
+            "model_specs",
         ],
-        "result": "edited_path",
         "when": "model_specs",
+        "result": "edited_path",
     },
 ]
 
@@ -430,14 +428,13 @@ VIEW_EDITED_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": view_router_config_fields,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.template_edited_dir",
+            "model_specs",
         ],
-        "result": "view_edited_ok",
         "when": "model_specs",
+        "result": "view_edited_ok",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # ENCODE ROUTER CONFIGURATION
@@ -448,20 +445,19 @@ ENCODE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": encode_router_config_files,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_DIR_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][TEMPLATE_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][EDITED_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ENCODED_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(PASSWORD_KEY),
-            lambda job, meta, ctx: "Enter target router password (Enter to use template password): ",
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
+            "meta.Routers.$selected_router.template_edited_dir",
+            "meta.Routers.$selected_router.template",
+            "meta.Routers.$selected_router.template_edited",
+            "meta.Routers.$selected_router.template_encoded",
+            "model_specs",
+            "meta.Routers.$selected_router.password",
+            "Enter target router password (Enter to use template password): ",
+            "meta.Routers.$selected_router.device_key",
         ],
-        "result": "encoded_path",
         "when": "model_specs",
+        "result": "encoded_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # DECODE MIGRATION CONFIGURATION
@@ -472,14 +468,14 @@ MIGRATION_DECODE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": decode_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][ORIGINAL_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.original",
+            "model_specs",
             None,
-            lambda job, meta, ctx: "Enter SOURCE router password: ",
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]].get(DEVICE_KEY),
+            "Enter SOURCE router password: ",
+            "meta.Routers.$selected_router.device_key",
         ],
-        "result": "decoded_config",
         "when": "model_specs",
+        "result": "decoded_config",
     },
 ]
 
@@ -488,12 +484,12 @@ MIGRATION_SAVE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": save_router_config,
         "args": [
-            lambda job, meta, ctx: ctx.get("decoded_config"),
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "decoded_config",
+            "meta.Routers.$selected_router.migration_decoded",
+            "model_specs",
         ],
-        "result": "save_ok",
         "when": "decoded_config",
+        "result": "save_ok",
     },
 ]
 
@@ -502,15 +498,14 @@ MIGRATION_EXTRACT_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": extract_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.migration_decoded",
+            "meta.Routers.$selected_router.migration_decoded_dir",
+            "model_specs",
         ],
-        "result": "extracted_path",
         "when": "save_ok",
+        "result": "extracted_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # EDIT MIGRATION CONFIGURATION
@@ -521,15 +516,14 @@ MIGRATION_EDIT_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": edit_router_config_files,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_DECODED_DIR_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.migration_decoded_dir",
+            "meta.Routers.$selected_router.migration_edited_dir",
+            "model_specs",
         ],
-        "result": "edited_path",
         "when": "model_specs",
+        "result": "edited_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # ENCODE MIGRATION CONFIGURATION
@@ -540,20 +534,19 @@ MIGRATION_ENCODE_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": encode_router_config_files,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_ENCODED_KEY],
-            lambda job, meta, ctx: ctx["destination_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(PASSWORD_KEY),
-            lambda job, meta, ctx: "Enter DESTINATION router password: ",
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
+            "meta.Routers.$destination_router.migration_converted_dir",
+            "meta.Routers.$destination_router.template",
+            "meta.Routers.$destination_router.migration_converted",
+            "meta.Routers.$destination_router.migration_encoded",
+            "destination_specs",
+            "meta.Routers.$destination_router.password",
+            "Enter DESTINATION router password: ",
+            "meta.Routers.$destination_router.device_key",
         ],
-        "result": "migration_encoded_path",
         "when": "destination_specs",
+        "result": "migration_encoded_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # VIEW EDITED MIGRATION CONFIGURATION
@@ -564,14 +557,13 @@ MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": view_router_config_fields,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
+            "meta.Routers.$selected_router.migration_edited_dir",
+            "model_specs",
         ],
-        "result": "view_migration_edited_ok",
         "when": "model_specs",
+        "result": "view_migration_edited_ok",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # SELECT DESTINATION ROUTER
@@ -580,11 +572,18 @@ MIGRATION_VIEW_EDITED_ROUTER_CONFIG_EXEC = [
 SELECT_DESTINATION_ROUTER_PRE = [
     {
         "phase": "pre",
+        "fn": list,
+        "args": ["meta.Routers"],
+        "result": "destination_router_choices",
+    },
+    {
+        "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select destination router",
-            lambda job, meta, ctx: list(meta.get(ROUTERS_KEY) or {}),
+            "Select destination router",
+            "destination_router_choices",
         ],
+        "when": "destination_router_choices",
         "result": "destination_router",
     },
 ]
@@ -593,32 +592,29 @@ LOAD_DESTINATION_MODEL_SPECS_PRE = [
     {
         "phase": "pre",
         "fn": load_json,
-        "args": [
-            lambda job, meta, ctx:
-                meta[ROUTERS_KEY][ctx["destination_router"]][SPECS_KEY] if ctx.get("destination_router") else [],
-        ],
+        "args": ["meta.Routers.$destination_router.specs"],
+        "when": "destination_router",
         "result": "destination_specs",
     },
     {
         "phase": "pre",
         "fn": validate_json_schema,
         "args": [
-            lambda job, meta, ctx: ctx.get("destination_specs") if isinstance(ctx.get("destination_specs"), dict) else [],
+            "destination_specs",
             ROUTER_SCHEMA_PATH,
             "Destination router model specifications",
         ],
+        "when": "destination_specs",
         "result": "destination_specs",
     },
     {
         "phase": "pre",
         "fn": validate_router_settings,
-        "args": [
-            lambda job, meta, ctx: ctx.get("destination_specs"),
-        ],
+        "args": ["destination_specs"],
+        "when": "destination_specs",
         "result": "validate_router_settings_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # DECODE DESTINATION CONFIGURATION FOR CONVERSION
@@ -629,14 +625,14 @@ MIGRATION_CONVERT_DECODE_EXEC = [
         "phase": "exec",
         "fn": decode_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][TEMPLATE_KEY],
-            lambda job, meta, ctx: ctx["destination_specs"],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(PASSWORD_KEY),
-            lambda job, meta, ctx: "Enter router password: ",
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]].get(DEVICE_KEY),
+            "meta.Routers.$destination_router.template",
+            "destination_specs",
+            "meta.Routers.$destination_router.password",
+            "Enter router password: ",
+            "meta.Routers.$destination_router.device_key",
         ],
-        "result": "converted_decoded_config",
         "when": "destination_specs",
+        "result": "converted_decoded_config",
     },
 ]
 
@@ -645,12 +641,12 @@ MIGRATION_CONVERT_SAVE_EXEC = [
         "phase": "exec",
         "fn": save_router_config,
         "args": [
-            lambda job, meta, ctx: ctx.get("converted_decoded_config"),
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
-            lambda job, meta, ctx: ctx["destination_specs"],
+            "converted_decoded_config",
+            "meta.Routers.$destination_router.migration_converted",
+            "destination_specs",
         ],
-        "result": "converted_save_ok",
         "when": "converted_decoded_config",
+        "result": "converted_save_ok",
     },
 ]
 
@@ -659,15 +655,14 @@ MIGRATION_CONVERT_EXTRACT_EXEC = [
         "phase": "exec",
         "fn": extract_router_config,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
-            lambda job, meta, ctx: ctx["destination_specs"],
+            "meta.Routers.$destination_router.migration_converted",
+            "meta.Routers.$destination_router.migration_converted_dir",
+            "destination_specs",
         ],
-        "result": "converted_extracted_path",
         "when": "converted_save_ok",
+        "result": "converted_extracted_path",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # CONVERT MIGRATION CONFIGURATION
@@ -678,17 +673,15 @@ MIGRATION_CONVERT_ROUTER_CONFIG_EXEC = [
         "phase": "exec",
         "fn": convert_router_config_fields,
         "args": [
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["selected_router"]][MIGRATION_EDITED_DIR_KEY],
-            lambda job, meta, ctx: meta[ROUTERS_KEY][ctx["destination_router"]][MIGRATION_CONVERTED_DIR_KEY],
-            lambda job, meta, ctx: ctx["model_specs"],
-            lambda job, meta, ctx: ctx["destination_specs"],
+            "meta.Routers.$selected_router.migration_edited_dir",
+            "meta.Routers.$destination_router.migration_converted_dir",
+            "model_specs",
+            "destination_specs",
         ],
+        "when": ["model_specs", "destination_specs"],
         "result": "converted_path",
-        "when": "destination_specs",
     },
 ]
-
-
 
 # ---------------------------------------------------------------------
 # SHOW MODEL SPECIFICATIONS HELP
@@ -698,14 +691,10 @@ SHOW_MODEL_SPECS_HELP_EXEC = [
     {
         "phase": "exec",
         "fn": display_readme,
-        "args": [
-            lambda job, meta, ctx:
-                meta[COMMON_LOCATIONS_KEY][MODEL_SPECS_README],
-        ],
-        "result": 'display_readme_result',
+        "args": ["meta.Common Locations.model_specs_readme_path"],
+        "result": "display_readme_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # SHOW CONFIG DOC
@@ -716,10 +705,9 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES

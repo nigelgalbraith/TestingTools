@@ -260,6 +260,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 
+
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -275,13 +276,13 @@ DRIVE_SELECTION_PRE = [
         "phase": "pre",
         "fn": select_drive,
         "args": [
-            lambda job, meta, ctx: "Select a drive",
-            lambda job, meta, ctx: ctx.get("drive_list", []),
+            "Select a drive",
+            "drive_list",
         ],
+        "when": "drive_list",
         "result": "selected_drive",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
@@ -298,390 +299,311 @@ LIST_DRIVES_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("drive_list") or None,
-            [
-                "Device",
-                "Model",
-                "Size",
-                "Type",
-                "Interface",
-            ],
-            lambda job, meta, ctx: "Detected Drives",
+            "drive_list",
+            ["Device", "Model", "Size", "Type", "Interface"],
+            "Detected Drives",
         ],
-        "result": 'print_dict_table_result',
+        "when": "drive_list",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 DISK_OVERVIEW_EXEC = [
     {
         "phase": "exec",
         "fn": get_disk_overview,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "disk_overview",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("disk_overview") or None,
-            [
-                "Device",
-                "Type",
-                "Size",
-                "Filesystem",
-                "Mount",
-            ],
-            lambda job, meta, ctx: "Disk and Partition Overview",
+            "disk_overview",
+            ["Device", "Type", "Size", "Filesystem", "Mount"],
+            "Disk and Partition Overview",
         ],
-        "result": 'print_dict_table_result',
+        "when": "disk_overview",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 FILESYSTEM_USAGE_EXEC = [
     {
         "phase": "exec",
         "fn": get_filesystem_usage,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
+            "selected_drive",
+            "meta.general.disk_usage_warning",
         ],
+        "when": "selected_drive",
         "result": "filesystem_usage",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("filesystem_usage") or None,
-            [
-                "Filesystem",
-                "Size",
-                "Used",
-                "Available",
-                "Usage",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Filesystem Usage",
+            "filesystem_usage",
+            ["Filesystem", "Size", "Used", "Available", "Usage", "Status"],
+            "Filesystem Usage",
         ],
-        "result": 'print_dict_table_result',
+        "when": "filesystem_usage",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 WINDOWS_INSTALLATIONS_EXEC = [
     {
         "phase": "exec",
         "fn": detect_windows_installations,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "windows_installations",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("windows_installations") or None,
-            [
-                "Device",
-                "Filesystem",
-                "Windows",
-                "Mount",
-            ],
-            lambda job, meta, ctx: "Windows Installations",
+            "windows_installations",
+            ["Device", "Filesystem", "Windows", "Mount"],
+            "Windows Installations",
         ],
-        "result": 'print_dict_table_result',
+        "when": "windows_installations",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 ENCRYPTION_STATUS_EXEC = [
     {
         "phase": "exec",
         "fn": get_encryption_status,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "encryption_status",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("encryption_status") or None,
-            [
-                "Device",
-                "Filesystem",
-                "Encryption",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Encryption / BitLocker Status",
+            "encryption_status",
+            ["Device", "Filesystem", "Encryption", "Status"],
+            "Encryption / BitLocker Status",
         ],
-        "result": 'print_dict_table_result',
+        "when": "encryption_status",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 DRIVE_INFORMATION_EXEC = [
     {
         "phase": "exec",
         "fn": get_drive_information,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "drive_information",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("drive_information") or None,
-            [
-                "Device",
-                "Model",
-                "Serial",
-                "Firmware",
-                "Capacity",
-                "Interface",
-            ],
-            lambda job, meta, ctx: "Drive Information",
+            "drive_information",
+            ["Device", "Model", "Serial", "Firmware", "Capacity", "Interface"],
+            "Drive Information",
         ],
-        "result": 'print_dict_table_result',
+        "when": "drive_information",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SMART_HEALTH_EXEC = [
     {
         "phase": "exec",
         "fn": get_smart_health,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "smart_health",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_health") or None,
-            [
-                "Device",
-                "Health",
-                "Status",
-            ],
-            lambda job, meta, ctx: "SMART Health",
+            "smart_health",
+            ["Device", "Health", "Status"],
+            "SMART Health",
         ],
-        "result": 'print_dict_table_result',
+        "when": "smart_health",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SMART_ATTRIBUTES_EXEC = [
     {
         "phase": "exec",
         "fn": get_smart_attributes,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "smart_attributes",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_attributes") or None,
-            [
-                "Device",
-                "Attribute",
-                "Value",
-                "Raw",
-                "Status",
-            ],
-            lambda job, meta, ctx: "SMART Attributes",
+            "smart_attributes",
+            ["Device", "Attribute", "Value", "Raw", "Status"],
+            "SMART Attributes",
         ],
-        "result": 'print_dict_table_result',
+        "when": "smart_attributes",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 TEMPERATURE_WEAR_EXEC = [
     {
         "phase": "exec",
         "fn": get_temperature_wear,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][TEMPERATURE_WARNING_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][WEAR_WARNING_KEY],
+            "selected_drive",
+            "meta.general.temperature_warning",
+            "meta.general.wear_warning",
         ],
+        "when": "selected_drive",
         "result": "temperature_wear",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("temperature_wear") or None,
-            [
-                "Device",
-                "Temperature",
-                "Wear",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Temperature and Wear",
+            "temperature_wear",
+            ["Device", "Temperature", "Wear", "Status"],
+            "Temperature and Wear",
         ],
-        "result": 'print_dict_table_result',
+        "when": "temperature_wear",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SMART_TEST_HISTORY_EXEC = [
     {
         "phase": "exec",
         "fn": get_smart_test_history,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "smart_test_history",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_test_history") or None,
-            [
-                "Device",
-                "Test",
-                "Result",
-                "Lifetime Hours",
-            ],
-            lambda job, meta, ctx: "SMART Self-test History",
+            "smart_test_history",
+            ["Device", "Test", "Result", "Lifetime Hours"],
+            "SMART Self-test History",
         ],
-        "result": 'print_dict_table_result',
+        "when": "smart_test_history",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SMART_SHORT_TEST_EXEC = [
     {
         "phase": "exec",
         "fn": run_short_smart_test,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "smart_short_test",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_short_test") or None,
-            [
-                "Device",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Short SMART Test",
+            "smart_short_test",
+            ["Device", "Result", "Status"],
+            "Short SMART Test",
         ],
-        "result": 'print_dict_table_result',
+        "when": "smart_short_test",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SMART_LONG_TEST_EXEC = [
     {
         "phase": "exec",
         "fn": run_long_smart_test,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-        ],
+        "args": ["selected_drive"],
+        "when": "selected_drive",
         "result": "smart_long_test",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("smart_long_test") or None,
-            [
-                "Device",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Long SMART Test",
+            "smart_long_test",
+            ["Device", "Result", "Status"],
+            "Long SMART Test",
         ],
-        "result": 'print_dict_table_result',
+        "when": "smart_long_test",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 READ_BENCHMARK_EXEC = [
     {
         "phase": "exec",
         "fn": run_read_benchmark,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][BENCHMARK_SIZE_MB_KEY],
+            "selected_drive",
+            "meta.general.benchmark_size_mb",
         ],
+        "when": "selected_drive",
         "result": "read_benchmark",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("read_benchmark") or None,
-            [
-                "Device",
-                "Read Speed",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Read Benchmark",
+            "read_benchmark",
+            ["Device", "Read Speed", "Status"],
+            "Read Benchmark",
         ],
-        "result": 'print_dict_table_result',
+        "when": "read_benchmark",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 FULL_DRIVE_DIAGNOSTIC_EXEC = [
     {
         "phase": "exec",
         "fn": get_full_drive_diagnostic,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_drive"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][TEMPERATURE_WARNING_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][WEAR_WARNING_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][DISK_USAGE_WARNING_KEY],
+            "selected_drive",
+            "meta.general.temperature_warning",
+            "meta.general.wear_warning",
+            "meta.general.disk_usage_warning",
         ],
+        "when": "selected_drive",
         "result": "full_drive_diagnostic",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("full_drive_diagnostic") or None,
-            [
-                "Device",
-                "Check",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Full Hard Drive Diagnostic",
+            "full_drive_diagnostic",
+            ["Device", "Check", "Result", "Status"],
+            "Full Hard Drive Diagnostic",
         ],
-        "result": 'print_dict_table_result',
+        "when": "full_drive_diagnostic",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES

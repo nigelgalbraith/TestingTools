@@ -1,0 +1,27 @@
+
+{
+  "FIXED_FIELDS": [
+    "ConstantsModules"
+  ],
+  "EDITABLE_FIELDS": [
+    "ConstantsModules.<VALUES>"
+  ],
+  "EXAMPLE": {
+    "ConstantsModules": [
+      "DataRecoveryConstants",
+      "DiagnosticConstants",
+      "EmailConstants",
+      "FileIntegrityConstants",
+      "FunctionConstants",
+      "HardDriveConstants",
+      "NetworkConstants",
+      "RouterConstants",
+      "WiFiConstants",
+      "WindowsInspectionConstants",
+      "TestsConstants"
+    ]
+  },
+  "DESCRIPTION": {
+    "ConstantsModules": "List of constants module names to import and check for required pipeline fields, valid phases, results, and prior-step conditions."
+  }
+}

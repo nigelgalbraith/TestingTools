@@ -86,29 +86,34 @@ def get_windows_status(mount_root: str) -> List[Dict[str, Any]]:
     return [{"windows_inspection": "Offline Windows inspection", "ready": ready}]
 
 
-def check_mount_root(mount_root: str) -> List[Dict[str, Any]]:
+def check_mount_root(
+    mount_root: str,
+    ready_only: bool = False,
+) -> List[Dict[str, Any]] | bool:
     """Check whether the configured mount root exists and is usable."""
     path = Path(mount_root)
     if not path.exists():
-        return [{
+        rows = [{
             "Mount root": str(path),
             "Result": "Configured mount root does not exist",
             "Status": "FAIL",
             "ready": False,
         }]
-    if not path.is_dir():
-        return [{
+    elif not path.is_dir():
+        rows = [{
             "Mount root": str(path),
             "Result": "Configured mount root is not a directory",
             "Status": "FAIL",
             "ready": False,
         }]
-    return [{
-        "Mount root": str(path),
-        "Result": "Mount root is available",
-        "Status": "PASS",
-        "ready": True,
-    }]
+    else:
+        rows = [{
+            "Mount root": str(path),
+            "Result": "Mount root is available",
+            "Status": "PASS",
+            "ready": True,
+        }]
+    return rows[0]["ready"] if ready_only else rows
 
 
 def detect_windows_installations(mount_root: str) -> List[Dict[str, Any]]:

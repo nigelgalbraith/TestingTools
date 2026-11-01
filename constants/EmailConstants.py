@@ -112,9 +112,7 @@ INACTIVE_LABEL = "NO DATA PRESENT"
 
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_directory_status,
-    "args": [
-        lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
-    ],
+    "args": ["meta.locations.pst_dir"],
     "id_field": "location",
     "active_rule": {"field": "state", "equals": "data_present"},
 }
@@ -256,6 +254,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 }
 
 
+
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -265,8 +264,8 @@ PST_SINGLE_SELECTION_PRE = [
         "phase": "pre",
         "fn": get_files_by_extension,
         "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
-            lambda job, meta, ctx: ".pst",
+            "meta.locations.pst_dir",
+            ".pst",
         ],
         "result": "pst_files",
     },
@@ -274,61 +273,55 @@ PST_SINGLE_SELECTION_PRE = [
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a PST file",
-            lambda job, meta, ctx: ctx.get("pst_files", []),
+            "Select a PST file",
+            "pst_files",
         ],
+        "when": "pst_files",
         "result": "selected_pst",
     },
 ]
-
 
 PST_FILE_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": select_pst_files,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][PST_DIR],
-        ],
+        "args": ["meta.locations.pst_dir"],
         "result": "selected_pst",
     },
 ]
-
-
-
 
 VIEW_MBOX_PRE = [
     {
         "phase": "pre",
         "fn": get_extracted_mbox_files,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][MBOX_DIR],
-        ],
+        "args": ["meta.locations.mbox_dir"],
         "result": "mbox_files",
     },
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select an MBOX file",
-            lambda job, meta, ctx: ctx.get("mbox_files") or [],
+            "Select an MBOX file",
+            "mbox_files",
         ],
+        "when": "mbox_files",
         "result": "selected_mbox",
     },
     {
         "phase": "pre",
         "fn": get_mbox_messages,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_mbox"),
-        ],
+        "args": ["selected_mbox"],
+        "when": "selected_mbox",
         "result": "mbox_messages",
     },
     {
         "phase": "pre",
         "fn": select_email,
         "args": [
-            lambda job, meta, ctx: "Select an MBOX email",
-            lambda job, meta, ctx: ctx.get("mbox_messages") or [],
+            "Select an MBOX email",
+            "mbox_messages",
         ],
+        "when": "mbox_messages",
         "result": "selected_mbox_message",
     },
 ]
@@ -337,102 +330,68 @@ VIEW_EML_PRE = [
     {
         "phase": "pre",
         "fn": get_extracted_email_files,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][EML_DIR],
-        ],
+        "args": ["meta.locations.eml_dir"],
         "result": "email_files",
     },
     {
         "phase": "pre",
         "fn": select_email_folder,
-        "args": [
-            lambda job, meta, ctx: ctx.get("email_files") or [],
-        ],
+        "args": ["email_files"],
+        "when": "email_files",
         "result": "selected_folder_emails",
     },
     {
         "phase": "pre",
         "fn": select_email,
         "args": [
-            lambda job, meta, ctx: "Select an email",
-            lambda job, meta, ctx: ctx.get("selected_folder_emails") or [],
+            "Select an email",
+            "selected_folder_emails",
         ],
+        "when": "selected_folder_emails",
         "result": "selected_email",
     },
 ]
-
-
-VIEW_MBOX_EXEC = [
-    {
-        "phase": "exec",
-        "fn": get_mbox_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_mbox"),
-            lambda job, meta, ctx: ctx.get("selected_mbox_message"),
-        ],
-        "result": "email_details",
-    },
-    {
-        "phase": "exec",
-        "fn": display_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("email_details"),
-        ],
-        "result": "view_ok",
-    },
-]
-
-VIEW_EML_EXEC = [
-    {
-        "phase": "exec",
-        "fn": get_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_email"),
-        ],
-        "result": "email_details",
-    },
-    {
-        "phase": "exec",
-        "fn": display_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("email_details"),
-        ],
-        "result": "view_ok",
-    },
-]
-
 
 SEARCH_EMAILS_PRE = [
     {
         "phase": "pre",
         "fn": list_email_search_configs,
-        "args": [lambda job, meta, ctx: meta[SEARCH_CONFIGS_KEY]],
+        "args": ["meta.search_configs"],
         "result": "selected_search_config",
     },
     {
         "phase": "pre",
         "fn": load_json,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_search_config") or []
-        ],
+        "args": ["selected_search_config"],
+        "when": "selected_search_config",
         "result": "search_configs",
     },
     {
         "phase": "pre",
         "fn": validate_json_schema,
         "args": [
-            lambda job, meta, ctx: ctx.get("search_configs", []),
+            "search_configs",
             EMAIL_SEARCH_SCHEMA_PATH,
             "Email search configurations",
         ],
+        "when": "search_configs",
         "result": "validated_search_configs",
     },
     {
         "phase": "pre",
+        "fn": zip,
+        "args": [
+            "selected_search_config",
+            "validated_search_configs",
+        ],
+        "when": ["selected_search_config", "validated_search_configs"],
+        "result": "search_config_pairs",
+    },
+    {
+        "phase": "pre",
         "fn": dict,
-        "args": [lambda job, meta, ctx: zip(
-            ctx.get("selected_search_config") or [], ctx.get("validated_search_configs") or []
-        )],
+        "args": ["search_config_pairs"],
+        "when": "search_config_pairs",
         "result": "search_configs_by_path",
     },
 ]
@@ -441,170 +400,180 @@ SEARCH_EMAILS_PRE = [
 # EXEC PHASE BLOCKS
 # ---------------------------------------------------------------------
 
+VIEW_MBOX_EXEC = [
+    {
+        "phase": "exec",
+        "fn": get_mbox_email_details,
+        "args": [
+            "selected_mbox",
+            "selected_mbox_message",
+        ],
+        "when": ["selected_mbox", "selected_mbox_message"],
+        "result": "email_details",
+    },
+    {
+        "phase": "exec",
+        "fn": display_email_details,
+        "args": ["email_details"],
+        "when": "email_details",
+        "result": "view_ok",
+    },
+]
+
+VIEW_EML_EXEC = [
+    {
+        "phase": "exec",
+        "fn": get_email_details,
+        "args": ["selected_email"],
+        "when": "selected_email",
+        "result": "email_details",
+    },
+    {
+        "phase": "exec",
+        "fn": display_email_details,
+        "args": ["email_details"],
+        "when": "email_details",
+        "result": "view_ok",
+    },
+]
 
 VIEW_PST_SUMMARY_EXEC = [
     {
         "phase": "exec",
         "fn": get_pst_summary,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-        ],
+        "args": ["selected_pst"],
+        "when": "selected_pst",
         "result": "summary_rows",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("summary_rows") or None,
+            "summary_rows",
             ["Item", "Count"],
-            lambda job, meta, ctx: "PST Summary",
+            "PST Summary",
         ],
+        "when": "summary_rows",
         "result": "summary_ok",
     },
 ]
-
-
-VIEW_EMAIL_EXEC = [
-    {
-        "phase": "exec",
-        "fn": get_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_email"),
-        ],
-        "result": "email_details",
-    },
-    {
-        "phase": "exec",
-        "fn": display_email_details,
-        "args": [
-            lambda job, meta, ctx: ctx.get("email_details"),
-        ],
-        "result": "view_ok",
-    },
-]
-
-
 
 CONVERT_PST_MBOX_EXEC = [
     {
         "phase": "exec",
         "fn": run_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][MBOX_DIR],
-            lambda job, meta, ctx: convert_pst_to_mbox,
+            "selected_pst",
+            "meta.locations.mbox_dir",
+            {"literal": convert_pst_to_mbox},
         ],
+        "when": "selected_pst",
         "result": "convert_ok",
     },
 ]
-
 
 CONVERT_PST_EML_EXEC = [
     {
         "phase": "exec",
         "fn": run_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][EML_DIR],
-            lambda job, meta, ctx: convert_pst_to_eml,
+            "selected_pst",
+            "meta.locations.eml_dir",
+            {"literal": convert_pst_to_eml},
         ],
+        "when": "selected_pst",
         "result": "convert_ok",
     },
 ]
-
 
 EXTRACT_CONTACTS_EXEC = [
     {
         "phase": "exec",
         "fn": run_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][CONTACTS_DIR],
-            lambda job, meta, ctx: extract_pst_contacts,
+            "selected_pst",
+            "meta.locations.contacts_dir",
+            {"literal": extract_pst_contacts},
         ],
+        "when": "selected_pst",
         "result": "extract_ok",
     },
 ]
-
 
 EXTRACT_CALENDARS_EXEC = [
     {
         "phase": "exec",
         "fn": run_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][CALENDARS_DIR],
-            lambda job, meta, ctx: extract_pst_calendars,
+            "selected_pst",
+            "meta.locations.calendars_dir",
+            {"literal": extract_pst_calendars},
         ],
+        "when": "selected_pst",
         "result": "extract_ok",
     },
 ]
-
 
 EXTRACT_ATTACHMENTS_EXEC = [
     {
         "phase": "exec",
         "fn": run_pst_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_pst"),
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][ATTACHMENTS_DIR],
-            lambda job, meta, ctx: extract_pst_attachments,
+            "selected_pst",
+            "meta.locations.attachments_dir",
+            {"literal": extract_pst_attachments},
         ],
+        "when": "selected_pst",
         "result": "extract_ok",
     },
 ]
-
 
 SEARCH_EMAILS_EXEC = [
     {
         "phase": "exec",
         "fn": run_email_searches,
-        "args": [
-            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
-        ],
+        "args": ["search_configs_by_path"],
+        "when": "search_configs_by_path",
         "result": "search_results",
     },
     {
         "phase": "exec",
         "fn": display_email_search_results,
         "args": [
-            lambda job, meta, ctx: ctx.get("search_results") if isinstance(ctx.get("search_configs_by_path"), dict) else None,
-            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
+            "search_results",
+            "search_configs_by_path",
         ],
+        "when": ["search_results", "search_configs_by_path"],
         "result": "search_ok",
     },
 ]
-
 
 VIEW_SEARCH_RESULTS_EXEC = [
     {
         "phase": "exec",
         "fn": load_email_search_results,
-        "args": [
-            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
-        ],
+        "args": ["search_configs_by_path"],
+        "when": "search_configs_by_path",
         "result": "search_results",
     },
     {
         "phase": "exec",
         "fn": display_email_search_results,
         "args": [
-            lambda job, meta, ctx: ctx.get("search_results") if isinstance(ctx.get("search_configs_by_path"), dict) else None,
-            lambda job, meta, ctx: ctx.get("search_configs_by_path"),
+            "search_results",
+            "search_configs_by_path",
         ],
+        "when": ["search_results", "search_configs_by_path"],
         "result": "view_ok",
     },
 ]
-
 
 SHOW_EMAIL_SEARCH_HELP_EXEC = [
     {
         "phase": "exec",
         "fn": display_readme,
-        "args": [
-            lambda job, meta, ctx: meta[LOCATIONS_KEY][SEARCH_README],
-        ],
-        "result": 'display_readme_result',
+        "args": ["meta.locations.search_readme_path"],
+        "result": "display_readme_result",
     },
 ]
 
@@ -613,17 +582,13 @@ SHOW_CONFIG_DOC_EXEC = [
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
-
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES
 # ---------------------------------------------------------------------
-
 
 PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     "VIEW_PST_SUMMARY": {
@@ -697,7 +662,9 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
         "label": "VIEW_SEARCH_RESULTS_COMPLETE",
     },
     "SHOW_EMAIL_SEARCH_HELP": {
-        "pipeline": [*SHOW_EMAIL_SEARCH_HELP_EXEC],
+        "pipeline": [
+            *SHOW_EMAIL_SEARCH_HELP_EXEC,
+        ],
         "label": "SHOW_EMAIL_SEARCH_HELP_COMPLETE",
     },
     "SHOW_CONFIG_DOC": {

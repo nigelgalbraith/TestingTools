@@ -92,13 +92,17 @@ INACTIVE_LABEL = "DISCONNECTED"
 # STATUS CHECK CONFIG
 # ---------------------------------------------------------------------
 
+
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": check_wifi_status,
-    "args": [lambda job, meta, ctx: meta[GENERAL_KEY][INTERFACE_TIMEOUT_KEY],
-             lambda job, meta, ctx: meta[GENERAL_KEY][STATUS_TIMEOUT_KEY]],
+    "args": [
+        "meta.general.interface_timeout",
+        "meta.general.status_timeout",
+    ],
     "id_field": "device",
     "active_rule": {"field": "state", "equals": "connected"},
 }
+
 
 
 # ---------------------------------------------------------------------
@@ -162,6 +166,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
     },
 }
 
+
 # ---------------------------------------------------------------------
 # REUSABLE STEP BLOCKS
 # ---------------------------------------------------------------------
@@ -170,65 +175,66 @@ INTERFACE_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": get_wireless_interfaces,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][INTERFACE_TIMEOUT_KEY],
-        ],
+        "args": ["meta.general.interface_timeout"],
         "result": "interfaces",
     },
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a wifi interface",
-            lambda job, meta, ctx: ctx.get("interfaces", []),
+            "Select a wifi interface",
+            "interfaces",
         ],
+        "when": "interfaces",
         "result": "selected_interface",
     },
 ]
-
 
 NETWORK_SELECTION_PRE = [
     {
         "phase": "pre",
         "fn": scan_networks,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_interface"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][SCAN_TIMEOUT_KEY],
-            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
-            lambda job, meta, ctx: "managed",
+            "selected_interface",
+            "meta.general.scan_timeout",
+            NETWORK_SUMMARY_COLUMNS_KEY,
+            "managed",
         ],
+        "when": "selected_interface",
         "result": "networks",
     },
     {
         "phase": "pre",
         "fn": build_network_choices,
         "args": [
-            lambda job, meta, ctx: ctx.get("networks", []),
-            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
+            "networks",
+            NETWORK_SUMMARY_COLUMNS_KEY,
         ],
+        "when": "networks",
         "result": "network_choices",
     },
     {
         "phase": "pre",
         "fn": select_from_list,
         "args": [
-            lambda job, meta, ctx: "Select a network",
-            lambda job, meta, ctx: ctx.get("network_choices", []),
+            "Select a network",
+            "network_choices",
         ],
+        "when": "network_choices",
         "result": "selected_network_choice",
     },
     {
         "phase": "pre",
         "fn": select_network_from_scan,
         "args": [
-            lambda job, meta, ctx: ctx.get("networks", []),
-            lambda job, meta, ctx: ctx.get("selected_network_choice"),
-            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
+            "networks",
+            "selected_network_choice",
+            NETWORK_SUMMARY_COLUMNS_KEY,
         ],
+        "when": ["networks", "selected_network_choice"],
         "result": "selected_network",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # EXEC PHASE STEPS
@@ -239,49 +245,48 @@ SCAN_NETWORKS_EXEC = [
         "phase": "exec",
         "fn": scan_networks,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_interface"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][SCAN_TIMEOUT_KEY],
-            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
-            lambda job, meta, ctx: "managed",
+            "selected_interface",
+            "meta.general.scan_timeout",
+            NETWORK_SUMMARY_COLUMNS_KEY,
+            "managed",
         ],
+        "when": "selected_interface",
         "result": "networks",
     },
     {
         "phase": "exec",
         "fn": display_available_networks,
         "args": [
-            lambda job, meta, ctx: ctx.get("networks", []),
-            lambda job, meta, ctx: meta.get(NETWORK_SUMMARY_COLUMNS_KEY, []),
+            "networks",
+            NETWORK_SUMMARY_COLUMNS_KEY,
         ],
+        "when": "selected_interface",
         "result": "display_ok",
     },
 ]
-
 
 ANALYZE_NETWORK_EXEC = [
     {
         "phase": "exec",
         "fn": show_network_details,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_interface"),
-            lambda job, meta, ctx: ctx.get("selected_network", {}),
-            lambda job, meta, ctx: meta[GENERAL_KEY][SCAN_TIMEOUT_KEY],
+            "selected_interface",
+            "selected_network",
+            "meta.general.scan_timeout",
         ],
+        "when": ["selected_interface", "selected_network"],
         "result": "analysis_ok",
     },
 ]
-
-
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # STEP GROUPS
@@ -291,7 +296,6 @@ ANALYZE_NETWORK_STEPS_PRE = (
     INTERFACE_SELECTION_PRE +
     NETWORK_SELECTION_PRE
 )
-
 
 # ---------------------------------------------------------------------
 # PIPELINES

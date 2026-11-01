@@ -84,12 +84,13 @@ INACTIVE_LABEL = "NOT_READY"
 # STATUS CHECK CONFIG
 # ---------------------------------------------------------------------
 
+
 STATUS_FN_CONFIG: Dict[str, Any] = {
     "fn": get_integrity_status,
     "args": [
-        lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
-        lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-        lambda job, meta, ctx: meta[GENERAL_KEY][MANIFEST_DIR_KEY],
+        "meta.general.algorithm",
+        "meta.general.target_dir",
+        "meta.general.manifest_dir",
     ],
     "id_field": "file_integrity",
     "active_rule": {
@@ -205,6 +206,7 @@ ACTIONS: Dict[str, Dict[str, Any]] = {
 
 
 
+#
 # ---------------------------------------------------------------------
 # PRE PHASE BLOCKS
 # ---------------------------------------------------------------------
@@ -214,51 +216,39 @@ FILE_PRE = [
         "phase": "pre",
         "fn": select_file,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: "Select a file",
+            "meta.general.target_dir",
+            "Select a file",
         ],
         "result": "selected_file",
     },
 ]
-
 
 VERIFY_FILE_PRE = [
     {
         "phase": "pre",
         "fn": select_file,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: "Select a file to verify",
+            "meta.general.target_dir",
+            "Select a file to verify",
         ],
         "result": "selected_file",
     },
     {
         "phase": "pre",
         "fn": prompt_expected_hash,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY] if ctx.get("selected_file") else None,
-        ],
+        "args": ["meta.general.algorithm"],
+        "when": "selected_file",
         "result": "expected_hash",
     },
-    {
-        "phase": "pre",
-        "fn": lambda file_path, expected_hash: bool(file_path and expected_hash),
-        "args": [
-            lambda job, meta, ctx: ctx.get("selected_file"),
-            lambda job, meta, ctx: ctx.get("expected_hash"),
-        ],
-        "result": "verify_ready",
-    },
 ]
-
 
 FILE_PAIR_PRE = [
     {
         "phase": "pre",
         "fn": select_file,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: "Select the first file",
+            "meta.general.target_dir",
+            "Select the first file",
         ],
         "result": "first_file",
     },
@@ -266,34 +256,22 @@ FILE_PAIR_PRE = [
         "phase": "pre",
         "fn": select_file,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY] if ctx.get("first_file") else None,
-            lambda job, meta, ctx: "Select the second file",
+            "meta.general.target_dir",
+            "Select the second file",
         ],
+        "when": "first_file",
         "result": "second_file",
     },
-    {
-        "phase": "pre",
-        "fn": lambda first, second: bool(first and second),
-        "args": [
-            lambda job, meta, ctx: ctx.get("first_file"),
-            lambda job, meta, ctx: ctx.get("second_file"),
-        ],
-        "result": "file_pair_ready",
-    },
 ]
-
 
 MANIFEST_PRE = [
     {
         "phase": "pre",
         "fn": prompt_manifest_path,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][MANIFEST_DIR_KEY],
-        ],
+        "args": ["meta.general.manifest_dir"],
         "result": "selected_manifest",
     },
 ]
-
 
 # ---------------------------------------------------------------------
 # EXEC PHASE BLOCKS
@@ -304,64 +282,57 @@ HASH_FILE_EXEC = [
         "phase": "exec",
         "fn": hash_file,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_file"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "selected_file",
+            "meta.general.algorithm",
         ],
+        "when": "selected_file",
         "result": "hash_result",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("hash_result") or None,
-            [
-                "File",
-                "Algorithm",
-                "Hash",
-            ],
-            lambda job, meta, ctx: "File Hash",
+            "hash_result",
+            ["File", "Algorithm", "Hash"],
+            "File Hash",
         ],
-        "result": 'print_dict_table_result',
+        "when": "hash_result",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 VERIFY_FILE_HASH_EXEC = [
     {
         "phase": "exec",
         "fn": verify_file_hash,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_file"),
-            lambda job, meta, ctx: ctx.get("expected_hash"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "selected_file",
+            "expected_hash",
+            "meta.general.algorithm",
         ],
+        "when": ["selected_file", "expected_hash"],
         "result": "verify_result",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("verify_result") or None,
-            [
-                "File",
-                "Expected",
-                "Actual",
-                "Status",
-            ],
-            lambda job, meta, ctx: "File Hash Verification",
+            "verify_result",
+            ["File", "Expected", "Actual", "Status"],
+            "File Hash Verification",
         ],
-        "result": 'print_dict_table_result',
+        "when": "verify_result",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 HASH_DIRECTORY_EXEC = [
     {
         "phase": "exec",
         "fn": hash_directory,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "meta.general.target_dir",
+            "meta.general.algorithm",
         ],
         "result": "directory_hashes",
     },
@@ -369,53 +340,47 @@ HASH_DIRECTORY_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("directory_hashes") or None,
-            [
-                "File",
-                "Hash",
-            ],
-            lambda job, meta, ctx: "Directory Hashes",
+            "directory_hashes",
+            ["File", "Hash"],
+            "Directory Hashes",
         ],
-        "result": 'print_dict_table_result',
+        "when": "directory_hashes",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 COMPARE_FILES_EXEC = [
     {
         "phase": "exec",
         "fn": compare_files,
         "args": [
-            lambda job, meta, ctx: ctx.get("first_file"),
-            lambda job, meta, ctx: ctx.get("second_file"),
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "first_file",
+            "second_file",
+            "meta.general.algorithm",
         ],
+        "when": ["first_file", "second_file"],
         "result": "compare_result",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("compare_result") or None,
-            [
-                "File 1",
-                "File 2",
-                "Status",
-            ],
-            lambda job, meta, ctx: "File Comparison",
+            "compare_result",
+            ["File 1", "File 2", "Status"],
+            "File Comparison",
         ],
-        "result": 'print_dict_table_result',
+        "when": "compare_result",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 FIND_DUPLICATES_EXEC = [
     {
         "phase": "exec",
         "fn": find_duplicate_files,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "meta.general.target_dir",
+            "meta.general.algorithm",
         ],
         "result": "duplicates",
     },
@@ -423,27 +388,23 @@ FIND_DUPLICATES_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("duplicates") or None,
-            [
-                "Hash",
-                "Count",
-                "Files",
-            ],
-            lambda job, meta, ctx: "Duplicate Files",
+            "duplicates",
+            ["Hash", "Count", "Files"],
+            "Duplicate Files",
         ],
-        "result": 'print_dict_table_result',
+        "when": "duplicates",
+        "result": "print_dict_table_result",
     },
 ]
-
 
 CREATE_MANIFEST_EXEC = [
     {
         "phase": "exec",
         "fn": create_manifest,
         "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][TARGET_DIR_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][MANIFEST_DIR_KEY],
-            lambda job, meta, ctx: meta[GENERAL_KEY][ALGORITHM_KEY],
+            "meta.general.target_dir",
+            "meta.general.manifest_dir",
+            "meta.general.algorithm",
         ],
         "result": "manifest_result",
     },
@@ -451,81 +412,99 @@ CREATE_MANIFEST_EXEC = [
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("manifest_result") or None,
-            [
-                "Directory",
-                "Manifest",
-                "Files",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Checksum Manifest",
+            "manifest_result",
+            ["Directory", "Manifest", "Files", "Status"],
+            "Checksum Manifest",
         ],
-        "result": 'print_dict_table_result',
+        "when": "manifest_result",
+        "result": "print_dict_table_result",
     },
 ]
 
 
-VERIFY_MANIFEST_EXEC = [
+
+RESTORE_MANIFEST_PERMISSIONS_EXEC = [
     {
         "phase": "exec",
-        "fn": verify_manifest,
+        "fn": str.__eq__,
         "args": [
-            lambda job, meta, ctx: ctx.get("selected_manifest"),
+            "ctx.manifest_result.0.Status",
+            "PASS",
         ],
-        "result": "manifest_verify",
+        "when": "manifest_result",
+        "result": "manifest_success",
     },
-    {
-        "phase": "exec",
-        "fn": print_dict_table,
-        "args": [
-            lambda job, meta, ctx: ctx.get("manifest_verify") or None,
-            [
-                "File",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Manifest Verification",
-        ],
-        "result": 'print_dict_table_result',
-    },
-]
-
-
-RESTORE_PERMISSIONS_EXEC = [
     {
         "phase": "exec",
         "fn": restore_integrity_permissions,
-        "args": [
-            lambda job, meta, ctx: meta[GENERAL_KEY][MANIFEST_DIR_KEY],
-        ],
+        "args": ["meta.general.manifest_dir"],
+        "when": "manifest_success",
         "result": "permissions_result",
     },
     {
         "phase": "exec",
         "fn": print_dict_table,
         "args": [
-            lambda job, meta, ctx: ctx.get("permissions_result") or None,
-            [
-                "Destination",
-                "Result",
-                "Status",
-            ],
-            lambda job, meta, ctx: "Manifest Permissions",
+            "permissions_result",
+            ["Destination", "Result", "Status"],
+            "Manifest Permissions",
         ],
+        "when": "permissions_result",
         "result": "permissions_ok",
     },
 ]
 
+
+
+VERIFY_MANIFEST_EXEC = [
+    {
+        "phase": "exec",
+        "fn": verify_manifest,
+        "args": ["selected_manifest"],
+        "when": "selected_manifest",
+        "result": "manifest_verify",
+    },
+    {
+        "phase": "exec",
+        "fn": print_dict_table,
+        "args": [
+            "manifest_verify",
+            ["File", "Status"],
+            "Manifest Verification",
+        ],
+        "when": "manifest_verify",
+        "result": "print_dict_table_result",
+    },
+]
+
+RESTORE_PERMISSIONS_EXEC = [
+    {
+        "phase": "exec",
+        "fn": restore_integrity_permissions,
+        "args": ["meta.general.manifest_dir"],
+        "result": "permissions_result",
+    },
+    {
+        "phase": "exec",
+        "fn": print_dict_table,
+        "args": [
+            "permissions_result",
+            ["Destination", "Result", "Status"],
+            "Manifest Permissions",
+        ],
+        "when": "permissions_result",
+        "result": "permissions_ok",
+    },
+]
 
 SHOW_CONFIG_DOC_EXEC = [
     {
         "phase": "exec",
         "fn": display_config_doc,
         "args": [CONFIG_DOC],
-        "result": 'display_config_doc_result',
+        "result": "display_config_doc_result",
     },
 ]
-
-
 
 # ---------------------------------------------------------------------
 # PIPELINE STATES
@@ -568,7 +547,7 @@ PIPELINE_STATES: Dict[str, Dict[str, Any]] = {
     "CREATE_MANIFEST": {
         "pipeline": [
             *CREATE_MANIFEST_EXEC,
-            *RESTORE_PERMISSIONS_EXEC,
+            *RESTORE_MANIFEST_PERMISSIONS_EXEC,
         ],
         "label": "CREATE_MANIFEST_COMPLETE",
     },
