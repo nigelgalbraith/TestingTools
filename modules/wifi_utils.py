@@ -143,15 +143,15 @@ def display_available_networks(networks, columns):
 # ---------------------------------------------------------------------
 
 
+
 def scan_networks(
     interface: str,
     timeout: int | float,
-    columns: List[Dict[str, Any]],
-    mode: str = "managed"
-) -> List[Dict[str, Any]]:
-    """Scan WiFi networks using JSON-defined extraction patterns."""
+    mode: str = "managed",
+) -> str:
+    """Run a WiFi scan and return its raw output."""
     if not interface:
-        return []
+        return ""
     if type(timeout) not in (int, float) or not 0 < timeout < float("inf"):
         raise ValueError("general.scan_timeout must be a positive number")
     run_cmd(["ip", "link", "set", interface, "up"])
@@ -170,10 +170,18 @@ def scan_networks(
             print(err)
         elif out:
             print(out)
-        return []
+        return ""
+    return result.stdout
+
+
+def parse_scanned_networks(
+    scan_output: str,
+    columns: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Parse raw WiFi scan output using JSON-defined extraction patterns."""
     networks: List[Dict[str, Any]] = []
     current: Dict[str, Any] = {}
-    for raw_line in result.stdout.splitlines():
+    for raw_line in scan_output.splitlines():
         line = raw_line.strip()
         if line.startswith("BSS "):
             if current:
@@ -186,10 +194,7 @@ def scan_networks(
                 continue
             match = re.search(pattern, line)
             if match:
-                if match.lastindex:
-                    value = match.group(1)
-                else:
-                    value = match.group(0)
+                value = match.group(1) if match.lastindex else match.group(0)
                 try:
                     if "." in value:
                         value = float(value)
@@ -202,6 +207,7 @@ def scan_networks(
         networks.append(current)
     print(f"[INFO] Scan complete: {len(networks)} networks found.")
     return networks
+
 
 
 def show_network_details(interface: str, network: Dict[str, Any], timeout: int | float) -> bool:

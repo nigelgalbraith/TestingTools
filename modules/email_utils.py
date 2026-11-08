@@ -485,6 +485,7 @@ def extract_pst_calendars(pst_file: str, dest_dir: str) -> bool:
         return False
 
 
+
 def extract_pst_attachments(pst_file: str, dest_dir: str) -> bool:
     """Extract attachments from all emails contained in a PST file."""
     if not Path(pst_file).is_file():
@@ -506,12 +507,15 @@ def extract_pst_attachments(pst_file: str, dest_dir: str) -> bool:
                     continue
                 for part in msg.iter_attachments():
                     filename = part.get_filename() or f"attachment_{count + 1}"
+                    filename = Path(filename.replace("\\", "/")).name
+                    if filename in ("", ".", ".."):
+                        filename = f"attachment_{count + 1}"
                     if part.get_content_type() == "message/rfc822" and not Path(filename).suffix:
                         filename += ".eml"
                     target = output_dir / filename
                     index = 1
                     while target.exists():
-                        target = output_dir / f"{target.stem}_{index}{target.suffix}"
+                        target = output_dir / f"{Path(filename).stem}_{index}{Path(filename).suffix}"
                         index += 1
                     payload = part.get_payload(decode=True)
                     if payload is not None:
@@ -535,6 +539,7 @@ def extract_pst_attachments(pst_file: str, dest_dir: str) -> bool:
         return True
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 
 # ---------------------------------------------------------------------
@@ -676,8 +681,9 @@ def list_email_search_configs(search_configs: list) -> list | bool:
     return [str(expand_path(config)) for config in selected]
 
 
-def search_emails(config: dict) -> list | bool:
-    """Search EML files using the dictionary already validated in PRE."""
+
+def prepare_email_search(config: dict) -> dict | bool:
+    """Validate email search paths and prepare matching criteria."""
     try:
         if not config:
             return False
@@ -696,6 +702,21 @@ def search_emails(config: dict) -> list | bool:
         for field in fields:
             terms = criteria.get(field, [])
             active_criteria[field] = [term.casefold() for term in terms if term.strip()]
+        return {
+            "search_location": search_location,
+            "results_location": results_location,
+            "match_mode": match_mode,
+            "active_criteria": active_criteria,
+        }
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+        print(f"Email search failed: {exc}")
+        return False
+
+
+def prepare_email_results_directory(search_settings: dict) -> dict | bool:
+    """Confirm replacement and prepare the email results directory."""
+    try:
+        results_location = search_settings["results_location"]
         if results_location.exists():
             if not results_location.is_dir():
                 raise ValueError(f"Results path is not a directory: {results_location}")
@@ -704,6 +725,19 @@ def search_emails(config: dict) -> list | bool:
                 return False
             shutil.rmtree(results_location)
         results_location.mkdir(parents=True, exist_ok=True)
+        return search_settings
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Email search failed: {exc}")
+        return False
+
+
+def scan_matching_emails(search_settings: dict) -> dict | bool:
+    """Search EML files and copy matching messages to the results directory."""
+    try:
+        search_location = search_settings["search_location"]
+        results_location = search_settings["results_location"]
+        active_criteria = search_settings["active_criteria"]
+        match_mode = search_settings["match_mode"]
         results = []
         scanned = 0
         for email_file in sorted(search_location.rglob("*")):
@@ -738,14 +772,26 @@ def search_emails(config: dict) -> list | bool:
                 })
             except (OSError, UnicodeError, ValueError, TypeError) as exc:
                 print(f"Skipped unreadable email {email_file}: {exc}")
-        print(f"\nEmails scanned : {scanned}")
-        print(f"Matches found  : {len(results)}")
-        print(f"Results saved  : {len(results)}")
-        print(f"Results folder : {results_location}")
-        return results
+        return {
+            "results": results,
+            "scanned": scanned,
+            "results_location": results_location,
+        }
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
         print(f"Email search failed: {exc}")
         return False
+
+
+def display_email_search_summary(search_data: dict) -> list:
+    """Display email search totals and return the matching emails."""
+    results = search_data["results"]
+    scanned = search_data["scanned"]
+    results_location = search_data["results_location"]
+    print(f"\nEmails scanned : {scanned}")
+    print(f"Matches found  : {len(results)}")
+    print(f"Results saved  : {len(results)}")
+    print(f"Results folder : {results_location}")
+    return results
 
 
 def load_email_search_results(configs: dict) -> list | bool:
@@ -856,16 +902,26 @@ def run_pst_files(pst_files: str | list[str], dest_dir: str, operation) -> bool:
     return successful == len(pst_files)
 
 
+
 def run_email_searches(configs: dict) -> list | bool:
-    """Run searches from the PRE mapping of configuration paths to settings."""
+    """Run each selected email search and combine its results."""
     if not isinstance(configs, dict) or not configs:
         return False
     results = []
     for config_file, config in configs.items():
         print(f"\nRunning email search: {Path(config_file).name}")
-        search_results = search_emails(config)
-        if search_results is False:
+        search_settings = prepare_email_search(config)
+        if search_settings is False:
             print(f"[ERROR] Search failed: {Path(config_file).name}")
             continue
+        search_settings = prepare_email_results_directory(search_settings)
+        if search_settings is False:
+            print(f"[ERROR] Search failed: {Path(config_file).name}")
+            continue
+        search_data = scan_matching_emails(search_settings)
+        if search_data is False:
+            print(f"[ERROR] Search failed: {Path(config_file).name}")
+            continue
+        search_results = display_email_search_summary(search_data)
         results.extend(search_results)
     return results

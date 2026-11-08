@@ -17,12 +17,12 @@ from modules.network_utils import (
 from modules.portscan_utils import (
     get_arp_neighbor_rows,
     get_arp_neighbors,
+    prepare_port_scan,
     scan_tcp_ports,
     build_target_choices,
     prompt_for_selected_target,
     display_no_arp_neighbors,
 )
-
 
 # ---------------------------------------------------------------------
 # CONFIG PATHS
@@ -265,18 +265,28 @@ ANALYZE_NETWORK_EXEC = [
 ]
 
 
+
 PORT_SCAN_EXEC = [
+    {
+        "phase": "exec",
+        "fn": prepare_port_scan,
+        "args": [
+            "meta.port_scan.ports",
+            "meta.port_scan.port_info",
+        ],
+        "when": "target",
+        "result": "scan_settings",
+    },
     {
         "phase": "exec",
         "fn": scan_tcp_ports,
         "args": [
             "target",
-            "meta.port_scan.ports",
-            "meta.port_scan.port_info",
+            "scan_settings",
             "meta.port_scan.timeout",
             "meta.port_scan.workers",
         ],
-        "when": "target",
+        "when": ["target", "scan_settings"],
         "result": "open_ports",
     },
     {
@@ -291,6 +301,7 @@ PORT_SCAN_EXEC = [
         "result": "portscan_display_ok",
     },
 ]
+
 
 
 ARP_SCAN_EXEC = [

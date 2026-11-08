@@ -9,15 +9,18 @@ from modules.display_utils import (
     print_dict_table,
     select_from_list,
 )
+
 from modules.wifi_utils import (
     build_network_choices,
     check_wifi_status,
     get_wireless_interfaces,
     scan_networks,
+    parse_scanned_networks,
     select_network_from_scan,
     show_network_details,
-    display_available_networks, 
+    display_available_networks,
 )
+
 
 
 # ---------------------------------------------------------------------
@@ -190,6 +193,7 @@ INTERFACE_SELECTION_PRE = [
     },
 ]
 
+
 NETWORK_SELECTION_PRE = [
     {
         "phase": "pre",
@@ -197,8 +201,17 @@ NETWORK_SELECTION_PRE = [
         "args": [
             "selected_interface",
             "meta.general.scan_timeout",
-            NETWORK_SUMMARY_COLUMNS_KEY,
             "managed",
+        ],
+        "when": "selected_interface",
+        "result": "scan_output",
+    },
+    {
+        "phase": "pre",
+        "fn": parse_scanned_networks,
+        "args": [
+            "scan_output",
+            NETWORK_SUMMARY_COLUMNS_KEY,
         ],
         "when": "selected_interface",
         "result": "networks",
@@ -236,9 +249,11 @@ NETWORK_SELECTION_PRE = [
     },
 ]
 
+
 # ---------------------------------------------------------------------
 # EXEC PHASE STEPS
 # ---------------------------------------------------------------------
+
 
 SCAN_NETWORKS_EXEC = [
     {
@@ -247,8 +262,17 @@ SCAN_NETWORKS_EXEC = [
         "args": [
             "selected_interface",
             "meta.general.scan_timeout",
-            NETWORK_SUMMARY_COLUMNS_KEY,
             "managed",
+        ],
+        "when": "selected_interface",
+        "result": "scan_output",
+    },
+    {
+        "phase": "exec",
+        "fn": parse_scanned_networks,
+        "args": [
+            "scan_output",
+            NETWORK_SUMMARY_COLUMNS_KEY,
         ],
         "when": "selected_interface",
         "result": "networks",
@@ -264,6 +288,7 @@ SCAN_NETWORKS_EXEC = [
         "result": "display_ok",
     },
 ]
+
 
 ANALYZE_NETWORK_EXEC = [
     {

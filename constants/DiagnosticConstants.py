@@ -361,15 +361,36 @@ SYSTEM_ERRORS_EXEC = [
     },
 ]
 
+
 FULL_DIAGNOSTIC_EXEC = [
+    {
+        "phase": "exec",
+        "fn": get_memory_status,
+        "args": ["meta.general.memory_usage_warning"],
+        "result": "memory_status",
+    },
+    {
+        "phase": "exec",
+        "fn": get_temperature_status,
+        "args": ["meta.general.temperature_warning"],
+        "result": "temperature_status",
+    },
+    {
+        "phase": "exec",
+        "fn": get_system_errors,
+        "args": [
+            "meta.general.command_timeout",
+            "meta.general.kernel_error_limit",
+        ],
+        "result": "system_errors",
+    },
     {
         "phase": "exec",
         "fn": get_full_diagnostic_report,
         "args": [
-            "meta.general.temperature_warning",
-            "meta.general.memory_usage_warning",
-            "meta.general.command_timeout",
-            "meta.general.kernel_error_limit",
+            "memory_status",
+            "temperature_status",
+            "system_errors",
         ],
         "result": "diagnostic_report",
     },
@@ -385,6 +406,7 @@ FULL_DIAGNOSTIC_EXEC = [
         "result": "print_dict_table_result",
     },
 ]
+
 
 SHOW_CONFIG_DOC_EXEC = [
     {

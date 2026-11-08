@@ -114,16 +114,12 @@ def prompt_for_target(default: Optional[str] = None) -> Optional[str]:
     return s or default
 
 
-def scan_tcp_ports(
-    host: str,
+
+def prepare_port_scan(
     ports: List[int],
     port_info: Dict[str, Dict[str, str]],
-    timeout: float,
-    workers: int,
-) -> List[Dict[str, Any]]:
-    """TCP connect scan for a list of ports; returns list of dicts for table display."""
-    if not host:
-        return []
+) -> Dict[str, Any]:
+    """Validate port information and prepare the ports to scan."""
     if not isinstance(port_info, dict):
         raise ValueError("port_scan.port_info must be a dictionary")
     for key, info in port_info.items():
@@ -134,15 +130,31 @@ def scan_tcp_ports(
         for field in ("service", "note"):
             if not isinstance(info.get(field), str):
                 raise ValueError(f"port_scan.port_info.{key}.{field} must be a string")
-    if not host or not ports:
+    normalized_ports = sorted(set(int(p) for p in ports if isinstance(p, int) or str(p).isdigit()))
+    return {
+        "ports": normalized_ports,
+        "port_info": port_info,
+    }
+
+
+def scan_tcp_ports(
+    host: str,
+    scan_settings: Dict[str, Any],
+    timeout: float,
+    workers: int,
+) -> List[Dict[str, Any]]:
+    """Scan TCP ports concurrently and return details of open ports."""
+    if not host or not scan_settings:
         return []
-    ports = sorted(set(int(p) for p in ports if isinstance(p, int) or str(p).isdigit()))
+    ports = scan_settings["ports"]
+    port_info = scan_settings["port_info"]
+    if not ports:
+        return []
     results: List[PortResult] = []
     with ThreadPoolExecutor(max_workers=max(1, int(workers))) as ex:
         fut_map = {ex.submit(_tcp_connect_open, host, p, timeout): p for p in ports}
         for fut in as_completed(fut_map):
             p = fut_map[fut]
-            is_open = False
             try:
                 is_open = bool(fut.result())
             except Exception:
@@ -157,14 +169,13 @@ def scan_tcp_ports(
                         note=info.get("note", ""),
                     )
                 )
-    results.sort(key=lambda x: x.port)
-    out: List[Dict[str, Any]] = []
-    for r in results:
-        out.append(
-            {
-                "Port": r.port,
-                "Service": r.service,
-                "Note": r.note,
-            }
-        )
-    return out
+    results.sort(key=lambda result: result.port)
+    return [
+        {
+            "Port": result.port,
+            "Service": result.service,
+            "Note": result.note,
+        }
+        for result in results
+    ]
+

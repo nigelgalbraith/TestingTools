@@ -353,53 +353,36 @@ def get_system_errors(command_timeout: int | float, kernel_error_limit: int) -> 
     ]
 
 
+
 def get_full_diagnostic_report(
-    temperature_warning: int | float,
-    memory_usage_warning: int | float,
-    command_timeout: int | float,
-    kernel_error_limit: int,
+    memory: List[Dict[str, Any]],
+    temperatures: List[Dict[str, Any]],
+    errors: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Return a concise overall system diagnostic report."""
-    rows: List[Dict[str, Any]] = []
-    memory = get_memory_status(memory_usage_warning)
-    temperatures = get_temperature_status(temperature_warning)
-    errors = get_system_errors(command_timeout, kernel_error_limit)
+    """Build a concise overall system report from diagnostic results."""
     memory_warning = any(row.get("Status") == "WARNING" for row in memory)
-    temperature_warning_found = any(
-        row.get("Status") == "WARNING"
-        for row in temperatures
-    )
+    temperature_warning_found = any(row.get("Status") == "WARNING" for row in temperatures)
     errors_found = any(row.get("Status") == "ERROR" for row in errors)
-    rows.append(
+    return [
         {
             "Check": "System",
             "Result": f"{platform.machine()} / {platform.release()}",
             "Status": "PASS",
-        }
-    )
-    rows.append(
+        },
         {
             "Check": "Memory",
             "Result": "High usage detected" if memory_warning else "Usage normal",
             "Status": "WARNING" if memory_warning else "PASS",
-        }
-    )
-    rows.append(
+        },
         {
             "Check": "Temperature",
-            "Result": (
-                "High temperature detected"
-                if temperature_warning_found
-                else "Temperatures normal"
-            ),
+            "Result": "High temperature detected" if temperature_warning_found else "Temperatures normal",
             "Status": "WARNING" if temperature_warning_found else "PASS",
-        }
-    )
-    rows.append(
+        },
         {
             "Check": "Kernel Errors",
             "Result": "Errors detected" if errors_found else "No critical errors",
             "Status": "WARNING" if errors_found else "PASS",
-        }
-    )
-    return rows
+        },
+    ]
+
