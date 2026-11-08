@@ -700,432 +700,279 @@ Source PST files, extracted output, and saved email search results should genera
 
 ## Router Utility
 
-The Router utility provides configuration backup decoding, viewing, editing, encoding, and migration workflows.
+The Router utility provides interactive decoding, viewing, editing, encoding, and migration of supported router configuration backups.
 
-Router processing uses a modular, JSON-driven architecture. The main router utility coordinates operations through centralised dispatchers, while specialised utility modules implement reusable processing functions.
-
-Adding a router that uses existing processing mechanisms requires a model specification and router configuration entry.
+Router model specifications determine the processing operations. The application pipelines manage operation order, user selections, validation, confirmation, and file handling.
 
 ### Features
 
-- Decode encrypted router configuration backups.
-- Extract and view decoded configurations.
-- View supported key-value and XML configuration fields.
-- Decrypt and display protected Wi-Fi passwords.
+- Decode and extract router configuration backups.
+- View supported key-value and XML configuration settings.
 - Edit supported configuration fields.
-- Encrypt modified protected configuration fields.
-- View edited configurations.
-- Encode updated configurations.
-- Sign and verify supported router backups.
-- Verify generated backups through local decoding round trips.
-- Run the complete same-model modification workflow.
-- Decode configurations for migration.
-- Edit migration configurations.
-- View edited migration configurations.
-- Prepare destination configurations.
-- Convert configuration values between supported router models and formats.
-- Encode migrated configurations.
-- Run the complete different-model migration workflow.
-- Display router model specification documentation.
-- Display router configuration help.
+- View edited configuration values.
+- Encode and verify router backups.
+- Modify configurations for the same router model.
+- Migrate compatible settings between different router models.
+- Prepare and convert destination configurations.
+- Display router specifications and configuration help.
+
+Processing capabilities depend on the selected router's format, available credentials, and supported algorithms.
 
 ### Files
 
-- `constants/RouterConstants.py` — router utility constants, dependencies, menu actions, and pipeline configuration.
-- `modules/router_utils.py` — main router workflows, backup validation, orchestration, and centralised dispatcher registrations.
-- `modules/router_encryption_utils.py` — encryption, decryption, cryptographic hashing, field encryption, RSA signing, and signature verification.
-- `modules/router_format_utils.py` — backup wrappers, encoding formats, compression, archive processing, and reconstruction.
-- `modules/router_config_utils.py` — configuration field extraction, viewing, editing, replacement, and validation.
-- `schemas/RouterSchema.json` — shared router model specification validation rules.
-- `config/RouterConfig.json` — configured router models and associated file paths.
-- `doc/RouterDoc.json` — router configuration documentation.
-- `routers/model_specs/` — router model JSON specifications and the common specification template.
-- `routers/model_specs/ModelSpecsReadMe.md` — model specification and extension documentation.
+| File | Purpose |
+|---|---|
+| `constants/RouterConstants.py` | Router menus, function registry, dependencies, and pipelines |
+| `modules/router_utils.py` | Operation builders, dispatcher, validation, credential handling, and file operations |
+| `modules/router_encryption_utils.py` | Encryption, decryption, signatures, and checksums |
+| `modules/router_format_utils.py` | Backup wrappers, encoding, compression, and archives |
+| `modules/router_config_utils.py` | Configuration viewing, editing, and field validation |
+| `schemas/RouterSchema.json` | Router specification schema |
+| `config/RouterConfig.json` | Router models and configured paths |
+| `doc/RouterDoc.json` | Router configuration help |
+| `doc/RouterSpecificationTemplate.json` | Router specification template |
+| `routers/model_specs/` | Router model specifications |
+| `routers/model_specs/ModelSpecsReadMe.md` | Specification documentation |
 
 ### Dependencies
 
-The Router utility uses:
+The Router utility declares the following dependencies:
 
-- `openssl` — OpenSSL-based router backup encryption and decryption.
-- `python3-cryptography` — AES encryption and decryption using Python's cryptography library.
-- `python3-jsonschema` — shared validation against external JSON Schema files.
+- `openssl`
+- `python3-cryptography`
+- `python3-jsonschema`
 
-Dependencies are declared in `constants/RouterConstants.py`.
-
-The required processing mechanisms depend on the selected router model specification.
+The required processing methods depend on the selected router specification.
 
 ### Router Configuration
 
-**Configuration file:** `config/RouterConfig.json`
+Router models and file paths are defined in `config/RouterConfig.json`.
 
-The configuration is organised into two top-level sections:
+The configuration contains two top-level sections:
 
-```json
-{
-  "Common Locations": {
-    "model_specs_readme_path": "routers/model_specs/ModelSpecsReadMe.md"
-  },
-  "Routers": {
-    "Router Model Name": {
-      "specs": "routers/model_specs/example-spec.json",
-      "password": "~/Documents/TestingToolsData/routers/templatePasswords/example-password.txt",
-      "device_key": null,
-      "template": "~/Documents/TestingToolsData/routers/templates/example-template.cfg",
-      "template_decoded": "~/Documents/TestingToolsData/routers/decoded/example-decoded.tar.gz",
-      "template_decoded_dir": "~/Documents/TestingToolsData/routers/decoded/example-decoded",
-      "template_edited": "~/Documents/TestingToolsData/routers/edited/example-edited.tar.gz",
-      "template_edited_dir": "~/Documents/TestingToolsData/routers/edited/example-edited",
-      "template_encoded": "~/Documents/TestingToolsData/routers/encoded/example-encoded.cfg",
-      "original": "~/Documents/TestingToolsData/routers/original/example-original.cfg",
-      "migration_decoded": "~/Documents/TestingToolsData/routers/migration/decoded/example-decoded.tar.gz",
-      "migration_decoded_dir": "~/Documents/TestingToolsData/routers/migration/decoded/example-decoded",
-      "migration_edited": "~/Documents/TestingToolsData/routers/migration/edited/example-edited.tar.gz",
-      "migration_edited_dir": "~/Documents/TestingToolsData/routers/migration/edited/example-edited",
-      "migration_converted": "~/Documents/TestingToolsData/routers/migration/converted/example-converted.tar.gz",
-      "migration_converted_dir": "~/Documents/TestingToolsData/routers/migration/converted/example-converted",
-      "migration_encoded": "~/Documents/TestingToolsData/routers/migration/encoded/example-encoded.cfg"
-    }
-  }
-}
-```
+- `Common Locations` — Shared documentation paths.
+- `Routers` — Router models, credentials, backups, and output paths.
 
-The example illustrates the common path configuration. Actual filenames and extensions depend on the router and its backup format.
-
-Password and device-key paths are used only when required by the selected encryption mechanism. Unused credential paths may be `null`.
-
-Firmware-wide encryption parameters are stored in the router model specification rather than separate credential files.
-
-### Router Path Keys
-
-Each configured router uses the following path keys:
+Each router entry supports these paths:
 
 | Key | Purpose |
 |---|---|
 | `specs` | Router model specification JSON |
-| `password` | Template password file, when required |
-| `device_key` | Device-specific encryption key file, when required |
-| `template` | Original template backup |
-| `template_decoded` | Decoded template configuration or archive |
-| `template_decoded_dir` | Extracted decoded configuration directory |
-| `template_edited` | Edited template configuration or archive |
-| `template_edited_dir` | Edited configuration directory |
+| `password` | Password file, when required |
+| `device_key` | Binary device-key file, when required |
+| `template` | Template router backup |
+| `template_decoded` | Decoded template output |
+| `template_decoded_dir` | Extracted template directory |
+| `template_edited` | Edited template output |
+| `template_edited_dir` | Edited template directory |
 | `template_encoded` | Encoded template backup |
-| `original` | Original router configuration backup |
-| `migration_decoded` | Decoded migration configuration or archive |
+| `original` | Original configuration for migration |
+| `migration_decoded` | Decoded migration output |
 | `migration_decoded_dir` | Extracted migration directory |
-| `migration_edited` | Edited migration configuration or archive |
+| `migration_edited` | Edited migration output |
 | `migration_edited_dir` | Edited migration directory |
-| `migration_converted` | Converted destination configuration or archive |
-| `migration_converted_dir` | Converted destination configuration directory |
+| `migration_converted` | Converted destination configuration |
+| `migration_converted_dir` | Converted destination directory |
 | `migration_encoded` | Encoded destination backup |
 
-The configured paths determine where router processing reads and writes files.
+Unused credential paths may be omitted or set to `null`, depending on the configuration.
 
-### Configured Router Models
+Output extensions depend on the router format.
 
-The supplied configuration supports the following router models:
+### Router Menu
 
-| Router | Model | Configuration Format | Encryption Mechanism |
+The Router Configuration menu provides:
+
+1. Decode Configuration
+2. View Configuration
+3. Edit Configuration
+4. View Edited Configuration
+5. Encode Configuration
+6. Modify Router - Same Model (Run All)
+7. Migrate a Config
+8. Edit Migration Config
+9. View Edited Migration Config
+10. Prepare Destination Config
+11. Convert Migration Config
+12. Encode Migration Config
+13. Modify Router - Different Model (Run All)
+14. View Model Specifications Help
+15. Show config help
+16. Cancel
+
+Each action selects the required router and prepares the applicable processing operations.
+
+### Router Architecture
+
+Router processing uses the model specifications and function registry to select reusable operations.
+
+`constants/RouterConstants.py` defines `ROUTER_FUNCTIONS`, with registered functions for:
+
+- Encoding and decoding.
+- Encode and decode validation.
+- Configuration extraction.
+- Format checking.
+- Checksums.
+- Configuration editing and validation.
+- Configuration viewing and validation.
+
+`modules/router_utils.py` provides the operation resolution, builders, and dispatcher:
+
+```python
+resolve_router_operations()
+build_encode_operations()
+build_decode_operations()
+build_edit_operations()
+build_view_operations()
+run_router_operations()
+```
+
+The builders prepare operations in the order required by the router specification, with applicable validators.
+
+`run_router_operations()` executes the ordered transformations, passing each operation's result to the next.
+
+The declarative pipelines in `RouterConstants.py` coordinate preparation, validation, processing, viewing, editing, saving, and confirmation. Individual functions perform their assigned operations and return their results.
+
+The selected action displays the relevant processing operations before execution.
+
+### Supported Router Models
+
+| Router | Model | Backup Format | Configuration Format |
 |---|---|---|---|
-| Spark SmartModem | VRV9517 | Key-value | AES-256-CBC with OpenSSL legacy key derivation |
-| Vodafone Ultra Hub | DGA0130VDF | Technicolor THENC | AES-256-CBC with device-specific key |
-| Vodafone Huawei HG659 | HG659 B020 | XML | AES-256-CBC with fixed firmware key |
+| Spark SmartModem | VRV9517 | Legacy OpenSSL AES-256-CBC, Base64, TAR/GZIP | Key-value |
+| Vodafone Ultra Hub | DGA0130VDF | Technicolor THENC, device-key specification | Not established |
+| Vodafone Huawei HG659 | HG659 | Fixed-key AES-256-CBC, signed zlib | XML |
 
-**Spark SmartModem**
+**Spark SmartModem VRV9517**
 
-Supports configuration decoding, viewing, editing, encoding, and compatible migration operations.
-
-**Vodafone Ultra Hub**
-
-Uses the Technicolor THENC backup format. Authenticated processing requires device-specific cryptographic material. Complete decoding and encoding remain unavailable without the required device key and signing support.
+Supports decoding, extraction, viewing, editing, encoding, and local backup verification.
 
 **Vodafone Huawei HG659**
 
-Supports:
+Supports fixed-key AES-256-CBC processing, RSA/MD5 signing and verification, XML configuration operations, and supported protected Wi-Fi password fields.
 
-- Fixed-key AES-256-CBC backup decryption and encryption.
-- zlib compression and decompression.
-- RSA/MD5 signature verification and signing.
-- XML configuration extraction, viewing, and editing.
-- AES-128-CBC encryption and decryption of protected Wi-Fi password fields.
-- Signed backup reconstruction.
-- Local backup round-trip verification.
-- Compatible cross-format configuration migration.
+**Vodafone Ultra Hub DGA0130VDF**
 
-Compatibility depends on the router's firmware and hardware revision.
+Supports THENC format parsing and relevant validation. Complete THENC encryption, decryption, signing, and authentication are not implemented. The required device-key derivation and cryptographic processing must be supported before complete backup modification is available.
 
-### JSON-Driven Router Processing
-
-Router models use a shared JSON specification schema with two top-level sections:
-
-- `router_specs` — Router identity, backup processing mechanisms, and applicable encoding and editing settings.
-- `config_fields` — Logical configuration field names mapped to actual keys or selectors.
-
-The `router_specs` section contains model, hardware, and firmware information, together with:
-
-- `codec` — Shared backup decoding and encoding settings, including encryption, wrappers, checksums, compression, and archive formats.
-- `encode` — Additional encoding parameters, only where required.
-- `edit` — Configuration editing settings, only where supported.
-
-Unused settings and optional sections are omitted rather than populated with JSON `null`.
-
-The `config_fields` section contains entries with `name` and `path` properties. Additional configuration field mappings can be added without changing Python code.
-
-Router-specific processing parameters are supplied through JSON rather than hardcoded into processing functions.
-
-Router configuration preparation follows **LOAD → CHECK → PLAN → EXECUTE**. Model specifications are loaded and validated against `schemas/RouterSchema.json`, with additional implementation-specific checks performed in Python.
-
-Processing functions are selected through registered handlers according to the mechanisms declared in the model specification.
-
-Backup integrity checks, signature verification, archive safety, and output verification are performed where supported by the selected router model.
-
-#### Router Architecture
-
-`router_utils.py` is responsible for the main router workflows, backup validation, and dispatching.
-
-All processing handler registrations are centralised near the top of `router_utils.py`:
-
-```python
-ENCRYPTION_HANDLERS
-FIELD_ENCRYPT_HANDLERS
-FIELD_DECRYPT_HANDLERS
-CONFIG_VIEW_HANDLERS
-CONFIG_EDIT_HANDLERS
-```
-
-Processing implementations remain in specialised utility modules:
-
-- `router_encryption_utils.py` — cryptographic algorithms and signing.
-- `router_format_utils.py` — backup encoding, decoding, wrappers, and compression.
-- `router_config_utils.py` — configuration field reading, editing, and validation.
-
-Dispatchers select functions using specification values, not router model names.
-
-The main workflow coordinates the registered functions without containing manufacturer-specific processing implementations.
-
-#### Adding Another Router
-
-To add support for another router:
-
-1. Start with `doc/RouterSpecificationTemplate.json`.
-2. Populate the router identity and required `router_specs.codec` settings.
-3. Add `router_specs.encode` only when additional encoding parameters are required.
-4. Add `router_specs.edit` only when configuration editing is supported.
-5. Define the required `config_fields` name/path mappings.
-6. Omit unused optional settings and sections.
-7. Add the router and its file paths to `config/RouterConfig.json`.
-8. Configure password or device-key files where required.
-9. Reuse existing registered encryption, format, and configuration-processing mechanisms.
-10. If a required mechanism is unsupported, implement a reusable function in the appropriate utility module and register it centrally in `router_utils.py`.
-11. Validate the specification and test the supported workflows.
-
-Routers using existing processing mechanisms can be added without changing the main router workflow.
-
-Additional `config_fields` mappings do not require changes to the shared schema, template, or other router model specifications.
-
-See `routers/model_specs/ModelSpecsReadMe.md` for further details.
+Router compatibility depends on the hardware and firmware revision.
 
 ### Router Backup Extensions
 
-Router backup selection supports the configured extensions:
+Configured input and output extensions include:
 
-```python
-CONFIG_EXTENSION = [".cfg", ".bin", ".conf"]
-```
+- `.cfg` — Spark SmartModem backups.
+- `.conf` — Vodafone Huawei HG659 backups.
+- `.bin` — Vodafone Ultra Hub backups.
+- `.tar.gz` — Decoded Spark configuration archives.
+- `.xml` — Decoded HG659 configurations.
 
-Common formats include:
+The selected specification and configured paths determine the expected format.
 
-- `.cfg` — router configuration backups.
-- `.bin` — binary encrypted backups.
-- `.conf` — encrypted configuration backups, including Huawei HG659.
+### Same-Model Workflow
 
-The file extension does not determine how a backup is processed.
+The same-model workflow uses one router model's specification for decoding and encoding.
 
-The router model specification defines its encryption, wrapper, compression, archive format, and configuration format.
+The processing sequence is:
 
-Decoded outputs may be TAR/GZIP archives or single-file XML configurations.
+1. Select the router.
+2. Load and validate its model specification.
+3. Resolve and build the applicable operations.
+4. Decode the router backup.
+5. Extract and validate the configuration.
+6. View and edit supported fields.
+7. Save the edited configuration.
+8. Rebuild and encode the backup.
+9. Verify the generated backup where supported.
 
-### Same-Model Router Workflow
+Individual menu actions can use existing saved inputs. Run All performs the configured sequence.
 
-The same-model workflow provides operations for:
+### Different-Model Migration
 
-1. Decoding a router configuration.
-2. Extracting and viewing supported configuration fields.
-3. Editing supported configuration fields.
-4. Viewing the edited configuration.
-5. Encoding the updated configuration.
+The migration workflow transfers compatible configuration settings from one router model to another.
 
-The menu also provides:
+The source router specification controls source decoding and field extraction.
 
-```text
-Modify Router - Same Model (Run All)
-```
+The destination router specification controls destination decoding, editing, conversion, and encoding.
 
-This runs the associated same-model workflow through the configured pipeline.
+The workflow provides separate actions to:
 
-The workflow uses the same orchestration regardless of router model. Its dispatchers select the processing implementations required by the model specification.
+- Decode the migration source.
+- Edit migration values.
+- View edited migration values.
+- Prepare the destination configuration.
+- Convert compatible fields into the destination format.
+- Encode the destination backup.
 
-Encoded backups are verified through the supported local decoding and integrity checks before being reported as successfully generated.
+**Modify Router - Different Model (Run All)** combines the applicable migration stages.
 
-### Different-Model Migration Workflow
+Only supported logical fields can be transferred. Fields without established destination mappings cannot be converted automatically.
 
-The Router utility provides a separate workflow for transferring compatible configuration values between router models.
+A migration requires valid source and destination backups and any necessary credentials.
 
-The available operations are:
+### Router Credentials
 
-1. Migrate a Config.
-2. Edit Migration Config.
-3. View Edited Migration Config.
-4. Prepare Destination Config.
-5. Convert Migration Config.
-6. Encode Migration Config.
+Password and device-key file paths are configured in `RouterConfig.json`.
 
-The menu also provides:
+Credential requirements are declared by the model specification:
 
-```text
-Modify Router - Different Model (Run All)
-```
+- `password_required` — Password credential requirement.
+- `device_key_required` — Binary device-key requirement.
 
-This executes the configured migration pipeline.
+Password-based encryption, fixed-key encryption, and device-key encryption use different preparation mechanisms.
 
-#### Cross-Format Configuration Conversion
+Missing required credentials prevent the corresponding operation from completing.
 
-The conversion workflow supports transferring compatible Wi-Fi settings between Spark SmartModem key-value configurations and Huawei HG659 XML configurations.
+Credentials should remain outside public repositories.
 
-Supported directions include:
+### Editable Fields
 
-- Spark SmartModem → Huawei HG659.
-- Huawei HG659 → Spark SmartModem.
+The model specification's `config_fields` list maps logical field names to actual configuration keys or XML selectors.
 
-Conversion reuses the existing configuration View and Edit handlers.
+The supplied models include mappings for:
 
-The source router provides the readable configuration values. The destination router's existing configuration is used as the base.
+- `wifi_2g_ssid`
+- `wifi_2g_password`
+- `wifi_5g_ssid`
+- `wifi_5g_password`
 
-Only supported mapped fields are transferred, including:
+Only fields with supported mappings and configuration formats can be edited.
 
-- 2.4 GHz Wi-Fi SSID.
-- 2.4 GHz Wi-Fi password.
-- 5 GHz Wi-Fi SSID.
-- 5 GHz Wi-Fi password.
-
-Protected fields are encrypted using the destination router's registered field-encryption mechanism.
-
-Unrelated destination configuration, guest networks, and device-specific settings are preserved.
-
-The converted configuration is encoded using the destination model's own backup format and encryption mechanism.
-
-Generated backups are verified locally by decoding them and checking the recovered configuration.
-
-### Router Password Handling
-
-Router backup authentication depends on the selected encryption mechanism.
-
-The supported approaches include:
-
-- Password-based key derivation.
-- Device-specific encryption keys.
-- Firmware-wide fixed encryption keys.
-
-Password files are used only when the selected router requires them.
-
-Device-specific keys may be supplied through the existing configured key paths.
-
-Firmware-wide encryption parameters, including keys, IVs, and signature parameters, are stored directly in the router model specification JSON.
-
-Some router configurations also protect individual password fields.
-
-For example, the HG659 uses AES-128-CBC encryption for stored Wi-Fi password values. The configuration-processing functions use the registered field-encryption handlers to display and update these values correctly.
-
-Actual router passwords, device-specific secrets, and router backups should be kept out of public repositories.
-
-### Editable Router Fields
-
-The `config_fields` section of each router specification maps common field names to their locations in the router's configuration.
-
-The supported Wi-Fi fields are:
-
-```json
-{
-  "config_fields": {
-    "file": "config/.glbcfg",
-    "wifi_2g_ssid": "ARC_WLAN_24G_SSID_0_ESSID",
-    "wifi_2g_password": "ARC_WLAN_24G_SSID_0_WPA_Passphrase",
-    "wifi_5g_ssid": "ARC_WLAN_5G_SSID_0_ESSID",
-    "wifi_5g_password": "ARC_WLAN_5G_SSID_0_WPA_Passphrase"
-  }
-}
-```
-
-This example represents a key-value configuration.
-
-For XML configurations, the same field names use selectors to identify XML elements and attributes.
-
-For example:
-
-```json
-{
-  "config_fields": {
-    "file": "config.xml",
-    "wifi_2g_ssid": "WLANConfigurationInstance|X_OperatingFrequencyBand=2.4GHz|X_Is_Guest_Network=0|SSID",
-    "wifi_2g_password": "WLANConfigurationInstance|X_OperatingFrequencyBand=2.4GHz|X_Is_Guest_Network=0|PreSharedKeyInstance@KeyPassphrase",
-    "wifi_5g_ssid": "WLANConfigurationInstance|X_OperatingFrequencyBand=5GHz|X_Is_Guest_Network=0|SSID",
-    "wifi_5g_password": "WLANConfigurationInstance|X_OperatingFrequencyBand=5GHz|X_Is_Guest_Network=0|PreSharedKeyInstance@KeyPassphrase"
-  }
-}
-```
-
-The XML selectors identify the intended Wi-Fi network and attribute, excluding guest-network entries.
-
-The existing configuration-processing utilities support both formats through registered handlers.
-
-Editing uses targeted field replacement rather than rewriting unrelated configuration content.
-
-Protected password fields are decrypted for viewing and encrypted when modified, according to the model specification.
-
-Adding another editable value generally requires updating its field mapping in the router specification, provided the field name and processing mechanism are already supported.
-
-### Router Model Documentation
-
-The router model specification guide is stored at:
-
-```text
-routers/model_specs/ModelSpecsReadMe.md
-```
-
-Its location is configured using:
-
-```text
-Common Locations.model_specs_readme_path
-```
-
-The Router utility provides a menu option for displaying this documentation.
-
-The guide describes the common model specification structure, supported processing mechanisms, configuration field mappings, and how to add router models.
+Protected fields are decrypted or encrypted by the registered field-processing functions where supported.
 
 ### Router Output Safety
 
-Router processing maintains separate locations for:
+Router workflows validate inputs and use safe file operations when creating or replacing generated outputs.
 
-- Original router backups.
-- Template configurations.
-- Decoded configurations.
-- Edited configurations.
-- Migration configurations.
-- Converted configurations.
-- Encoded backups.
+Supported protections include archive extraction checks, configuration validation, staged writes, and rollback when an operation fails.
 
-Processing includes appropriate validation, preservation of unrelated configuration content, and local verification of generated outputs.
+Interactive actions request confirmation before overwriting applicable existing outputs.
 
-Recommended precautions:
+Failed or cancelled combined workflow stages must not be treated as successful prerequisites for later operations.
 
-- Preserve original router backups.
-- Keep device-specific credentials and actual Wi-Fi passwords private.
-- Check router firmware and hardware compatibility.
-- Confirm source and destination models before migration.
-- Review edited and converted configuration values.
-- Keep a recovery method available before restoring a configuration to physical hardware.
+Preserve an unchanged copy of the original router backup.
 
-**Successful local processing and cryptographic verification do not guarantee that physical router firmware will accept a generated backup.**
+Successful local processing or cryptographic verification does not guarantee that physical router firmware will accept a generated backup.
+
+### Router Model Specifications
+
+Router specifications are stored in `routers/model_specs/` and validated against `schemas/RouterSchema.json`.
+
+AutomationTools and TestingTools use the same specification structure.
+
+For specification fields, operation ordering, supported algorithms, and instructions for adding router models, see:
+
+`routers/model_specs/ModelSpecsReadMe.md`
+
+### Testing
+
+Run the router regression tests with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests cover supported workflows using synthetic backups and temporary directories. Physical-router restore compatibility requires separate verification.
 
 ## Function Utility
 

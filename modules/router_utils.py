@@ -9,395 +9,497 @@ from getpass import getpass
 from pathlib import Path
 import os
 import shutil
-import subprocess
-import tarfile
 import tempfile
 
-import jsonschema
-
 from modules.display_utils import confirm
-from modules.json_utils import load_json
-from modules.router_config_utils import (
-    normalize_key_value_fields,
-    parse_key_value_fields,
-    parse_xml_field_selector,
-    validate_key_value_field_changes,
-    xml_field_values,
-    view_key_value_values,
-    edit_key_value_values,
-    update_xml_fields,
-    validate_xml_field_changes,
-)
-from modules.router_encryption_utils import (
-    decrypt_aes_128_cbc_field, encrypt_aes_128_cbc_field,
-    crypt_aes_256_cbc, crypt_aes_256_cbc_fixed_key, crypt_technicolor_thenc,
-    interpret_password_credentials,
-    calculate_payload_checksum, verify_rsa_md5_signature, sign_rsa_md5_configuration,
-)
-from modules.router_format_utils import (
-    validate_xml_declaration,
-    validate_directory,
-    safe_relative,
-    rebuild_tar_archive,
-    extract_tar_archive,
-    replace_router_directory,
-    read_tar_files,
-    split_line_wrapper, prepare_line_wrapper,
-    parse_technicolor_wrapper, parse_encrypted_configuration,
-    rebuild_technicolor_wrapper,
-    encode_base64_payload, decode_base64_payload,
-    unpack_signed_configuration, pack_signed_configuration, decode_xml_configuration,
-)
-
-
-# ---------------------------------------------------------------------
-# CONSTANTS
-# ---------------------------------------------------------------------
-
-DECODED_EXTENSION = ".tar.gz"
-
-ROUTER_FUNCTIONS = {
-    "base64": {"decode": decode_base64_payload, "encode": encode_base64_payload},
-    "aes-256-cbc": {"decode": crypt_aes_256_cbc, "encode": crypt_aes_256_cbc},
-    "fixed-key": {"decode": crypt_aes_256_cbc_fixed_key, "encode": crypt_aes_256_cbc_fixed_key},
-    "device-key": {"decode": crypt_technicolor_thenc, "encode": crypt_technicolor_thenc},
-    "line-wrapper": {"decode": split_line_wrapper, "encode": prepare_line_wrapper},
-    "technicolor-thenc": {"decode": parse_technicolor_wrapper, "encode": rebuild_technicolor_wrapper},
-    "encrypted-configuration": {"decode": parse_encrypted_configuration, "encode": parse_encrypted_configuration},
-    "tar.gz": {"decode": read_tar_files, "encode": rebuild_tar_archive},
-    "signed-zlib": {"decode": unpack_signed_configuration, "encode": pack_signed_configuration},
-    "rsa-md5": {"decode": verify_rsa_md5_signature, "encode": sign_rsa_md5_configuration},
-    "md5": {"checksum": calculate_payload_checksum},
-    "sha256": {"checksum": calculate_payload_checksum},
-    "sha512": {"checksum": calculate_payload_checksum},
-    "key-value": {"decode": view_key_value_values, "edit": edit_key_value_values},
-    "xml": {"decode": xml_field_values, "edit": update_xml_fields},
-    "aes-128-cbc-zero-padded-base64": {"decode": decrypt_aes_128_cbc_field, "encode": encrypt_aes_128_cbc_field},
-}
-
+from modules.router_config_utils import normalize_key_value_fields
 
 # ---------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------
 
+def safe_relative(name: str) -> Path:
+    """Reject absolute paths and traversal."""
+    path = Path(name)
+    if not name or path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"Unsafe relative path: {name}")
+    return path
 
-def field_handler(specs: dict, action: str):
-    settings = (specs["router_specs"].get("edit") or {}).get("field_encryption")
-    if not settings or settings.get("algorithm") is None:
+
+def validate_directory(directory: Path) -> None:
+    """Reject symlinks and special files, including symlink ancestors."""
+    if any(path.is_symlink() for path in (directory, *directory.parents)):
+        raise ValueError("Unsafe directory symlink")
+    for path in directory.rglob("*"):
+        if path.is_symlink() or not (path.is_file() or path.is_dir()):
+            raise ValueError(f"Unsafe configuration entry: {path}")
+
+
+def _handler(functions: dict, name: str | None):
+    """Resolve a configured algorithm; skip null values, reject unknown ones."""
+    if name is None:
         return None
-    return partial(ROUTER_FUNCTIONS[settings["algorithm"]][action],
-                   key_hex=settings["key_hex"], iv_hex=settings["iv_hex"])
+    handler = functions.get(name)
+    if not callable(handler):
+        raise ValueError(f"Unsupported router algorithm: {name}")
+    return handler
 
 
-def parse_line_wrapper(data: bytes, backup_format: dict) -> dict:
-    """Verify the wrapper checksum before decoding and validating its Base64 payload."""
-    wrapper = ROUTER_FUNCTIONS["line-wrapper"]["decode"](data, backup_format)
-    encoded = wrapper["encoded"]
-    expected = ROUTER_FUNCTIONS[backup_format["checksum"]]["checksum"](encoded, backup_format["checksum"])
-    if wrapper["checksum"] != expected:
-        raise ValueError("Backup encrypted payload checksum mismatch")
-    encrypted = decode_base64_payload(encoded)
-    if encode_base64_payload(encrypted, backup_format) != encoded:
-        raise ValueError("Invalid encoded payload line layout")
-    return {"header": wrapper["header"], "encoded": encoded,
-            "encrypted": encrypted, "checksum": expected}
+def field_handler(edit: dict, functions: dict):
+    """Bind the configured field cipher to its key and IV."""
+    settings = edit.get("field_encryption") or {}
+    name = settings.get("algorithm")
+    if name is None:
+        return None
+    handler = functions.get(name)
+    if not callable(handler):
+        raise ValueError(f"Unsupported router algorithm: {name}")
+    return partial(handler, **{key: value for key, value in settings.items()
+                               if key not in ("algorithm", "fields")})
 
 
-def rebuild_line_wrapper(encoded: bytes, header: bytes, backup_format: dict) -> bytes:
-    """Build and verify a wrapper with its checksum and fresh random prefix."""
-    before, after = ROUTER_FUNCTIONS["line-wrapper"]["encode"](encoded, header, backup_format)
-    checksum = ROUTER_FUNCTIONS[backup_format["checksum"]]["checksum"](encoded, backup_format["checksum"])
-    result = before + checksum + after
-    parse_line_wrapper(result, backup_format)
-    return result
+# ---------------------------------------------------------------------
+# ROUTER SPECIFICATIONS
+# ---------------------------------------------------------------------
+
+def resolve_router_operations(router_settings, registry, operation):
+    """Select registered callables in registry execution order."""
+    router = router_settings["router_specs"]
+    codec = router.get("codec") or {}
+    edit = router.get("edit") or {}
+    if operation in ("edit", "view"):
+        selected = {edit.get("configuration_format")}
+    elif operation == "checksum":
+        selected = {codec.get("checksum")}
+    elif operation in ("extract", "check"):
+        selected = {codec.get("archive")}
+    else:
+        selected = {
+            codec.get("encoding"),
+            codec.get("wrapper"),
+            codec.get("archive"),
+            (codec.get("key_derivation") or codec.get("encryption")) if codec.get("encryption") else None,
+            (codec.get("signature") or {}).get("algorithm"),
+            (edit.get("field_encryption") or {}).get("algorithm"),
+        }
+    selected.discard(None)
+    return {name: function for name, function in registry.items() if name in selected}
 
 
-def parse_router_wrapper(data: bytes, settings: dict) -> dict:
-    method = settings.get("wrapper")
-    if method == "line-wrapper":
-        return parse_line_wrapper(data, settings)
-    if method == "technicolor-thenc":
-        return ROUTER_FUNCTIONS[method]["decode"](data, settings, settings["hardware"], settings["firmware"])
-    if method == "encrypted-configuration":
-        return ROUTER_FUNCTIONS[method]["decode"](data)
-    if method is None:
-        return {"header": b"", "encrypted": data}
-    raise ValueError(f"Unsupported router wrapper: {method}")
+# ---------------------------------------------------------------------
+# OPERATION BUILDERS
+# ---------------------------------------------------------------------
 
-
-def rebuild_router_wrapper(encoded: bytes, header: bytes, settings: dict) -> bytes:
-    method = settings.get("wrapper")
-    if method == "line-wrapper":
-        return rebuild_line_wrapper(encoded, header, settings)
-    if method == "technicolor-thenc":
-        return ROUTER_FUNCTIONS[method]["encode"](encoded, header, settings, settings["hardware"], settings["firmware"])
-    if method == "encrypted-configuration":
-        ROUTER_FUNCTIONS[method]["encode"](encoded)
-    elif method is not None:
-        raise ValueError(f"Unsupported router wrapper: {method}")
-    return encoded
-
-
-def decode_signed_configuration(data: bytes, backup_format: dict, signature: dict) -> bytes:
-    """Verify the decompressed RSA block before interpreting authenticated XML bytes."""
-    signed, signature_bytes = ROUTER_FUNCTIONS["signed-zlib"]["decode"](data, backup_format)
-    ROUTER_FUNCTIONS["rsa-md5"]["decode"](signed, signature_bytes, backup_format, signature)
-    return decode_xml_configuration(signed, backup_format)
-
-
-def encode_signed_configuration(xml: bytes, backup_format: dict, signature: dict) -> bytes:
-    """Sign XML, compress and pad it, then verify the exact recovered bytes."""
-    validate_xml_declaration(xml, backup_format)
-    if b"\x00" in xml:
-        raise ValueError("XML configuration contains an embedded null byte")
-    signed = xml + b"\x00"
-    signature_bytes = ROUTER_FUNCTIONS["rsa-md5"]["encode"](signed, backup_format, signature)
-    padded = ROUTER_FUNCTIONS["signed-zlib"]["encode"](signed, signature_bytes)
-    if decode_signed_configuration(padded, backup_format, signature) != xml:
-        raise ValueError("Rebuilt signed configuration failed verification")
-    return padded
-
-
-def crypt_router_payload(data: bytes, password: str, settings: dict, action: str, device_key_path: str | None = None) -> bytes:
-    """Pass the selected cipher its explicit parameters and credential type."""
-    if not settings.get("encryption"):
-        return data
-    derivation = settings.get("key_derivation")
-    decrypt = action == "decode"
-    if derivation == "openssl-legacy":
-        return ROUTER_FUNCTIONS[settings["encryption"]][action](data, password, decrypt,
-            salted=settings["salted"], password_required=settings["password_required"],
-            password_base=settings["password_base"], password_hash=settings["password_hash"],
-            key_derivation_digest=settings["key_derivation_digest"])
-    if derivation == "fixed-key":
-        return ROUTER_FUNCTIONS[derivation][action](data, password, decrypt,
-            encryption_settings=settings["encryption_settings"])
-    if derivation == "device-key":
-        if not device_key_path:
-            raise ValueError("THENC device key unavailable: device_key_path is required; an export password is not a device key")
-        key = Path(device_key_path).expanduser().read_bytes()
-        if not key:
-            raise ValueError("THENC device key file is empty")
-        return ROUTER_FUNCTIONS[derivation][action](data, password, decrypt, device_key=key)
-    raise ValueError(f"Unsupported key_derivation: {derivation}")
-
-
-def _validate_router_codec(router: dict, codec: dict, edit: dict) -> None:
-    """Validate selected implementations, codec requirements and operation ordering."""
-    derivation = codec.get("key_derivation")
-    cipher = "aes-256-cbc" if derivation == "openssl-legacy" else derivation
-    selected = [(codec.get("encoding"), ("decode", "encode")),
-                (cipher, ("decode", "encode")),
-                (codec.get("wrapper"), ("decode", "encode")),
-                (codec.get("archive"), ("decode", "encode")),
-                (codec.get("checksum"), ("checksum",)),
-                ((codec.get("signature") or {}).get("algorithm"), ("decode", "encode")),
-                (edit.get("configuration_format"), ("decode", "edit")),
-                ((edit.get("field_encryption") or {}).get("algorithm"), ("decode", "encode"))]
-    for method, actions in selected:
-        if method is not None:
-            for action in actions:
-                if not callable(ROUTER_FUNCTIONS.get(method, {}).get(action)):
-                    raise ValueError(f"Unsupported {action} method: {method}")
-    required = []
-    if codec.get("encryption"):
-        required.append("key_derivation")
-    elif derivation:
-        raise ValueError("key_derivation requires encryption")
-    if derivation == "openssl-legacy":
-        required += ["password_base", "password_hash", "salted", "password_required", "key_derivation_digest"]
-        if codec.get("wrapper") != "line-wrapper":
-            raise ValueError("OpenSSL legacy backups require a line-wrapper")
-    elif derivation == "fixed-key":
-        required.append("encryption_settings")
-        if any((codec.get("encryption_settings") or {}).get(name) is None for name in ("key_hex", "iv_hex")):
-            raise ValueError("Fixed-key encryption requires encryption_settings.key_hex and encryption_settings.iv_hex")
-        if codec.get("wrapper") != "encrypted-configuration":
-            raise ValueError("Fixed-key backups require encrypted-configuration")
-    elif derivation == "device-key":
-        if codec.get("wrapper") != "technicolor-thenc":
-            raise ValueError("Device-key backups require technicolor-thenc")
-    wrapper = codec.get("wrapper")
-    if codec.get("encoding") == "base64":
-        required.append("payload_line_length")
-    if wrapper == "line-wrapper":
-        required += ["header_lines", "preserve_header", "payload_line_length", "newline", "checksum",
-                     "checksum_after_payload_lines", "checksum_prefix_bytes", "trailer_character", "trailer_repeat"]
-        if codec.get("encoding") != "base64" or edit.get("configuration_format") != "key-value":
-            raise ValueError("Line wrappers require Base64 and key-value configuration")
-        if (codec.get("header_lines") or 0) > 0 and not codec.get("preserve_header"):
-            raise ValueError("A nonempty wrapper header must be preserved")
-    elif wrapper == "technicolor-thenc":
-        required += ["header_lines", "iv_length", "signature_length", "preamble", "backup_version", "header_terminator"]
-        if codec.get("header_lines") != 9 or codec.get("iv_length") != 16:
-            raise ValueError("THENC requires nine header lines and a 16-byte IV")
-        if not router.get("hardware") or not router.get("firmware"):
-            raise ValueError("THENC requires hardware and firmware identifiers")
-        if edit or codec.get("archive"):
-            raise ValueError("THENC configuration editing and archives are not established")
-    elif wrapper == "encrypted-configuration":
-        if derivation != "fixed-key" or edit.get("configuration_format") != "xml":
-            raise ValueError("Encrypted configurations require fixed-key AES and XML configuration")
-    if wrapper in ("technicolor-thenc", "encrypted-configuration") and codec.get("encoding"):
-        raise ValueError("Binary wrappers do not use transport encoding")
-    if codec.get("archive") == "signed-zlib":
-        required += ["signature", "signature_length", "preamble"]
-        if any((codec.get("signature") or {}).get(name) is None for name in ("algorithm", "modulus_hex", "exponent")):
-            raise ValueError("Signed zlib requires signature.algorithm, signature.modulus_hex and signature.exponent")
-        if edit.get("configuration_format") != "xml" or wrapper != "encrypted-configuration":
-            raise ValueError("Signed zlib requires XML and encrypted-configuration")
-        if not (codec.get("preamble") or "").startswith("<?xml"):
-            raise ValueError("Signed configurations require an XML preamble")
-    if edit.get("configuration_format") == "key-value" and codec.get("archive") != "tar.gz":
-        raise ValueError("Key-value configuration requires a tar.gz archive")
-    if edit.get("configuration_format") == "xml" and codec.get("archive") != "signed-zlib":
-        raise ValueError("XML configuration requires a signed-zlib archive")
+def build_encode_operations(router_settings, encode_operations, encode_validate_operations):
+    """Return selected encode validators and algorithms in execution order."""
+    codec = router_settings['router_specs'].get('codec') or {}
+    if codec.get('key_derivation') and not codec.get('encryption'):
+        raise ValueError('key_derivation requires encryption')
+    roles = {name: codec.get(name) for name in ('archive', 'encryption', 'encoding', 'wrapper')}
+    roles['encryption'] = (codec.get('key_derivation') or codec.get('encryption')) if codec.get('encryption') else None
+    signature = (codec.get('signature') or {}).get('algorithm')
+    required = (set(roles.values()) | {signature}) - {None}
     for name in required:
-        if codec.get(name) is None:
-            raise ValueError(f"Required codec parameter {name} is missing or null")
-    for action, default in (("decode", ("wrapper", "encoding", "encryption", "archive")),
-                            ("encode", ("archive", "encryption", "encoding", "wrapper"))):
-        order = codec.get(f"{action}_order") or default
-        for step in default:
-            if codec.get(step) and step not in order:
-                raise ValueError(f"{action}_order is missing the active {step} operation")
+        _handler(encode_operations, name)
+    names = [name for name in encode_operations if name in required]
+    order = codec.get('encode_order')
+    if order:
+        active = {role for role, name in roles.items() if name is not None}
+        if len(order) != len(set(order)) or not active.issubset(order) or not set(order).issubset(roles):
+            raise ValueError('Invalid encode_order')
+        names = [roles[role] for role in order if roles[role] is not None]
+        if signature:
+            names.insert(names.index(roles['archive']) if roles['archive'] in names else 0, signature)
+        names = list(dict.fromkeys(names))
+    return [function for name, function in encode_validate_operations.items() if name in required] + [encode_operations[name] for name in names]
 
 
-def _validate_router_fields(router: dict, config_fields: list, codec: dict, edit: dict) -> None:
-    """Validate logical mappings, protected fields and encoding-only settings."""
-    names = [field["name"] for field in config_fields]
+def build_decode_operations(router_settings, decode_operations, decode_validate_operations):
+    """Return selected decode validators and algorithms in execution order."""
+    codec = router_settings['router_specs'].get('codec') or {}
+    if codec.get('key_derivation') and not codec.get('encryption'):
+        raise ValueError('key_derivation requires encryption')
+    roles = {name: codec.get(name) for name in ('wrapper', 'encoding', 'encryption', 'archive')}
+    roles['encryption'] = (codec.get('key_derivation') or codec.get('encryption')) if codec.get('encryption') else None
+    signature = (codec.get('signature') or {}).get('algorithm')
+    required = (set(roles.values()) | {signature}) - {None}
+    for name in required:
+        _handler(decode_operations, name)
+    names = [name for name in decode_operations if name in required]
+    order = codec.get('decode_order')
+    if order:
+        active = {role for role, name in roles.items() if name is not None}
+        if len(order) != len(set(order)) or not active.issubset(order) or not set(order).issubset(roles):
+            raise ValueError('Invalid decode_order')
+        names = [roles[role] for role in order if roles[role] is not None]
+        if signature:
+            names.insert(names.index(roles['archive']) + 1 if roles['archive'] in names else len(names), signature)
+        names = list(dict.fromkeys(names))
+    return [function for name, function in decode_validate_operations.items() if name in required] + [decode_operations[name] for name in names]
+
+
+def build_edit_operations(router_settings, edit_operations, edit_validate_operations):
+    """Return the selected format validators followed by its editor."""
+    method = (router_settings['router_specs'].get('edit') or {}).get('configuration_format')
+    if method is None:
+        return []
+    editor = _handler(edit_operations, method)
+    return [function for name, function in edit_validate_operations.items() if name == method] + [editor]
+
+
+def build_view_operations(router_settings, view_operations, view_validate_operations):
+    """Return the selected format validators followed by its reader."""
+    method = (router_settings['router_specs'].get('edit') or {}).get('configuration_format')
+    if method is None:
+        return []
+    viewer = _handler(view_operations, method)
+    return [function for name, function in view_validate_operations.items() if name == method] + [viewer]
+
+
+# ---------------------------------------------------------------------
+# OPERATION EXECUTION
+# ---------------------------------------------------------------------
+
+def run_router_operations(data, operations, context):
+    """Pass each result to the next selected operation; validators retain the input."""
+    if not isinstance(operations, list) or not isinstance(context, dict):
+        raise ValueError("Router operations and context are required")
+    if data is None or (isinstance(data, (bytes, str)) and not data):
+        raise ValueError("Router input is empty or unavailable")
+    for operation in operations:
+        value = operation(data, context=context)
+        if value is not None:
+            if isinstance(data, bytes) and (not isinstance(value, bytes) or not value):
+                raise ValueError(f"Invalid router payload from {operation.__name__}")
+            data = value
+    return data
+
+
+# ---------------------------------------------------------------------
+# ROUTER INPUT AND CREDENTIALS
+# ---------------------------------------------------------------------
+
+def read_router_input(path):
+    """Read a backup without accepting an empty or missing payload."""
+    source = Path(path).expanduser()
+    data = source.read_bytes()
+    if not data:
+        raise ValueError(f"Router backup is empty: {source}")
+    return {"path": source, "data": data}
+
+
+def load_router_credentials(password_path, codec, password_prompt):
+    """Read a required template password or prompt, keeping cancellation distinct."""
+    if not codec.get("password_required"):
+        return ""
+    if password_path:
+        try:
+            password = Path(password_path).expanduser().read_bytes().decode("utf-8").strip()
+        except UnicodeError:
+            raise ValueError("Password file must contain UTF-8 text") from None
+    else:
+        try:
+            password = getpass(password_prompt)
+        except (EOFError, KeyboardInterrupt):
+            print("\nRouter password entry cancelled.")
+            return None
+    if not password or any(char in password for char in "\r\n\x00"):
+        raise ValueError("Router password is required and must not contain control characters")
+    return password
+
+
+def prepare_codec_context(model_specs, password_path, password_prompt, device_key_path, checksum_functions):
+    """Load this router's credentials and metadata for its selected operations."""
+    router = model_specs["router_specs"]
+    codec = router["codec"]
+    password = load_router_credentials(password_path, codec, password_prompt)
+    if password is None:
+        return None
+    device_key = None
+    if codec.get("device_key_required") or codec.get("key_derivation") == "device-key":
+        if not device_key_path:
+            raise ValueError("Required router device key path is not configured; an export password is not a device key")
+        device_key = Path(device_key_path).expanduser().read_bytes()
+        if not device_key:
+            raise ValueError("Router device key file is empty")
+    return {
+        "codec": codec,
+        "hardware": router.get("hardware"),
+        "firmware": router.get("firmware"),
+        "edit": router.get("edit") or {},
+        "password": password,
+        "device_key": device_key,
+        "checksum_functions": checksum_functions,
+        "header": b"",
+        "check_inputs": True,
+    }
+
+
+def load_target_router_credentials(template_context, password_prompt):
+    """Collect a target password using only this router's template credentials."""
+    if not isinstance(template_context, dict):
+        raise ValueError("Template codec context is required")
+    codec = template_context["codec"]
+    password = ""
+    if codec.get("password_required"):
+        try:
+            password = getpass(password_prompt)
+        except (EOFError, KeyboardInterrupt):
+            print("\nDestination router password entry cancelled.")
+            return None
+        if password_prompt == "Enter target router password (Enter to use template password): ":
+            password = password or template_context["password"]
+        if not password or any(char in password for char in "\r\n\x00"):
+            raise ValueError("Destination router password is required and must not contain control characters")
+    return {"password": password, "device_key": template_context.get("device_key")}
+
+
+# ---------------------------------------------------------------------
+# ROUTER VALIDATION
+# ---------------------------------------------------------------------
+
+def validate_router_field_mappings(model_specs: dict) -> bool:
+    """Validate logical field mappings and their protected-field references."""
+    edit = model_specs["router_specs"].get("edit") or {}
+    names = [field["name"] for field in model_specs["config_fields"]]
     if len(set(names)) != len(names):
         raise ValueError("Duplicate logical configuration field names")
-    mapped = set()
-    for field in config_fields:
-        if field["path"] is None:
-            continue
-        mapped.add(field["name"])
-        if edit.get("configuration_format") == "xml":
-            parse_xml_field_selector(field["path"], field["name"])
-        elif edit.get("configuration_format") == "key-value":
-            if not field["path"].strip() or any(char in field["path"] for char in "=\r\n\x00"):
-                raise ValueError(f"Invalid configuration key: {field['name']}")
-        else:
-            raise ValueError("Configuration field mappings require an edit section")
-    fields = edit.get("field_encryption") or {}
-    if edit.get("configuration_format") and edit.get("configuration_file") is None:
-        raise ValueError("Configuration editing requires configuration_file")
-    if fields.get("algorithm") and any(fields.get(name) is None for name in ("key_hex", "iv_hex", "fields")):
-        raise ValueError("Field encryption requires key_hex, iv_hex and fields")
-    if fields.get("algorithm") and edit.get("configuration_format") != "xml":
-        raise ValueError("Protected fields require XML configuration")
-    for name in fields.get("fields") or []:
-        if name not in mapped:
-            raise ValueError(f"Encrypted field has no configuration mapping: {name}")
-    if router.get("encode") and codec.get("archive") != "signed-zlib":
-        raise ValueError("Private signing settings require a signed-zlib archive")
+    field_paths = [field["path"] for field in model_specs["config_fields"] if field["path"] is not None]
+    if len(field_paths) != len(set(field_paths)):
+        raise ValueError("Duplicate configuration field mappings")
+    if field_paths and not edit.get("configuration_format"):
+        raise ValueError("Configuration field mappings require an edit section")
+    if edit.get("configuration_format"):
+        safe_relative(edit["configuration_file"])
+    protected = edit.get("field_encryption") or {}
+    if protected.get("algorithm") is not None and (not isinstance(protected.get("fields"), list) or not protected["fields"]):
+        raise ValueError("Field encryption requires a nonempty declared fields list")
+    mapped = {field["name"] for field in model_specs["config_fields"] if field["path"] is not None}
+    if any(name not in mapped for name in protected.get("fields") or []):
+        raise ValueError("Encrypted field has no configuration mapping")
+    return True
 
 
-def validate_router_settings(specs: dict) -> None:
-    """Check required method settings, compatible formats and logical field mappings."""
-    if not isinstance(specs, dict):
-        raise ValueError("Router model specifications are missing or invalid")
-    router = specs["router_specs"]
-    codec = router["codec"]
-    edit = router.get("edit") or {}
-    _validate_router_codec(router, codec, edit)
-    _validate_router_fields(router, specs["config_fields"], codec, edit)
+def validate_decoded_configuration(data, model_specs, check_functions, checksum_functions,
+                                   decoded_context, view_operations):
+    """Validate decoded bytes and declared configuration fields before saving."""
+    if not isinstance(data, bytes) or not data:
+        raise ValueError("No decoded router configuration available to save")
+    router = model_specs["router_specs"]
+    method = router["codec"].get("archive")
+    context = {"codec": router["codec"], "edit": router.get("edit") or {},
+               "checksum_functions": checksum_functions}
+    if method is not None:
+        _handler(check_functions, method)(data, context=context)
+    if method == "tar.gz":
+        edit = router.get("edit") or {}
+        configured = str(safe_relative(edit["configuration_file"]))
+        files = decoded_context.get("files") or {}
+        if configured not in files:
+            raise ValueError("Configured file missing from archive")
+        if not view_operations:
+            raise ValueError("Configuration reader is unavailable")
+        view_operations[-1](files[configured].decode("utf-8"), model_specs)
+    return True
 
 
-def validate_tar_gzip_config(decoded: bytes, model_specs: dict) -> None:
-    """Validate TAR/GZIP contents and the declared key-value configuration."""
-    files = ROUTER_FUNCTIONS["tar.gz"]["decode"](decoded)
-    configured = str(Path(model_specs["router_specs"]["edit"]["configuration_file"]))
-    if configured not in files:
-        raise ValueError("Configured file missing from archive")
-    parse_key_value_fields(files[configured].decode("utf-8"), model_specs)
+def validate_configuration_changes(original: str, edited: str, specs: dict,
+                                   viewer, editor, decrypt_handler=None, encrypt_handler=None) -> bool:
+    """Permit only declared replacements using the selected format's own editor."""
+    if not isinstance(original, str) or not isinstance(edited, str):
+        raise ValueError('Original and edited configuration must be text')
+    before = viewer(original, specs, decrypt_handler)
+    after = viewer(edited, specs, decrypt_handler)
+    if before.keys() != after.keys():
+        raise ValueError("Edited configuration fields do not match the original")
+    changes = {name: value for name, value in after.items() if value != before[name]}
+    configuration_format = (specs["router_specs"].get("edit") or {}).get("configuration_format")
+    if configuration_format == "key-value":
+        permitted = normalize_key_value_fields(original, specs) == normalize_key_value_fields(edited, specs)
+    else:
+        permitted = editor(original, specs, changes, encrypt_handler) == edited
+    if not permitted:
+        raise ValueError("Edited configuration differs outside declared editable values")
+    return True
 
 
-def validate_edited_fields(original_archive: bytes, directory: Path, specs: dict) -> None:
-    """Match every original byte except values explicitly declared editable."""
-    config_path = Path(specs["router_specs"]["edit"]["configuration_file"])
-    found = False
-    files = read_tar_files(original_archive)
-    for name, original in files.items():
-        edited = (directory / safe_relative(name)).read_bytes()
-        if Path(name) != config_path:
-            if original != edited:
-                raise ValueError(f"Original mismatch in uneditable file: {name}")
-            continue
-        found = True
-        if normalize_key_value_fields(original.decode("utf-8"), specs) != normalize_key_value_fields(edited.decode("utf-8"), specs):
-            raise ValueError("Edited configuration differs outside declared editable values")
-    if not found:
-        raise ValueError("Configured file missing from original archive")
+# ---------------------------------------------------------------------
+# DECODING AND EXTRACTION
+# ---------------------------------------------------------------------
 
-
-def validate_edited_xml(original: bytes, directory: Path, specs: dict, decrypt_handler=None, encrypt_handler=None) -> tuple[bytes, list[str]]:
-    """Permit only configured XML field edits relative to the authenticated original."""
-    if not directory.is_dir():
-        raise NotADirectoryError(f"Edited configuration directory not found: {directory}")
-    validate_directory(directory)
-    relative = Path(specs["router_specs"]["edit"]["configuration_file"])
-    actual = {path.relative_to(directory) for path in directory.rglob("*") if path.is_file()}
-    if actual != {relative}:
-        raise ValueError("Edited files do not match the original single-file configuration")
-    edited = (directory / relative).read_bytes()
-    validate_xml_declaration(edited, specs["router_specs"]["codec"])
-    before = xml_field_values(original.decode("utf-8"), specs, decrypt_handler)
-    after = xml_field_values(edited.decode("utf-8"), specs, decrypt_handler)
-    changes = {label: value for label, value in after.items() if value != before[label]}
-    validate_xml_field_changes(original.decode("utf-8"), edited.decode("utf-8"), specs, changes, decrypt_handler, encrypt_handler)
-    return edited, [str(relative)] if edited != original else []
-
-
-def extract_xml_configuration(archive_path: Path, output: Path, model_specs: dict) -> None:
-    """Stage the preserved XML bytes as a single configuration file and replace the destination."""
-    decoded = archive_path.read_bytes()
-    validate_xml_declaration(decoded, model_specs["router_specs"]["codec"])
-    relative = Path(model_specs["router_specs"]["edit"]["configuration_file"])
+def extract_configuration_file(data: bytes, output: Path, configuration_file: str | None = None, *, context=None) -> None:
+    """Stage one decoded configuration file, preserving its bytes and permissions."""
+    if context is not None:
+        configuration_file = context["edit"]["configuration_file"]
+    relative = safe_relative(configuration_file)
     output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with tempfile.TemporaryDirectory(dir=output.parent, prefix=f".{output.name}.") as directory:
         prepared = Path(directory) / "configuration"
         target = prepared / relative
         target.parent.mkdir(parents=True, mode=0o700)
-        target.write_bytes(decoded)
+        target.write_bytes(data)
         target.chmod(0o600)
         replace_router_directory(prepared, output)
 
 
-def _prompt_router_changes(source: Path, destination: Path, configuration_format: str, values: dict) -> dict | None:
-    """Collect and confirm edits, retaining the existing prompts and cancellation."""
+def extract_router_config(archive_path, output_dir, model_specs, extract_functions, checksum_functions):
+    """Confirm and atomically extract a declared format through its registered extractor."""
+    archive_path, output = Path(archive_path).expanduser(), Path(output_dir).expanduser()
+    if not archive_path.is_file():
+        raise FileNotFoundError(f"Decoded archive not found: {archive_path}")
+    if any(path.is_symlink() for path in (output, *output.parents)):
+        raise ValueError(f"Unsafe extraction directory symlink: {output}")
+    if output.resolve() == archive_path.resolve() or output.resolve() in archive_path.resolve().parents:
+        raise ValueError("Extraction directory must not contain the decoded archive")
+    if output.exists():
+        if not output.is_dir():
+            raise NotADirectoryError(f"Extraction destination is not a directory: {output}")
+        if not confirm(f"Extraction directory already exists: {output}\nOverwrite? [y/n]: "):
+            print("Extraction overwrite cancelled.")
+            return None
+    router = model_specs["router_specs"]
+    context = {"codec": router["codec"], "edit": router.get("edit") or {},
+               "checksum_functions": checksum_functions}
+    method = router["codec"].get("archive")
+    if method is None:
+        raise ValueError("Configuration extraction is not declared for this router")
+    _handler(extract_functions, method)(archive_path.read_bytes(), output, context=context)
+    validate_directory(output)
+    if not (output / safe_relative(context["edit"]["configuration_file"])).is_file():
+        raise ValueError("Configured file missing from extracted configuration")
+    print(f"Extracted router configuration: {output}")
+    return str(output)
+
+
+# ---------------------------------------------------------------------
+# CONFIGURATION VIEWING
+# ---------------------------------------------------------------------
+
+def display_configuration_values(values, context, config_fields):
+    """Display selected fields using the existing layout."""
+    if not isinstance(values, dict):
+        raise ValueError('Configuration values must be a mapping')
+    rows = [(field['name'], values[field['name']]) for field in config_fields if field['path'] is not None]
+    width = max([len('Field'), *(len(label) for label, _ in rows)])
+    print(f"\nConfiguration: {context['source'].name} ({context['relative']})")
+    print(f"{'Field':<{width}} | Value")
+    print(f"{'-' * width}-+------------------------------")
+    for label, value in rows:
+        print(f'{label:<{width}} | {value}')
+    return True
+
+
+def display_router_operations(operations, label):
+    """Display selected callable operations through the existing table formatter."""
+    from modules.display_utils import print_dict_table
+
+    rows = [
+        {"Step": index, "Function": function.__name__}
+        for index, function in enumerate(operations, 1)
+    ]
+    return print_dict_table(rows, ["Step", "Function"], label)
+
+
+# ---------------------------------------------------------------------
+# CONFIGURATION EDITING
+# ---------------------------------------------------------------------
+
+def read_configuration_source(config_dir, edit):
+    """Read a safe configuration file and retain its exact source bytes."""
+    if not edit or not edit.get("configuration_file"):
+        raise ValueError('Configuration format is not established')
+    source = Path(config_dir).expanduser()
+    validate_directory(source)
+    if not source.is_dir():
+        raise NotADirectoryError(f'Configuration directory not found: {source}')
+    relative = safe_relative(edit['configuration_file'])
+    path = source / relative
+    if not path.is_file() or path.is_symlink():
+        raise FileNotFoundError(f'Configuration file not found or unsafe: {path}')
+    original = path.read_bytes()
+    return {
+        'source': source,
+        'relative': relative,
+        'original_bytes': original,
+        'original': original.decode('utf-8'),
+    }
+
+
+def prepare_configuration_context(source, model_specs, decode_functions, encode_functions,
+                                  view_operations, edit_operations=None, destination=None):
+    """Bind the loaded configuration to registered field handlers and its format."""
+    if not isinstance(source, dict) or not view_operations or (edit_operations is not None and not edit_operations):
+        raise ValueError("Configuration source and format operations are required")
+    target = Path(destination).expanduser() if destination is not None else None
+    if target is not None:
+        if any(path.is_symlink() for path in (target, *target.parents)):
+            raise ValueError(f"Unsafe edited configuration symlink: {target}")
+        if target.exists() and not target.is_dir():
+            raise NotADirectoryError(f"Edited configuration destination is not a directory: {target}")
+        directory = source["source"].resolve()
+        if directory == target.resolve() or directory in target.resolve().parents or target.resolve() in directory.parents:
+            raise ValueError("Edited directory must be separate from the decoded source directory")
+    edit = model_specs["router_specs"].get("edit") or {}
+    return {
+        **source,
+        "destination": target,
+        "specs": model_specs,
+        "decrypt_handler": field_handler(edit, decode_functions),
+        "encrypt_handler": field_handler(edit, encode_functions),
+        "viewer": view_operations[-1],
+        "editor": edit_operations[-1] if edit_operations else None,
+    }
+
+
+def prompt_router_changes(values, context):
+    """Collect and confirm field edits, including unchanged configurations."""
+    if not isinstance(values, dict) or not isinstance(context, dict):
+        raise ValueError("Configuration values are unavailable")
+    source, destination = context["source"], context["destination"]
+    configuration_format = context["specs"]["router_specs"]["edit"]["configuration_format"]
     changes = {}
     print(f"\nEditing configuration: {source.name}")
     print("Press Enter to keep the existing value.")
-    for label, current in values.items():
-        print(f"\n{label}: {current}")
-        updated = input(f"New {label}: ")
-        if not updated:
-            continue
-        if "\n" in updated or "\r" in updated or "\x00" in updated:
-            raise ValueError(f"Invalid value for {label}")
-        changes[label] = updated
-    if not changes:
-        print("No changes made.")
-    else:
-        print("\nChanges:")
+    try:
         for label, current in values.items():
-            if label in changes:
-                print(f"{label}: {current} -> {changes[label]}")
-    prompt = "\nSave edited configuration? [y/n]: " if configuration_format == "xml" else "\nSave configuration for encoding? [y/n]: "
-    if not confirm(prompt):
-        print("Configuration editing cancelled.")
-        return None
-    if destination.exists():
-        if not confirm(f"Edited configuration already exists: {destination}\nOverwrite? [y/n]: "):
+            print(f"\n{label}: {current}")
+            updated = input(f"New {label}: ")
+            if not updated:
+                continue
+            if any(char in updated for char in "\r\n\x00"):
+                raise ValueError(f"Invalid value for {label}")
+            changes[label] = updated
+        if not changes:
+            print("No changes made.")
+        else:
+            print("\nChanges:")
+            for label, current in values.items():
+                if label in changes:
+                    print(f"{label}: {current} -> {changes[label]}")
+        prompt = "\nSave edited configuration? [y/n]: " if configuration_format == "xml" else "\nSave configuration for encoding? [y/n]: "
+        if not confirm(prompt):
+            print("Configuration editing cancelled.")
+            return None
+        if destination.exists() and not confirm(f"Edited configuration already exists: {destination}\nOverwrite? [y/n]: "):
             print("Edited configuration overwrite cancelled.")
             return None
-    return changes
+    except (EOFError, KeyboardInterrupt):
+        print("\nConfiguration editing cancelled.")
+        return None
+    return {**context, "changes": changes}
 
 
-def _confirm_router_conversion(source_values: dict, destination_values: dict) -> dict | None:
+# ---------------------------------------------------------------------
+# CONVERSION AND MIGRATION
+# ---------------------------------------------------------------------
+
+def prepare_router_conversion(source_values, destination_values, source_context, destination_context):
     """Compare fields and confirm the same conversion report before changing files."""
+    if not isinstance(source_values, dict) or not isinstance(destination_values, dict):
+        raise ValueError("Source and destination configuration values are unavailable")
+    source, destination = source_context["source"].resolve(), destination_context["source"].resolve()
+    if source == destination or source in destination.parents or destination in source.parents:
+        raise ValueError("Source and destination directories must be separate")
     skipped_fields = sorted(source_values.keys() - destination_values.keys())
     changes = []
     for label in sorted(source_values.keys() & destination_values.keys()):
@@ -430,24 +532,169 @@ def _confirm_router_conversion(source_values: dict, destination_values: dict) ->
         print("Conversion cancelled.")
         return None
     updates = {label: value for label, previous, value in changes}
-    return updates
+    return {**destination_context, "destination": destination_context["source"],
+            "changes": updates,
+            "conversion_source": (source_context["source"] / source_context["relative"],
+                                  source_context["original_bytes"])}
 
 
-def _save_configuration_directory(
-    source: Path,
-    destination: Path,
-    relative: Path,
-    original_bytes: bytes,
-    edited: str,
-    model_specs: dict,
-    changes: dict,
-    *,
-    conversion_source: tuple[Path, bytes] | None = None,
-) -> None:
-    """Stage, verify and install edited files while checking the original snapshots."""
-    configuration_format = (model_specs["router_specs"].get("edit") or {}).get("configuration_format")
-    original = original_bytes.decode("utf-8")
-    source_file = source / relative
+# ---------------------------------------------------------------------
+# ENCODING AND VERIFICATION
+# ---------------------------------------------------------------------
+
+def prepare_encode_paths(edited_dir, original_cfg, edited_archive_path, output_path, model_specs):
+    """Validate and confirm the two encoding destinations before collecting credentials."""
+    directory, original, edited_archive, output = (
+        Path(value).expanduser() for value in (edited_dir, original_cfg, edited_archive_path, output_path))
+    extension = model_specs["router_specs"]["codec"]["decoded_extension"]
+    if not edited_archive.name.endswith(extension):
+        raise ValueError(f"Edited archive path must end with {extension}")
+    if not directory.is_dir():
+        raise NotADirectoryError(f"Edited configuration directory not found: {directory}")
+    validate_directory(directory)
+    if edited_archive.resolve() == output.resolve() or (edited_archive.exists() and output.exists() and edited_archive.samefile(output)):
+        raise ValueError("Output destinations must be different files")
+    for path in (edited_archive, output):
+        if path.resolve().is_relative_to(directory.resolve()):
+            raise ValueError("Output destinations must not overwrite the edited configuration directory")
+        if path.resolve() == original.resolve() or (path.exists() and original.exists() and path.samefile(original)):
+            raise ValueError("Output destinations must not overwrite the original backup")
+        if any(parent.is_symlink() for parent in (path, *path.parents)):
+            raise ValueError(f"Unsafe output symlink: {path}")
+        if path.exists() and not path.is_file():
+            raise ValueError(f"Output destination is not a file: {path}")
+    existing = [path for path in (edited_archive, output) if path.exists()]
+    if existing:
+        print("\nExisting output files:")
+        for path in existing:
+            print(f"  {path}")
+        if not confirm("Overwrite existing output files? [y/n]: "):
+            print("Encoding overwrite cancelled.")
+            return None
+    return {"directory": directory, "original": original, "edited_archive": edited_archive, "output": output}
+
+
+def compare_configuration_files(directory, files, edit):
+    """Compare the edited directory with the original and protect uneditable files."""
+    if files is None:
+        raise ValueError('Selected decoder does not declare editable configuration files')
+    actual = {str(path.relative_to(directory)) for path in directory.rglob('*') if path.is_file()}
+    if actual != set(files):
+        raise ValueError('Edited files do not match the original configuration')
+    configured = str(safe_relative(edit['configuration_file']))
+    if configured not in files:
+        raise ValueError('Configured file missing from original backup')
+    changes = []
+    configuration = None
+    for name, original_data in files.items():
+        edited_data = (directory / safe_relative(name)).read_bytes()
+        if name == configured:
+            configuration = edited_data
+        elif original_data != edited_data:
+            raise ValueError(f'Original mismatch in uneditable file: {name}')
+        if original_data != edited_data:
+            changes.append(name)
+    return {
+        'changes': changes,
+        'original': files[configured].decode('utf-8'),
+        'edited': configuration.decode('utf-8'),
+        'data': configuration,
+    }
+
+
+def prepare_encode_payload(original_archive, original_context, comparison, credentials, signing, directory):
+    """Construct encoding metadata and payload from validated configuration inputs."""
+    data = comparison['data'] if original_context.get('configuration_payload') else original_archive
+    return {
+        **original_context,
+        **credentials,
+        'signing': signing,
+        'edited_dir': str(directory),
+        'changes': comparison['changes'],
+        'data': data,
+        'expected': data,
+        'configuration_payload': bool(original_context.get('configuration_payload')),
+    }
+
+
+def verify_encoded_backup(actual, expected):
+    """Require byte-identical round-trip recovery before saving."""
+    if actual != expected:
+        raise ValueError('Generated backup failed decryption verification')
+    return True
+
+
+# ---------------------------------------------------------------------
+# FILE AND DIRECTORY SAVING
+# ---------------------------------------------------------------------
+
+def replace_router_directory(staged: Path, destination: Path) -> None:
+    """Install a prepared directory, restoring the old one if installation fails."""
+    if any(path.is_symlink() for path in (destination, *destination.parents)):
+        raise ValueError(f"Unsafe destination symlink: {destination}")
+    if not destination.exists():
+        os.replace(staged, destination)
+        return
+    if not destination.is_dir():
+        raise NotADirectoryError(f"Expected output directory: {destination}")
+    backup_dir = Path(tempfile.mkdtemp(dir=destination.parent, prefix=f".{destination.name}.backup."))
+    backup = backup_dir / "original"
+    installed = False
+    try:
+        os.replace(destination, backup)
+        try:
+            os.replace(staged, destination)
+            installed = True
+        except BaseException:
+            os.replace(backup, destination)
+            raise
+    finally:
+        if installed or not backup.exists():
+            shutil.rmtree(backup_dir)
+        else:
+            print(f"Original configuration retained at: {backup}")
+
+
+
+def save_router_config(decoded_config, decoded_config_path, model_specs):
+    """Confirm and atomically save validated decoded bytes with private permissions."""
+    if not isinstance(decoded_config, bytes) or not decoded_config:
+        raise ValueError("No decoded router configuration available to save")
+    path = Path(decoded_config_path).expanduser()
+    extension = model_specs["router_specs"]["codec"]["decoded_extension"]
+    if not path.name.endswith(extension):
+        raise ValueError(f"Decoded configuration path must end with {extension}")
+    if any(parent.is_symlink() for parent in (path, *path.parents)):
+        raise ValueError(f"Unsafe decoded archive symlink: {path}")
+    if path.exists():
+        if not path.is_file():
+            raise ValueError(f"Decoded archive destination is not a file: {path}")
+        if not confirm(f"Decoded archive already exists: {path}\nOverwrite? [y/n]: "):
+            print("Decoded archive overwrite cancelled.")
+            return None
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="wb", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as target:
+            temp_path = Path(target.name)
+            os.chmod(temp_path, 0o600)
+            target.write(decoded_config)
+        if temp_path.read_bytes() != decoded_config:
+            raise ValueError("Decoded configuration failed write verification")
+        os.replace(temp_path, path)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+    print(f"Saved decoded router configuration: {path}")
+    return str(path)
+
+
+def save_configuration_directory(context, edited):
+    """Stage and verify edits, checking source snapshots before atomic replacement."""
+    if not isinstance(edited, str):
+        raise ValueError("Edited configuration text is unavailable")
+    source, destination, relative = context["source"], context["destination"], context["relative"]
+    validate_directory(source)
     destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     staging = Path(tempfile.mkdtemp(dir=destination.parent, prefix=f".{destination.name}."))
     prepared = staging / "replacement"
@@ -455,53 +702,48 @@ def _save_configuration_directory(
         shutil.copytree(source, prepared, symlinks=True)
         validate_directory(prepared)
         target = prepared / relative
-        if target.is_symlink():
-            if conversion_source is not None:
-                raise ValueError("Unsafe destination configuration file")
-            raise ValueError(f"Unsafe configuration file: {target}")
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=target.parent, prefix=".config.", delete=False) as temp_file:
-            temp_path = Path(temp_file.name)
-            temp_file.write(edited)
+        temp_path = None
         try:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="", dir=target.parent, prefix=".config.", delete=False) as temp_file:
+                temp_path = Path(temp_file.name)
+                temp_file.write(edited)
             os.chmod(temp_path, 0o600)
             os.replace(temp_path, target)
         finally:
-            temp_path.unlink(missing_ok=True)
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
         saved = target.read_bytes().decode("utf-8")
-        if configuration_format == "xml":
-            validate_xml_field_changes(original, saved, model_specs, changes,
-                field_handler(model_specs, "decode"),
-                field_handler(model_specs, "encode"))
-        elif conversion_source is not None:
-            validate_key_value_field_changes(original, saved, model_specs, changes)
-        else:
-            parse_key_value_fields(saved, model_specs)
+        expected = context["editor"](context["original"], context["specs"], context["changes"], context["encrypt_handler"])
+        if saved != expected:
+            raise ValueError("Saved configuration differs outside the requested field replacements")
+        before = context["viewer"](context["original"], context["specs"], context["decrypt_handler"])
+        after = context["viewer"](saved, context["specs"], context["decrypt_handler"])
+        configuration_format = context["specs"]["router_specs"]["edit"]["configuration_format"]
+        if configuration_format == "xml" and after != {**before, **context["changes"]}:
+            raise ValueError("Saved configuration field verification failed")
+        conversion_source = context.get("conversion_source")
         if conversion_source is not None:
             path, snapshot = conversion_source
             if path.read_bytes() != snapshot:
                 raise ValueError("Source configuration changed during conversion")
-            if source_file.read_bytes() != original_bytes:
-                raise ValueError("Prepared destination configuration changed during conversion")
-        elif source_file.read_bytes() != original_bytes:
-            raise ValueError("Original decoded configuration changed during editing")
+        if (source / relative).read_bytes() != context["original_bytes"]:
+            raise ValueError("Original configuration changed during editing or conversion")
         validate_directory(prepared)
         replace_router_directory(prepared, destination)
     finally:
         if staging.exists():
             shutil.rmtree(staging)
+    label = "Converted configuration saved" if context.get("conversion_source") else "Saved edited router configuration"
+    print(f"{label}: {destination}")
+    return str(destination)
 
 
-def _save_encoded_outputs(
-    edited_archive: Path,
-    output: Path,
-    rebuilt_archive: bytes,
-    rebuilt: bytes,
-    single_file: bool,
-    model_specs: dict,
-    device_key_path: str | None,
-    target_password: str,
-) -> None:
+def save_encoded_outputs(paths, rebuilt, recovered, context):
     """Publish both encoded outputs with the existing staging, verification and rollback."""
+    if not isinstance(rebuilt, bytes) or not rebuilt or recovered != context["expected"]:
+        raise ValueError("Verified encoded output is unavailable")
+    edited_archive, output = paths["edited_archive"], paths["output"]
+    rebuilt_archive = context["expected"]
     edited_archive.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     output.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     staged = []
@@ -517,10 +759,6 @@ def _save_encoded_outputs(
                 temp_file.write(data)
             if prepared.read_bytes() != data:
                 raise ValueError(f"Generated output failed write verification: {path}")
-            if single_file and path == output:
-                recovered = decode_router_config(str(prepared), model_specs, device_key_path=device_key_path, password=target_password)
-                if recovered != rebuilt_archive:
-                    raise ValueError("Generated backup failed independent decode verification")
         try:
             for path, staging in staged:
                 if path.exists():
@@ -550,404 +788,16 @@ def _save_encoded_outputs(
                 (staging / "replacement").unlink(missing_ok=True)
             else:
                 shutil.rmtree(staging)
+    return str(output)
 
 
 # ---------------------------------------------------------------------
-# ROUTER CREDENTIALS
+# REPORTING
 # ---------------------------------------------------------------------
 
-
-def load_router_credentials(password_path: str | None, model_specs: dict, password_prompt: str) -> str | bool:
-    """Preserve password-file and interactive-password behaviour."""
-    if model_specs.get("key_derivation") == "device-key":
-        raise ValueError("THENC device key credentials are not established; an export password is not a device key")
-    if model_specs.get("key_derivation") == "fixed-key":
-        return ""
-    if not model_specs.get("password_required", False):
-        return ""
-    if password_path is not None:
-        try:
-            return interpret_password_credentials(Path(password_path).expanduser().read_bytes())
-        except (OSError, ValueError, TypeError) as exc:
-            print(f"Failed to load template password: {exc}")
-            return False
-    try:
-        password = getpass(password_prompt)
-    except (EOFError, KeyboardInterrupt):
-        print("\nRouter password entry cancelled.")
-        return False
-    if not password:
-        print("Router password is required.")
-        return False
-    return password
-
-
-def load_target_router_credentials(template_credentials, model_specs: dict, password_prompt: str):
-    """Preserve the existing destination password prompts and cancellation."""
-    if model_specs.get("key_derivation") == "device-key":
-        raise ValueError("THENC destination key handling and signature signing are not established")
-    if model_specs.get("key_derivation") == "fixed-key":
-        return ""
-    if not model_specs.get("password_required", False):
-        return ""
-    try:
-        password = getpass(password_prompt)
-    except (EOFError, KeyboardInterrupt):
-        print("\nDestination router password entry cancelled.")
-        return False
-    if password_prompt == "Enter target router password (Enter to use template password): ":
-        return password or template_credentials
-    if not password:
-        print("Destination router password is required.")
-        return False
-    return password
-
-
-# ---------------------------------------------------------------------
-# ROUTER DECODING
-# ---------------------------------------------------------------------
-
-
-def decode_router_config(config_path: str | bytes, model_specs: dict, password_path: str | None = None, password_prompt: str = "Enter router password: ", device_key_path: str | None = None, *, password: str | None = None) -> bytes | bool:
-    """Decode bytes or an application backup path in the specified order."""
-    settings = {**model_specs["router_specs"]["codec"],
-                "hardware": model_specs["router_specs"].get("hardware"),
-                "firmware": model_specs["router_specs"].get("firmware")}
-    data = config_path if isinstance(config_path, bytes) else Path(config_path).expanduser().read_bytes()
-    if password is None:
-        password = "" if not settings.get("encryption") or settings.get("key_derivation") == "device-key" else load_router_credentials(password_path, settings, password_prompt)
-    if password is False:
-        return False
-    for operation in (settings.get("decode_order") or ("wrapper", "encoding", "encryption", "archive")):
-        if operation == "wrapper":
-            wrapper = parse_router_wrapper(data, settings)
-            data = wrapper["encoded" if settings.get("wrapper") == "line-wrapper" else "encrypted"]
-        elif operation == "encoding" and settings.get("encoding"):
-            data = ROUTER_FUNCTIONS[settings["encoding"]]["decode"](data)
-        elif operation == "encryption":
-            data = crypt_router_payload(data, password, settings, "decode", device_key_path)
-        elif operation == "archive":
-            if settings.get("archive") == "tar.gz":
-                validate_tar_gzip_config(data, model_specs)
-            elif settings.get("archive") == "signed-zlib":
-                data = decode_signed_configuration(data, settings, settings["signature"])
-    return data
-
-
-# ---------------------------------------------------------------------
-# CONFIGURATION SAVING
-# ---------------------------------------------------------------------
-
-
-def save_router_config(decoded_config: bytes, decoded_config_path: str, model_specs: dict) -> bool:
-    """Save the decoded router configuration in its declared format."""
-    if not isinstance(decoded_config, bytes) or not decoded_config:
-        print("No decoded router configuration available to save.")
-        return False
-    try:
-        path = Path(decoded_config_path).expanduser()
-        extension = ".xml" if (model_specs["router_specs"].get("edit") or {}).get("configuration_format") == "xml" else DECODED_EXTENSION
-        if not path.name.endswith(extension):
-            raise ValueError(f"Decoded configuration path must end with {extension}")
-        if path.is_symlink():
-            raise ValueError(f"Unsafe decoded archive symlink: {path}")
-        if path.exists():
-            if not path.is_file():
-                raise ValueError(f"Decoded archive destination is not a file: {path}")
-            if not confirm(f"Decoded archive already exists: {path}\nOverwrite? [y/n]: "):
-                print("Decoded archive overwrite cancelled.")
-                return False
-        if (model_specs["router_specs"].get("edit") or {}).get("configuration_format") == "xml":
-            validate_xml_declaration(decoded_config, model_specs["router_specs"]["codec"])
-        else:
-            read_tar_files(decoded_config)
-        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with tempfile.NamedTemporaryFile(mode="wb", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as temp_file:
-            temp_path = Path(temp_file.name)
-            os.chmod(temp_path, 0o600)
-            temp_file.write(decoded_config)
-        try:
-            os.replace(temp_path, path)
-        finally:
-            temp_path.unlink(missing_ok=True)
-        print(f"Saved decoded router configuration: {path}")
-        return True
-    except (OSError, ValueError, TypeError, tarfile.TarError, EOFError) as exc:
-        print(f"Failed to save decoded router configuration: {exc}")
-        return False
-
-
-# ---------------------------------------------------------------------
-# CONFIGURATION EXTRACTION
-# ---------------------------------------------------------------------
-
-
-def extract_router_config(archive_path: str, output_dir: str, model_specs: dict) -> str | bool:
-    """Safely extract the decoded router configuration."""
-    try:
-        archive_path = Path(archive_path).expanduser()
-        output = Path(output_dir).expanduser()
-        if not archive_path.is_file():
-            raise FileNotFoundError(f"Decoded archive not found: {archive_path}")
-        if any(path.is_symlink() for path in (output, *output.parents)):
-            raise ValueError(f"Unsafe extraction directory symlink: {output}")
-        if output.exists():
-            if not output.is_dir():
-                raise ValueError(f"Extraction destination is not a directory: {output}")
-            if not confirm(f"Extraction directory already exists: {output}\nOverwrite? [y/n]: "):
-                print("Extraction overwrite cancelled.")
-                return False
-        if (model_specs["router_specs"].get("edit") or {}).get("configuration_format") == "xml":
-            extract_xml_configuration(archive_path, output, model_specs)
-        else:
-            extract_tar_archive(archive_path, output)
-        print(f"Extracted router configuration: {output}")
-        return str(output)
-    except (OSError, ValueError, TypeError, tarfile.TarError) as exc:
-        print(f"Failed to extract router configuration: {exc}")
-        return False
-
-
-# ---------------------------------------------------------------------
-# CONFIGURATION VIEWING
-# ---------------------------------------------------------------------
-
-
-def view_router_config_fields(config_dir: str, model_specs: dict) -> bool:
-    """Display selected router configuration fields."""
-    try:
-        viewer = ROUTER_FUNCTIONS.get((model_specs["router_specs"].get("edit") or {}).get("configuration_format"), {}).get("decode")
-        if viewer is None:
-            raise ValueError(f'Unsupported configuration_format for viewing: {(model_specs["router_specs"].get("edit") or {}).get("configuration_format")}')
-        config_fields = model_specs["config_fields"]
-        directory = Path(config_dir).expanduser()
-        validate_directory(directory)
-        if not directory.is_dir():
-            raise NotADirectoryError(f"Configuration directory not found: {directory}")
-        config_file = model_specs["router_specs"]["edit"]["configuration_file"]
-        relative = Path(config_file)
-        path = directory / relative
-        if not path.is_file():
-            raise FileNotFoundError(f"Configuration file not found: {path}")
-        contents = path.read_bytes().decode("utf-8")
-        values = viewer(contents, model_specs, field_handler(model_specs, "decode"))
-        rows = []
-        for field in config_fields:
-            label, key = field["name"], field["path"]
-            if key is not None:
-                rows.append((label, values[label]))
-        width = max([len("Field"), *(len(label) for label, _ in rows)])
-        print(f"\nConfiguration: {directory.name} ({config_file})")
-        print(f"{'Field':<{width}} | Value")
-        print(f"{'-' * width}-+------------------------------")
-        for label, value in rows:
-            print(f"{label:<{width}} | {value}")
-        return True
-    except (OSError, ValueError, TypeError, KeyError) as exc:
-        print(f"Failed to view router configuration fields: {exc}")
-        return False
-
-
-# ---------------------------------------------------------------------
-# CONFIGURATION EDITING
-# ---------------------------------------------------------------------
-
-
-def edit_router_config_fields(config: str, changes: dict, specs: dict) -> str:
-    """Apply logical field changes through the selected configuration implementation."""
-    method = (specs["router_specs"].get("edit") or {}).get("configuration_format")
-    if method is None:
-        raise ValueError("Configuration editing is unavailable for this specification")
-    return ROUTER_FUNCTIONS[method]["edit"](config, specs, changes, field_handler(specs, "encode"))
-
-
-def edit_router_config_files(config_dir: str, edited_dir: str, model_specs: dict) -> str | bool:
-    """Copy and edit selected router configuration fields."""
-    try:
-        configuration_format = (model_specs["router_specs"].get("edit") or {}).get("configuration_format")
-        editor = ROUTER_FUNCTIONS.get(configuration_format, {}).get("edit")
-        viewer = ROUTER_FUNCTIONS.get(configuration_format, {}).get("decode")
-        if editor is None or viewer is None:
-            raise ValueError(f"Unsupported configuration_format for editing: {configuration_format}")
-        source = Path(config_dir).expanduser()
-        validate_directory(source)
-        destination = Path(edited_dir).expanduser()
-        if not source.is_dir():
-            raise NotADirectoryError(f"Decoded configuration directory not found: {source}")
-        if any(path.is_symlink() for path in (destination, *destination.parents)):
-            raise ValueError(f"Unsafe edited configuration symlink: {destination}")
-        if destination.exists() and not destination.is_dir():
-            raise ValueError(f"Edited configuration destination is not a directory: {destination}")
-        relative = safe_relative(model_specs["router_specs"]["edit"]["configuration_file"])
-        source_file = source / relative
-        if not source_file.is_file() or source_file.is_symlink():
-            raise FileNotFoundError(f"Configuration file not found or unsafe: {source_file}")
-        original_bytes = source_file.read_bytes()
-        original = original_bytes.decode("utf-8")
-        values = viewer(original, model_specs, field_handler(model_specs, "decode"))
-        if source.resolve() == destination.resolve() or source.resolve() in destination.resolve().parents or destination.resolve() in source.resolve().parents:
-            raise ValueError("Edited directory must be separate from the decoded source directory")
-        changes = _prompt_router_changes(source, destination, configuration_format, values)
-        if changes is None:
-            return False
-        edited = editor(original, model_specs, changes, field_handler(model_specs, "encode"))
-        if configuration_format == "xml":
-            validate_xml_field_changes(original, edited, model_specs, changes,
-                field_handler(model_specs, "decode"),
-                field_handler(model_specs, "encode"))
-        _save_configuration_directory(source, destination, relative, original_bytes, edited, model_specs, changes)
-        print(f"Saved edited router configuration: {destination}")
-        return str(destination)
-    except (OSError, ValueError, TypeError, KeyError, UnicodeError) as exc:
-        print(f"Failed to edit router configuration: {exc}")
-        return False
-
-
-# ---------------------------------------------------------------------
-# ROUTER ENCODING
-# ---------------------------------------------------------------------
-
-
-def encode_router_config(data: bytes, specs: dict, password: str = "", header: bytes = b"", device_key_path: str | None = None) -> bytes:
-    """Encode prepared configuration bytes in the independent encode order."""
-    settings = {**specs["router_specs"]["codec"],
-                "hardware": specs["router_specs"].get("hardware"),
-                "firmware": specs["router_specs"].get("firmware")}
-    for operation in (settings.get("encode_order") or ("archive", "encryption", "encoding", "wrapper")):
-        if operation == "archive" and settings.get("archive") == "signed-zlib":
-            signature = {**settings["signature"], **(specs["router_specs"].get("encode") or {})}
-            signature.setdefault("private_exponent_hex", None)
-            data = encode_signed_configuration(data, settings, signature)
-        elif operation == "encryption":
-            data = crypt_router_payload(data, password, settings, "encode", device_key_path)
-        elif operation == "encoding" and settings.get("encoding"):
-            data = ROUTER_FUNCTIONS[settings["encoding"]]["encode"](data, settings)
-        elif operation == "wrapper":
-            data = rebuild_router_wrapper(data, header, settings)
-    return data
-
-
-def encode_router_config_files(
-    edited_dir: str,
-    original_cfg: str,
-    edited_archive_path: str,
-    output_path: str,
-    model_specs: dict,
-    password_path: str,
-    password_prompt: str = "Enter target router password (Enter to use template password): ",
-    device_key_path: str | None = None,
-) -> str | bool:
-    """Rebuild, encrypt and verify an edited backup without changing its source."""
-    try:
-        directory = Path(edited_dir).expanduser()
-        original = Path(original_cfg).expanduser()
-        edited_archive = Path(edited_archive_path).expanduser()
-        output = Path(output_path).expanduser()
-        single_file = model_specs["router_specs"]["codec"].get("archive") == "signed-zlib"
-        extension = ".xml" if single_file else DECODED_EXTENSION
-        if not edited_archive.name.endswith(extension):
-            raise ValueError("Edited archive path has an invalid extension")
-        if edited_archive.resolve() == output.resolve():
-            raise ValueError("Output destinations must be different files")
-        for path in (edited_archive, output):
-            if path.resolve().is_relative_to(directory.resolve()):
-                raise ValueError("Output destinations must not overwrite the edited configuration directory")
-            if path.resolve() == original.resolve() or (path.exists() and original.exists() and path.samefile(original)):
-                raise ValueError("Output destinations must not overwrite the original backup")
-            if any(parent.is_symlink() for parent in (path, *path.parents)):
-                raise ValueError(f"Unsafe output symlink: {path}")
-            if path.exists() and not path.is_file():
-                raise ValueError(f"Output destination is not a file: {path}")
-        existing = [path for path in (edited_archive, output) if path.exists()]
-        if existing:
-            print("\nExisting output files:")
-            for path in existing:
-                print(f"  {path}")
-            if not confirm("Overwrite existing output files? [y/n]: "):
-                print("Encoding overwrite cancelled.")
-                return False
-        codec = {**model_specs["router_specs"]["codec"],
-                           "hardware": model_specs["router_specs"].get("hardware"),
-                           "firmware": model_specs["router_specs"].get("firmware")}
-        wrapper = parse_router_wrapper(original.read_bytes(), codec)
-        template_password = "" if codec.get("key_derivation") == "device-key" else load_router_credentials(password_path, codec, "Enter router password: ")
-        if template_password is False:
-            return False
-        original_archive = decode_router_config(original.read_bytes(), model_specs, device_key_path=device_key_path, password=template_password)
-        if single_file:
-            rebuilt_archive, changes = validate_edited_xml(original_archive, directory, model_specs,
-                field_handler(model_specs, "decode"),
-                field_handler(model_specs, "encode"))
-        else:
-            rebuilt_archive, changes = ROUTER_FUNCTIONS[codec["archive"]]["encode"](original_archive, str(directory))
-            validate_edited_fields(original_archive, directory, model_specs)
-        target_password = "" if codec.get("key_derivation") == "device-key" else load_target_router_credentials(template_password, codec, password_prompt)
-        if target_password is False:
-            return False
-        rebuilt = encode_router_config(rebuilt_archive, model_specs, target_password, wrapper["header"], device_key_path)
-        decrypted = decode_router_config(rebuilt, model_specs, device_key_path=device_key_path, password=target_password)
-        if decrypted != rebuilt_archive:
-            raise ValueError("Generated backup failed decryption verification")
-        if not single_file:
-            validate_tar_gzip_config(decrypted, model_specs)
-        _save_encoded_outputs(edited_archive, output, rebuilt_archive, rebuilt, single_file,
-                              model_specs, device_key_path, target_password)
-        print("Modified files: " + (", ".join(changes) or "none; original compressed archive retained"))
-        print(f"Saved edited router archive: {edited_archive}")
-        print(f"Updated router backup: {output}; checksum and local round-trip verified.")
-        return str(output)
-    except (OSError, ValueError, KeyError, TypeError, UnicodeError, tarfile.TarError, EOFError, subprocess.SubprocessError) as exc:
-        print(f"Failed to encode router configuration: {exc}")
-        raise
-
-
-# ---------------------------------------------------------------------
-# CONFIGURATION CONVERSION
-# ---------------------------------------------------------------------
-
-
-def convert_router_config_fields(source_dir: str, destination_dir: str, source_specs: dict, destination_specs: dict) -> str | bool:
-    """Transfer matching configured fields into the prepared destination and report skipped fields."""
-    try:
-        source_reader = ROUTER_FUNCTIONS.get((source_specs["router_specs"].get("edit") or {}).get("configuration_format"), {}).get("decode")
-        destination_reader = ROUTER_FUNCTIONS.get((destination_specs["router_specs"].get("edit") or {}).get("configuration_format"), {}).get("decode")
-        editor = ROUTER_FUNCTIONS.get((destination_specs["router_specs"].get("edit") or {}).get("configuration_format"), {}).get("edit")
-        if source_reader is None or destination_reader is None or editor is None:
-            raise ValueError("Unsupported configuration format for source reading or destination editing")
-        source_decrypt_handler = field_handler(source_specs, "decode")
-        destination_decrypt_handler = field_handler(destination_specs, "decode")
-        destination_encrypt_handler = field_handler(destination_specs, "encode")
-        source = Path(source_dir).expanduser()
-        destination = Path(destination_dir).expanduser()
-        validate_directory(source)
-        validate_directory(destination)
-        if not source.is_dir() or not destination.is_dir():
-            raise ValueError("Source or prepared destination directory is missing")
-        if source.resolve() == destination.resolve() or source.resolve() in destination.resolve().parents or destination.resolve() in source.resolve().parents:
-            raise ValueError("Source and destination directories must be separate")
-        source_relative = Path(source_specs["router_specs"]["edit"]["configuration_file"])
-        destination_relative = Path(destination_specs["router_specs"]["edit"]["configuration_file"])
-        source_file = source / source_relative
-        destination_file = destination / destination_relative
-        if not source_file.is_file() or not destination_file.is_file() or source_file.is_symlink() or destination_file.is_symlink():
-            raise ValueError("Missing or unsafe router configuration file")
-        source_bytes = source_file.read_bytes()
-        original = destination_file.read_bytes().decode("utf-8")
-        source_values = source_reader(source_bytes.decode("utf-8"), source_specs, source_decrypt_handler)
-        destination_values = destination_reader(original, destination_specs, destination_decrypt_handler)
-        updates = _confirm_router_conversion(source_values, destination_values)
-        if updates is None:
-            return False
-        edited = editor(original, destination_specs, updates, destination_encrypt_handler)
-        if (destination_specs["router_specs"].get("edit") or {}).get("configuration_format") == "xml":
-            validate_xml_field_changes(original, edited, destination_specs, updates,
-                destination_decrypt_handler, destination_encrypt_handler)
-        else:
-            validate_key_value_field_changes(original, edited, destination_specs, updates)
-        _save_configuration_directory(destination, destination, destination_relative, original.encode("utf-8"),
-                                      edited, destination_specs, updates, conversion_source=(source_file, source_bytes))
-        print(f"Converted configuration saved: {destination}")
-        return str(destination)
-    except (OSError, ValueError, TypeError, KeyError, UnicodeError) as exc:
-        print(f"Failed to convert router configuration: {exc}")
-        return False
+def report_encoded_backup(output, paths, context):
+    """Report only the successfully published encoded outputs."""
+    print("Modified files: " + (", ".join(context["changes"]) or "none; original compressed archive retained"))
+    print(f"Saved edited router archive: {paths['edited_archive']}")
+    print(f"Updated router backup: {output}; checksum and local round-trip verified.")
+    return output

@@ -1,177 +1,371 @@
 # Router Model Specifications
 
-Router model specifications describe the settings used to decode, inspect, edit, and encode router configuration backups. Each supported router has a JSON specification, allowing the shared processing functions to work with different backup formats without model-specific logic.
+Router model specifications define the information and processing methods required to decode, view, edit, and encode supported router configuration backups.
 
-## Specification structure
+AutomationTools and TestingTools use the same specification structure and JSON schema.
 
-Every specification contains exactly two top-level properties:
+Each router model has a JSON specification stored in `routers/model_specs/`.
+
+## Specification Structure
+
+Every specification contains two top-level properties:
 
 | Property | Description |
 |---|---|
-| `router_specs` | Router identity and supported backup processing settings |
-| `config_fields` | Logical field names mapped to configuration keys or selectors |
+| `router_specs` | Router identity and backup processing settings |
+| `config_fields` | Logical configuration field mappings |
 
-The `router_specs` object contains the router identity and the following sections as applicable:
+`router_specs` contains these required properties:
 
-| Section | Description |
+| Property | Description |
 |---|---|
-| `codec` | Shared decoding and encoding settings |
-| `encode` | Additional parameters required only for encoding |
-| `edit` | Configuration editing settings, where supported |
+| `model` | Router model identifier |
+| `firmware` | Firmware version |
+| `hardware` | Hardware revision |
+| `codec` | Backup encryption, encoding, wrapper, archive, and processing settings |
+| `encode` | Additional encoding-only settings, or `null` |
+| `edit` | Configuration editing settings, or `null` |
 
-Omit unused optional sections and settings rather than adding `null` placeholders. The exception is an existing `config_fields` mapping whose `path` is `null` because the field location is unknown.
+The specification is validated against `schemas/RouterSchema.json`, which uses JSON Schema Draft 2020-12.
 
-### Example
+Required properties must remain present. Use `null` for unused settings where permitted by the schema.
 
-This example illustrates the structure and field mappings. It is **not** a complete working specification; required `codec` properties and identity fields depend on the router and the shared schema.
+## Specification Example
+
+The following example illustrates the specification structure:
 
 ```json
 {
   "router_specs": {
+    "model": "ExampleRouter",
+    "firmware": "1.0",
+    "hardware": "R1",
     "codec": {},
+    "encode": null,
     "edit": {
-      "configuration_file": "config.xml"
+      "configuration_file": "config/settings.conf",
+      "configuration_format": "key-value",
+      "field_encryption": null
     }
   },
   "config_fields": [
     {
-      "name": "wifi_ssid",
-      "path": "Wireless|Name=Main|SSID"
+      "name": "wifi_2g_ssid",
+      "path": "ACTUAL_SSID_KEY"
     },
     {
-      "name": "wifi_password",
-      "path": "Wireless|Name=Main|Password"
+      "name": "wifi_2g_password",
+      "path": "ACTUAL_PASSWORD_KEY"
     }
   ]
 }
 ```
 
-The example selectors are illustrative. Use the actual paths found in the router's decoded configuration. For a complete starting specification, see `doc/RouterSpecificationTemplate.json`.
+This is a structural example, not a complete working specification.
 
-## Codec settings
+The required codec properties and valid format combinations are defined by the schema and registered processing functions.
 
-`router_specs.codec` defines the shared mechanisms and parameters for decoding and encoding a backup. Depending on the router, these include:
+Use `doc/RouterSpecificationTemplate.json` as the starting point for a complete specification.
 
-- Encryption algorithms, keys, and initialization vectors (IVs)
-- Password derivation parameters
-- Backup wrappers, headers, trailers, and random prefixes
-- Checksum locations and line lengths
-- Compression and archive formats
-- Signature verification parameters
-- Decode and encode operation order
+## Codec Settings
 
-Wrapper parameters are shared: decoding checks the same checksum location, line length, random prefix, and trailer that encoding writes. These parameters are flat properties of `codec`.
+`router_specs.codec` describes how the router backup is processed.
 
-Keys, IVs, and public signature parameters are included only for methods that require them.
+Important properties include:
 
-The supported archive methods used by the supplied profiles are `tar.gz` and `signed-zlib`.
+| Property | Description |
+|---|---|
+| `encoding` | Payload encoding method |
+| `encryption` | Encryption algorithm |
+| `key_derivation` | Encryption key derivation method |
+| `password_base` | Base password material where required |
+| `password_hash` | Password hashing method |
+| `key_derivation_digest` | Key derivation digest |
+| `salted` | Whether the specified key derivation uses a salt |
+| `password_required` | Whether a password file is required |
+| `device_key_required` | Whether a binary device key is required |
+| `encryption_settings` | Additional encryption parameters |
+| `wrapper` | Backup wrapper format |
+| `archive` | Archive or compression format |
+| `checksum` | Checksum method |
+| `signature` | Signature algorithm or settings |
+| `decode_order` | Ordered decoding operations |
+| `encode_order` | Ordered encoding operations |
+| `decoded_extension` | Decoded payload extension |
 
-The supplied profiles use default processing orders. Where necessary, specify independent orders with:
+Additional codec properties describe wrapper formatting and cryptographic parameters, including:
 
-```text
-router_specs.codec.decode_order
-router_specs.codec.encode_order
+- `header_lines`
+- `preserve_header`
+- `payload_line_length`
+- `newline`
+- `checksum_after_payload_lines`
+- `checksum_prefix_bytes`
+- `trailer_character`
+- `trailer_repeat`
+- `iv_length`
+- `signature_length`
+- `preamble`
+- `backup_version`
+- `header_terminator`
+
+The applicable settings depend on the selected backup format.
+
+Codec properties are declared in the specification. Registered processing functions validate the parameters required by their implementations.
+
+## Encode and Decode Order
+
+Router specifications define the order in which processing mechanisms execute.
+
+For example, Spark SmartModem uses:
+
+```json
+"decode_order": [
+  "wrapper",
+  "encoding",
+  "encryption",
+  "archive"
+],
+"encode_order": [
+  "archive",
+  "encryption",
+  "encoding",
+  "wrapper"
+]
 ```
 
-## Encoding settings
+Each processing role is resolved to a registered function.
 
-Use `router_specs.encode` only for encoding-specific parameters that are not shared with decoding.
+Validation operations are placed before the corresponding transformations.
 
-The Vodafone Huawei HG659 profile includes:
+Signature processing is positioned according to the selected format's signing and verification requirements.
+
+A `null` operation order uses the applicable registered default order.
+
+## Encoding Settings
+
+`router_specs.encode` contains parameters required only when encoding a backup.
+
+For example, Vodafone Huawei HG659 uses:
 
 ```text
 router_specs.encode.private_exponent_hex
 ```
 
-This is the private exponent used by its supported signing process. Public signature parameters remain in `codec` where required.
+This supplies the private exponent required by the supported signing process.
 
-## Editing settings
+When no additional encoding settings are required, use:
 
-Use `router_specs.edit` only when the decoded configuration format and editing mechanism are established.
-
-The configuration file to edit is specified by:
-
-```text
-router_specs.edit.configuration_file
+```json
+"encode": null
 ```
 
-Protected fields are listed under:
+## Editing Settings
 
-```text
-router_specs.edit.field_encryption.fields
+`router_specs.edit` identifies the configuration file, configuration format, and optional protected fields.
+
+Example:
+
+```json
+"edit": {
+  "configuration_file": "config/.glbcfg",
+  "configuration_format": "key-value",
+  "field_encryption": null
+}
 ```
 
-## Configuration field mappings
+The supported properties are:
 
-`config_fields` is a list of mappings between a logical name and a key or selector in the decoded configuration.
+| Property | Description |
+|---|---|
+| `configuration_file` | File containing the editable configuration |
+| `configuration_format` | Configuration format, such as `key-value` or `xml` |
+| `field_encryption` | Field-level encryption settings, or `null` |
 
-Each entry has this form:
+Field encryption settings may specify an algorithm and the logical field names requiring protected-value processing.
+
+If the router's configuration format or editing mechanism is not established, use:
+
+```json
+"edit": null
+```
+
+## Configuration Field Mappings
+
+`config_fields` maps common logical field names to the keys or selectors used by a router.
+
+Each entry has the form:
 
 ```json
 {
   "name": "logical_name",
-  "path": "actual_key_or_selector"
+  "path": "actual_configuration_key_or_selector"
 }
 ```
 
-For example, an XML-backed configuration might use:
+The supplied router models include logical fields such as:
 
-```json
-{
-  "config_fields": [
-    {
-      "name": "wifi_ssid",
-      "path": "Wireless|Name=Main|SSID"
-    },
-    {
-      "name": "wifi_password",
-      "path": "Wireless|Name=Main|Password"
-    }
-  ]
-}
-```
+- `wifi_2g_ssid`
+- `wifi_2g_password`
+- `wifi_5g_ssid`
+- `wifi_5g_password`
 
-These paths are examples, not confirmed selectors for any supplied router model.
+For key-value configurations, the path identifies the actual configuration key.
+
+For XML configurations, the path identifies an element or attribute selector.
 
 Supported XML selector forms include:
 
-| Form | Purpose |
+| Selector | Purpose |
 |---|---|
-| `element\|filter=value\|attribute` | Find an element by a filter and select an attribute |
+| `element\|filter=value\|attribute` | Select an attribute from a matching element |
 | `child@attribute` | Select an attribute on a child element |
 
-Add mappings as needed without changing Python processing functions. Some existing Ultra Hub mappings have a `null` path because the corresponding configuration location is not yet known; these fields are not currently editable.
+An example XML mapping is:
 
-## Supplied router profiles
+```json
+{
+  "name": "wifi_2g_ssid",
+  "path": "WLANConfigurationInstance|X_OperatingFrequencyBand=2.4GHz|X_Is_Guest_Network=0|SSID"
+}
+```
 
-| Router | Specification sections | Notes |
+A `null` field path indicates that the corresponding configuration location is unavailable or unsupported.
+
+Only fields with supported mappings and configuration formats can be edited.
+
+## Registered Operations
+
+Both applications define their router function registry in:
+
+```text
+constants/RouterConstants.py
+```
+
+The registry is named `ROUTER_FUNCTIONS`.
+
+It contains these categories:
+
+| Category | Purpose |
+|---|---|
+| `encode` | Encoding functions and validators |
+| `decode` | Decoding functions and validators |
+| `extract` | Configuration extraction |
+| `check` | Configuration format checking |
+| `checksum` | Checksum functions |
+| `edit` | Configuration editing functions and validators |
+| `view` | Configuration viewing functions and validators |
+
+The router utility provides the following operation functions:
+
+```python
+resolve_router_operations()
+build_encode_operations()
+build_decode_operations()
+build_edit_operations()
+build_view_operations()
+run_router_operations()
+```
+
+`resolve_router_operations()` selects the applicable functions from `ROUTER_FUNCTIONS`.
+
+The four builders construct ordered operation lists using the model specification and applicable validators.
+
+`run_router_operations()` executes the supplied operations in sequence, passing transformation results between functions.
+
+The application pipeline determines when the operations are built, displayed, and executed.
+
+Individual encryption, format, and configuration functions are implemented in the corresponding router utility modules.
+
+## Router Credentials
+
+A model specification declares credential requirements but does not store credential file paths.
+
+Credential file locations belong in the application's `config/RouterConfig.json`.
+
+Relevant codec properties are:
+
+```text
+router_specs.codec.password_required
+router_specs.codec.device_key_required
+```
+
+Password files and binary device-key files are handled separately.
+
+Fixed-key methods use their supported parameters from the specification.
+
+A missing required credential prevents the corresponding processing operation.
+
+## Supplied Router Profiles
+
+| Router | Model | Processing |
 |---|---|---|
-| Spark SmartModem VRV9517 | `codec`, `edit` | Complete Spark-format example supplied in the template |
-| Vodafone Huawei HG659 | `codec`, `encode`, `edit` | Includes `encode.private_exponent_hex` for signing |
-| Vodafone Ultra Hub | `codec` | Configuration format and required cryptographic mechanisms are not fully established |
+| Spark SmartModem | VRV9517 | Legacy OpenSSL AES-256-CBC, Base64, line wrapper, TAR/GZIP |
+| Vodafone Huawei HG659 | HG659 | Fixed-key AES-256-CBC, RSA/MD5, signed zlib |
+| Vodafone Ultra Hub | DGA0130VDF | Technicolor THENC format and device-key specification |
 
-Supported operations depend on the router model, firmware, and available cryptographic material. A successful local encode/decode round trip does not establish compatibility with every hardware or firmware revision.
+### Spark SmartModem VRV9517
 
-## Adding a router model
+Supports:
 
-1. Copy `doc/RouterSpecificationTemplate.json` as a starting point.
-2. Set the router identity and supply the required `router_specs.codec` properties for its backup format.
-3. Add `router_specs.encode` only if the encoding process requires additional parameters.
-4. Add `router_specs.edit` only if configuration editing is supported; specify the configuration file and any protected fields.
-5. Add the required `config_fields` name/path mappings using keys or selectors from the decoded configuration.
-6. Omit unused optional sections and properties.
-7. Validate the specification with `load_router_model_specs(spec_path, schema_path)` using `schemas/RouterSchema.json`.
-8. Add the router entry and file paths to the application's `config/RouterConfig.json`, including input and credential files where required.
-9. Test the supported decode, inspect, edit, encode, and verification operations.
+- Password-based backup decryption and encryption.
+- Base64 and line-wrapper processing.
+- TAR/GZIP archive extraction and reconstruction.
+- Key-value configuration viewing and editing.
+- Local backup verification.
 
-`RouterSchema.json` uses JSON Schema Draft 2020-12. Required implementation parameters and compatible format combinations are also checked in Python.
+### Vodafone Huawei HG659
 
-A router using already-supported processing methods requires a new specification and application configuration entry, not changes to the Python processing functions.
+Supports:
 
-## Related files
+- Fixed-key AES-256-CBC encryption and decryption.
+- Signed zlib processing.
+- RSA/MD5 signature verification and signing.
+- XML configuration viewing and editing.
+- AES-128-CBC protection of supported Wi-Fi password fields.
+- Local backup verification.
+
+### Vodafone Ultra Hub DGA0130VDF
+
+The specification declares the Technicolor THENC wrapper and device-key encryption requirements.
+
+THENC parsing and relevant validation are implemented.
+
+Complete THENC decryption, encryption, authentication, and signing are not implemented because the required cryptographic processing is not established.
+
+Providing a device-key file alone does not make complete THENC processing available.
+
+The configuration editing format is not established.
+
+## Adding Another Router Model
+
+1. Copy `doc/RouterSpecificationTemplate.json`.
+2. Enter the router model, firmware, and hardware information.
+3. Configure the codec properties for its backup format.
+4. Define the correct encode and decode operation order.
+5. Supply encoding-only parameters or set `encode` to `null`.
+6. Define editing settings or set `edit` to `null`.
+7. Map supported configuration fields in `config_fields`.
+8. Validate the specification against `schemas/RouterSchema.json`.
+9. Add the router and its paths to `config/RouterConfig.json`.
+10. Configure any required credential files.
+11. Test the supported processing workflows.
+
+A new router using existing registered methods generally requires only a model specification and application configuration entry.
+
+A new encryption algorithm, wrapper, archive format, or configuration mechanism requires an implementation in the appropriate utility module and registration in `ROUTER_FUNCTIONS`.
+
+## Related Files
 
 | File | Purpose |
 |---|---|
-| `doc/RouterSpecificationTemplate.json` | Complete Spark-format specification example |
-| `schemas/RouterSchema.json` | Shared specification validation schema |
-| `config/RouterConfig.json` | Application router entries and input/output paths |
+| `schemas/RouterSchema.json` | Specification validation schema |
+| `doc/RouterSpecificationTemplate.json` | Starting specification |
+| `constants/RouterConstants.py` | Operation registry and pipelines |
+| `config/RouterConfig.json` | Application configuration |
+| `modules/router_utils.py` | Operation builders, dispatcher, and supporting functions |
+| `modules/router_encryption_utils.py` | Encryption and signature processing |
+| `modules/router_format_utils.py` | Backup format processing |
+| `modules/router_config_utils.py` | Configuration viewing and editing |
+
+Successful local processing and verification do not guarantee that physical router firmware will accept a generated backup.
